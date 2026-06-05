@@ -52,7 +52,13 @@
 </head>
 <body>
 
-<!-- 가로모드 강제 오버레이 (모바일 세로 지원을 위해 제거됨) -->
+<!-- 가로모드 강제 오버레이 -->
+<div id="portraitLock" class="hidden absolute inset-0 z-[100] bg-slate-950 text-white flex-col items-center justify-center text-center px-4">
+    <div class="text-7xl mb-6 animate-bounce">📱</div>
+    <h2 class="text-2xl font-black text-amber-400 mb-3 orbitron">가로 모드로 회전해주세요</h2>
+    <p class="text-slate-400 text-sm">5:5 전장은 가로 화면에서만 플레이할 수 있습니다.</p>
+    <div class="mt-6 text-4xl animate-spin" style="animation-duration:2s">🔄</div>
+</div>
 
 <!-- ══════════ 타이틀 화면 ══════════ -->
 <div id="titleScreen" class="absolute inset-0 z-50 flex flex-col items-center justify-center overflow-y-auto text-white"
@@ -61,7 +67,7 @@
     <div class="absolute inset-0 pointer-events-none"
          style="background-image:linear-gradient(rgba(255,255,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.03) 1px,transparent 1px);background-size:60px 60px;"></div>
 
-    <div class="relative z-10 w-full max-w-3xl px-2 py-4 md:py-8 flex flex-col items-center gap-3 md:gap-5">
+    <div class="relative z-10 w-full max-w-3xl px-4 py-8 flex flex-col items-center gap-5">
         <!-- 타이틀 -->
         <div class="text-center">
             <h1 class="orbitron text-4xl md:text-6xl font-black tracking-widest mb-1"
@@ -170,7 +176,7 @@
     <div class="flex justify-between items-start pointer-events-auto w-full relative">
 
         <!-- 좌상단: 플레이어 정보 + 미니맵 -->
-        <div class="flex flex-col gap-1.5 z-20">
+        <div class="flex flex-col gap-1.5">
             <!-- 캐릭터 정보 카드 -->
             <div class="flex items-center gap-2 bg-slate-950/90 border border-slate-800 rounded-xl p-2 shadow-2xl backdrop-blur-md">
                 <div class="w-36">
@@ -196,12 +202,12 @@
             </div>
 
             <!-- 미니맵 -->
-            <div class="bg-slate-950/90 border border-slate-800 rounded-xl p-1.5 shadow-2xl backdrop-blur-md w-20 md:w-36 mt-1 pointer-events-auto">
+            <div class="bg-slate-950/90 border border-slate-800 rounded-xl p-1.5 shadow-2xl backdrop-blur-md w-28 md:w-36">
                 <div class="flex justify-between items-center w-full mb-1 px-0.5">
                     <span class="text-[7px] text-slate-400 font-bold tracking-widest uppercase">MINIMAP</span>
                     <span id="gameTimerMini" class="text-[7px] text-amber-400 font-mono font-bold">00:00</span>
                 </div>
-                <div class="relative w-full h-20 md:h-32 bg-slate-900/80 border border-slate-800 rounded overflow-hidden">
+                <div class="relative w-full h-24 md:h-32 bg-slate-900/80 border border-slate-800 rounded overflow-hidden">
                     <canvas id="minimapCanvas" class="w-full h-full"></canvas>
                 </div>
             </div>
@@ -226,7 +232,7 @@
         </div>
 
         <!-- 우상단: 상점 + 인벤토리 -->
-        <div class="flex flex-col items-end gap-1.5 z-20">
+        <div class="flex flex-col items-end gap-1.5">
             <div class="flex gap-1.5">
                 <button onclick="playNextBGM()" id="btnManualBGM"
                         class="bg-gradient-to-r from-slate-700 to-slate-800 text-slate-300 font-black text-[10px] px-2 py-2 rounded-xl shadow-lg border border-slate-600 active:scale-95 transition-transform">
@@ -271,32 +277,24 @@
             <div class="joy-circle"><span class="text-white/40 text-xs font-bold">이동</span></div>
         </div>
 
-        <!-- 패시브 스킬 표시 영역 & 스킬 버튼 -->
-        <div id="uiSkillBar" class="pointer-events-auto flex flex-col md:flex-row items-end gap-2 bg-slate-950/90 border border-slate-800 p-2.5 rounded-2xl shadow-2xl backdrop-blur-md absolute bottom-0 right-0">
-            <!-- 획득한 패시브 스킬 슬롯 -->
-            <div id="passiveSkillBar" class="flex gap-1 flex-wrap max-w-[120px] md:max-w-[200px] mb-1 md:mb-0">
-                <!-- JS가 채움 -->
+        <!-- 패시브 스킬 표시 영역 -->
+        <div id="uiSkillBar" class="pointer-events-auto flex items-end gap-2 bg-slate-950/90 border border-slate-800 p-2.5 rounded-2xl shadow-2xl backdrop-blur-md absolute bottom-0 right-0">
+            <!-- 고유 패시브 1 -->
+            <div class="skill-btn relative overflow-hidden bg-gradient-to-br from-slate-800 to-slate-900 border-2 border-emerald-500/50 shadow-lg" style="width:52px;height:52px;">
+                <span id="txtSkill1Icon" class="text-lg">✨</span>
+                <span class="text-[6px] text-emerald-400 font-bold">자동</span>
+                <div id="maskSkill1" class="hidden absolute inset-0 bg-slate-950/85 flex items-center justify-center font-mono font-black text-amber-400 text-[10px] rounded-full"></div>
             </div>
-            
-            <div class="flex gap-2 items-end">
-                <!-- 오토 스킬 토글 -->
-                <button onclick="toggleAutoSkill()" id="btnAutoSkill" class="flex flex-col items-center justify-center bg-amber-500 text-slate-900 font-black text-[9px] w-12 h-12 rounded-xl shadow border border-amber-300 active:scale-95 transition-transform">
-                    <span class="text-xs">🤖</span>
-                    <span id="txtAutoSkill">AUTO ON</span>
-                </button>
-                
-                <!-- 고유 패시브/액티브 1 -->
-                <button onclick="triggerSkill(1)" class="skill-btn relative overflow-hidden bg-gradient-to-br from-slate-800 to-slate-900 border-2 border-emerald-500/50 shadow-lg" style="width:56px;height:56px;">
-                    <span id="txtSkill1Icon" class="text-lg">✨</span>
-                    <span class="text-[7px] text-emerald-400 font-bold" id="txtSkill1Type">자동</span>
-                    <div id="maskSkill1" class="hidden absolute inset-0 bg-slate-950/85 flex items-center justify-center font-mono font-black text-amber-400 text-[10px] rounded-full"></div>
-                </button>
-                <!-- 고유 패시브/액티브 2 -->
-                <button onclick="triggerSkill(2)" class="skill-btn relative overflow-hidden bg-gradient-to-br from-slate-800 to-slate-900 border-2 border-indigo-500/50 shadow-lg" style="width:56px;height:56px;">
-                    <span id="txtSkill2Icon" class="text-lg">💫</span>
-                    <span class="text-[7px] text-indigo-400 font-bold" id="txtSkill2Type">자동</span>
-                    <div id="maskSkill2" class="hidden absolute inset-0 bg-slate-950/85 flex items-center justify-center font-mono font-black text-amber-400 text-[10px] rounded-full"></div>
-                </button>
+            <!-- 고유 패시브 2 -->
+            <div class="skill-btn relative overflow-hidden bg-gradient-to-br from-slate-800 to-slate-900 border-2 border-indigo-500/50 shadow-lg" style="width:52px;height:52px;">
+                <span id="txtSkill2Icon" class="text-lg">💫</span>
+                <span class="text-[6px] text-indigo-400 font-bold">자동</span>
+                <div id="maskSkill2" class="hidden absolute inset-0 bg-slate-950/85 flex items-center justify-center font-mono font-black text-amber-400 text-[10px] rounded-full"></div>
+            </div>
+            <!-- 획득한 패시브 스킬 슬롯 -->
+            <div class="h-px bg-slate-700 w-px self-stretch mx-0.5"></div>
+            <div id="passiveSkillBar" class="flex gap-1 flex-wrap max-w-[200px]">
+                <!-- JS가 채움 -->
             </div>
         </div>
     </div>

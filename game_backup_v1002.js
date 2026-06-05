@@ -130,7 +130,7 @@ const PASSIVE_SKILLS = [
 ];
 
 // ============ 전역 상태 ============
-let GS = { status:'TITLE', platform:'PC', faction:'BLUE', hero:'BERSERKER', time:0, lastFrame:0, paused:false, autoSkill:true };
+let GS = { status:'TITLE', platform:'PC', faction:'BLUE', hero:'BERSERKER', time:0, lastFrame:0, paused:false };
 let camera = { x:1500, y:2500, zoom:0.65 };
 let player = null;
 let entities = [];
@@ -620,39 +620,44 @@ class Hero extends Entity {
         this.hp=Math.min(this.hp, this.maxHp);
     }
     autoUseHeroSkills(){
-        if(!GS.autoSkill) return;
         let k = this.heroKey;
         let sl = Math.floor((this.level - 1) / 3) + 1;
-        let nearEnemies = (cx,cy,r) => entities.filter(e=>e.faction!==this.faction&&!e.isDead&&dist({x:cx,y:cy},e)<=r);
-        
-        if(this.heroSkill1Timer <= 0 && nearEnemies(this.x, this.y, 400).length > 0) this.useSkill(1);
-        if(this.heroSkill2Timer <= 0 && nearEnemies(this.x, this.y, 400).length > 0) this.useSkill(2);
-    }
-    useSkill(idx) {
-        let k = this.heroKey;
-        let sl = Math.floor((this.level - 1) / 3) + 1;
-        let cd = Math.max(2, (idx===1 ? HERO_TMPL[k].skill1.cd : HERO_TMPL[k].skill2.cd) - sl*0.5);
-        if(idx===1) { if(this.heroSkill1Timer > 0) return; this.heroSkill1Timer = cd; }
-        else { if(this.heroSkill2Timer > 0) return; this.heroSkill2Timer = cd; }
-        
         let skillDmg = this.atk * (1.5 + sl * 0.5);
         let nearEnemies = (cx,cy,r) => entities.filter(e=>e.faction!==this.faction&&!e.isDead&&dist({x:cx,y:cy},e)<=r);
-        
-        if(k==='BERSERKER' || k==='THOR'){
-            nearEnemies(this.x,this.y,250).forEach(e=>{e.applyRawDamage(skillDmg,this);e.stunTimer=1;});
-            spawnAOE(this.x,this.y,250,HERO_TMPL[k].color+'88',0.5);
-        } else {
+        // Skill 1
+        if(this.heroSkill1Timer <= 0) {
+            let cd = Math.max(2, HERO_TMPL[k].skill1.cd - sl*0.5);
             let targets = nearEnemies(this.x, this.y, 400);
-            let t=targets.length > 0 ? targets.sort((a,b)=>dist(this,a)-dist(this,b))[0] : null;
-            if(t) {
-                if(HERO_TMPL[k].type==='ranged') { for(let i=0;i<3+sl;i++) setTimeout(()=>{if(!t.isDead) projectiles.push(new Projectile(this.x,this.y,t,skillDmg*0.5,this,false));}, i*100); }
-                else { this.x=t.x+rand(-40,40); this.y=t.y+rand(-40,40); t.applyRawDamage(skillDmg*1.5,this); spawnParticles(this.x,this.y,HERO_TMPL[k].color,20,150,0.5); }
-            } else {
-                // 적이 없어도 스킬 시전 이펙트는 출력
-                spawnParticles(this.x,this.y,HERO_TMPL[k].color,10,100,0.3);
+            if(targets.length > 0) {
+                this.heroSkill1Timer = cd;
+                if(k==='BERSERKER' || k==='THOR'){
+                    nearEnemies(this.x,this.y,250).forEach(e=>{e.applyRawDamage(skillDmg,this);e.stunTimer=1;});
+                    spawnAOE(this.x,this.y,250,HERO_TMPL[k].color+'88',0.5);
+                } else {
+                    let t=targets.sort((a,b)=>dist(this,a)-dist(this,b))[0];
+                    if(HERO_TMPL[k].type==='ranged') { for(let i=0;i<3+sl;i++) setTimeout(()=>{if(!t.isDead) projectiles.push(new Projectile(this.x,this.y,t,skillDmg*0.5,this,false));}, i*100); }
+                    else { this.x=t.x+rand(-40,40); this.y=t.y+rand(-40,40); t.applyRawDamage(skillDmg*1.5,this); spawnParticles(this.x,this.y,HERO_TMPL[k].color,20,150,0.5); }
+                }
+                addText(this.x,this.y-50,HERO_TMPL[k].skill1.name,HERO_TMPL[k].color); playSFX('shoot');
             }
         }
-        addText(this.x,this.y-50, idx===1 ? HERO_TMPL[k].skill1.name : HERO_TMPL[k].skill2.name, HERO_TMPL[k].color); playSFX('shoot');
+        // Skill 2
+        if(this.heroSkill2Timer <= 0) {
+            let cd = Math.max(2, HERO_TMPL[k].skill2.cd - sl*0.5);
+            let targets = nearEnemies(this.x, this.y, 400);
+            if(targets.length > 0) {
+                this.heroSkill2Timer = cd;
+                if(k==='BERSERKER' || k==='THOR'){
+                    nearEnemies(this.x,this.y,250).forEach(e=>{e.applyRawDamage(skillDmg,this);e.stunTimer=1;});
+                    spawnAOE(this.x,this.y,250,HERO_TMPL[k].color+'88',0.5);
+                } else {
+                    let t=targets.sort((a,b)=>dist(this,a)-dist(this,b))[0];
+                    if(HERO_TMPL[k].type==='ranged') { for(let i=0;i<3+sl;i++) setTimeout(()=>{if(!t.isDead) projectiles.push(new Projectile(this.x,this.y,t,skillDmg*0.5,this,false));}, i*100); }
+                    else { this.x=t.x+rand(-40,40); this.y=t.y+rand(-40,40); t.applyRawDamage(skillDmg*1.5,this); spawnParticles(this.x,this.y,HERO_TMPL[k].color,20,150,0.5); }
+                }
+                addText(this.x,this.y-50,HERO_TMPL[k].skill2.name,HERO_TMPL[k].color); playSFX('shoot');
+            }
+        }
     }
     updatePassives(dt) {
         // 화염의 고리
@@ -1012,7 +1017,7 @@ function spawnChainEffect(x1,y1,x2,y2) {
 }
 
 // ============ 입력 이벤트 & 줌 ============
-window.addEventListener('keydown',e=>{ let k=e.key.toLowerCase(); if(keys.hasOwnProperty(k)) keys[k]=true; if(k==='o'&&player&&!GS.autoSkill) player.useSkill(1); if(k==='p'&&player&&!GS.autoSkill) player.useSkill(2); });
+window.addEventListener('keydown',e=>{ let k=e.key.toLowerCase(); if(keys.hasOwnProperty(k)) keys[k]=true; });
 window.addEventListener('keyup',e=>{ let k=e.key.toLowerCase(); if(keys.hasOwnProperty(k)) keys[k]=false; });
 window.addEventListener('wheel', e => { camera.zoom -= e.deltaY * 0.001; camera.zoom = clamp(camera.zoom, 0.3, 2.0); });
 
@@ -1026,13 +1031,7 @@ window.addEventListener('touchmove',e=>{
     if(e.touches.length === 2 && initPinchD) { let d = Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY); camera.zoom = clamp(initZoom * (d/initPinchD), 0.3, 2.0); }
     else if(joy.active) { for(let t of e.changedTouches) if(t.identifier===joy.id){ let dx=t.clientX-joy.ox, dy=t.clientY-joy.oy, d=Math.hypot(dx,dy); if(d>50){dx=dx/d*50;dy=dy/d*50;} joy.dx=dx; joy.dy=dy; } }
 });
-window.addEventListener('touchend',e=>{ 
-    if(e.touches.length<2) initPinchD=null; 
-    let stillTouching = false;
-    for(let t of e.touches) if(t.identifier===joy.id) stillTouching = true;
-    if(!stillTouching){ joy.active=false; joy.dx=0; joy.dy=0; } 
-});
-window.addEventListener('touchcancel',e=>{ joy.active=false; joy.dx=0; joy.dy=0; });
+window.addEventListener('touchend',e=>{ if(e.touches.length<2) initPinchD=null; for(let t of e.changedTouches) if(t.identifier===joy.id){joy.active=false;joy.dx=0;joy.dy=0;} });
 
 // ============ UI ============
 window.selectPlatform=p=>{ GS.platform=p; document.getElementById('btnPlatPC').className=p==='PC'?"px-4 py-2.5 rounded-xl font-bold bg-indigo-600 border text-white w-1/2 text-sm":"px-4 py-2.5 rounded-xl font-bold bg-slate-800 border text-slate-400 w-1/2 text-sm"; document.getElementById('btnPlatMobile').className=p==='MOBILE'?"px-4 py-2.5 rounded-xl font-bold bg-emerald-600 border text-white w-1/2 text-sm":"px-4 py-2.5 rounded-xl font-bold bg-slate-800 border text-slate-400 w-1/2 text-sm"; };
@@ -1096,8 +1095,6 @@ window.startGame=()=>{
 };
 window.toggleShop=()=>{ document.getElementById('shopUI').classList.toggle('hidden'); renderShop(); };
 window.buyItemUI=id=>{ if(player) player.buyItem(id); };
-window.triggerSkill=idx=>{ if(player&&!player.isDead) player.useSkill(idx); };
-window.toggleAutoSkill=()=>{ GS.autoSkill = !GS.autoSkill; document.getElementById('txtAutoSkill').textContent = GS.autoSkill?'AUTO ON':'MANUAL'; document.getElementById('txtSkill1Type').textContent = GS.autoSkill?'자동':'터치'; document.getElementById('txtSkill2Type').textContent = GS.autoSkill?'자동':'터치'; document.getElementById('btnAutoSkill').className = GS.autoSkill ? 'flex flex-col items-center justify-center bg-amber-500 text-slate-900 font-black text-[9px] w-12 h-12 rounded-xl shadow border border-amber-300 active:scale-95 transition-transform' : 'flex flex-col items-center justify-center bg-slate-700 text-slate-300 font-black text-[9px] w-12 h-12 rounded-xl shadow border border-slate-500 active:scale-95 transition-transform'; };
 
 function renderShop(){
     const cont=document.getElementById('shopItemContainer'); cont.innerHTML='';
