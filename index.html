@@ -208,8 +208,8 @@
         </div>
 
         <!-- 중앙 상단: 스코어 + 타이머 -->
-        <div class="absolute left-1/2 -translate-x-1/2 top-0 flex flex-col items-center gap-1">
-            <div class="bg-slate-950/90 border border-slate-800 rounded-2xl px-5 py-1.5 text-center shadow-2xl flex items-center gap-6 text-white backdrop-blur-md">
+        <div class="absolute left-1/2 -translate-x-1/2 top-0 flex flex-col items-center gap-1 mt-14 md:mt-0">
+            <div class="bg-slate-950/90 border border-slate-800 rounded-2xl px-3 md:px-5 py-1.5 text-center shadow-2xl flex items-center gap-3 md:gap-6 text-white backdrop-blur-md scale-90 md:scale-100 origin-top">
                 <div class="text-emerald-400 font-black text-lg flex flex-col leading-none">
                     <span class="text-[7px] text-slate-400 tracking-widest font-bold">BLUE</span>
                     <span id="scoreBlue">0</span>
@@ -230,7 +230,8 @@
             <div class="flex gap-1.5">
                 <button onclick="playNextBGM()" id="btnManualBGM"
                         class="bg-gradient-to-r from-slate-700 to-slate-800 text-slate-300 font-black text-[10px] px-2 py-2 rounded-xl shadow-lg border border-slate-600 active:scale-95 transition-transform">
-                    🎵 BGM 켜기/변경
+                    <span class="hidden md:inline">🎵 BGM 켜기/변경</span>
+                    <span class="md:hidden">🎵 BGM</span>
                 </button>
                 <button onclick="toggleShop()"
                         class="bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 font-black text-[10px] px-3 py-2 rounded-xl shadow-lg flex items-center gap-1.5 border border-amber-300 active:scale-95 transition-transform">
@@ -278,24 +279,25 @@
                 <!-- JS가 채움 -->
             </div>
             
-            <div class="flex gap-2 items-end">
-                <!-- 오토 스킬 토글 -->
-                <button onclick="toggleAutoSkill()" id="btnAutoSkill" class="flex flex-col items-center justify-center bg-amber-500 text-slate-900 font-black text-[9px] w-12 h-12 rounded-xl shadow border border-amber-300 active:scale-95 transition-transform">
-                    <span class="text-xs">🤖</span>
-                    <span id="txtAutoSkill">AUTO ON</span>
+            <div class="flex flex-col gap-2 items-end">
+                <!-- 고유 패시브/액티브 2 -->
+                <button onmousedown="triggerSkill(2)" ontouchstart="triggerSkill(2); event.preventDefault();" class="skill-btn relative overflow-hidden bg-gradient-to-br from-slate-800 to-slate-900 border-2 border-indigo-500/50 shadow-lg" style="width:56px;height:56px;">
+                    <span id="txtSkill2Icon" class="text-lg">💫</span>
+                    <span class="text-[7px] text-indigo-400 font-bold" id="txtSkill2Type">자동</span>
+                    <div id="maskSkill2" class="hidden absolute inset-0 bg-slate-950/85 flex items-center justify-center font-mono font-black text-amber-400 text-[10px] rounded-full"></div>
                 </button>
                 
                 <!-- 고유 패시브/액티브 1 -->
-                <button onclick="triggerSkill(1)" class="skill-btn relative overflow-hidden bg-gradient-to-br from-slate-800 to-slate-900 border-2 border-emerald-500/50 shadow-lg" style="width:56px;height:56px;">
+                <button onmousedown="triggerSkill(1)" ontouchstart="triggerSkill(1); event.preventDefault();" class="skill-btn relative overflow-hidden bg-gradient-to-br from-slate-800 to-slate-900 border-2 border-emerald-500/50 shadow-lg" style="width:56px;height:56px;">
                     <span id="txtSkill1Icon" class="text-lg">✨</span>
                     <span class="text-[7px] text-emerald-400 font-bold" id="txtSkill1Type">자동</span>
                     <div id="maskSkill1" class="hidden absolute inset-0 bg-slate-950/85 flex items-center justify-center font-mono font-black text-amber-400 text-[10px] rounded-full"></div>
                 </button>
-                <!-- 고유 패시브/액티브 2 -->
-                <button onclick="triggerSkill(2)" class="skill-btn relative overflow-hidden bg-gradient-to-br from-slate-800 to-slate-900 border-2 border-indigo-500/50 shadow-lg" style="width:56px;height:56px;">
-                    <span id="txtSkill2Icon" class="text-lg">💫</span>
-                    <span class="text-[7px] text-indigo-400 font-bold" id="txtSkill2Type">자동</span>
-                    <div id="maskSkill2" class="hidden absolute inset-0 bg-slate-950/85 flex items-center justify-center font-mono font-black text-amber-400 text-[10px] rounded-full"></div>
+                
+                <!-- 오토 스킬 토글 -->
+                <button onmousedown="toggleAutoSkill()" ontouchstart="toggleAutoSkill(); event.preventDefault();" id="btnAutoSkill" class="flex flex-col items-center justify-center bg-amber-500 text-slate-900 font-black text-[9px] w-12 h-12 rounded-xl shadow border border-amber-300 active:scale-95 transition-transform mt-1">
+                    <span class="text-xs">🤖</span>
+                    <span id="txtAutoSkill">AUTO ON</span>
                 </button>
             </div>
         </div>

@@ -1220,8 +1220,9 @@ function drawMinimap(){
         if(e.isDead&&e.type!=='jungle') return;
         let col=e.faction==='BLUE'?'#3b82f6':e.faction==='RED'?'#ef4444':'#f59e0b';
         if(e.type==='nexus'||e.type.includes('tower')) col=e.faction==='BLUE'?'#60a5fa':'#f87171';
-        mCtx.fillStyle=col; let r=e.type==='hero'?4:e.type==='nexus'?6:e.type.includes('tower')?4:2;
-        if(e===player){ mCtx.fillStyle='#fcd34d'; r=5; }
+        let isMob = GS.platform === 'MOBILE';
+        mCtx.fillStyle=col; let r=e.type==='hero'?(isMob?2.5:4):e.type==='nexus'?(isMob?4:6):e.type.includes('tower')?(isMob?2.5:4):(isMob?1:2);
+        if(e===player){ mCtx.fillStyle='#fcd34d'; r=isMob?3.5:5; }
         mCtx.beginPath(); mCtx.arc(e.x*sx,e.y*sy,r,0,Math.PI*2); mCtx.fill();
     });
     mCtx.strokeStyle='rgba(255,255,255,0.7)'; mCtx.strokeRect(camera.x*sx-(window.innerWidth/camera.zoom*sx)/2, camera.y*sy-(window.innerHeight/camera.zoom*sy)/2, window.innerWidth/camera.zoom*sx, window.innerHeight/camera.zoom*sy);
