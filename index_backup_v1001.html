@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>운빨 아발론 — 5v5 AOS</title>
+    <meta name="description" content="극한의 운빨 성장! 5:5 AOS 웹 MOBA 게임 운빨 아발론">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&family=Orbitron:wght@700;900&display=swap');
+        *, *::before, *::after { box-sizing: border-box; }
+        body, html { margin:0; padding:0; width:100%; height:100%; overflow:hidden; background:#05070c;
+            user-select:none; -webkit-user-select:none; touch-action:none;
+            font-family:'Noto Sans KR',system-ui,sans-serif; -webkit-touch-callout:none; }
+        canvas { display:block; image-rendering:auto; }
+        .orbitron { font-family:'Orbitron',sans-serif; }
+        /* 스킬 버튼 */
+        .skill-btn { width:64px; height:64px; border-radius:50%; display:flex; flex-direction:column; align-items:center; justify-content:center; transition:transform 0.1s; }
+        .skill-btn:active { transform:scale(0.88); }
+        .skill-btn-main { width:80px; height:80px; border-radius:50%; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+        /* 체력바 애니메이션 */
+        #hudHpBar { transition: width 0.15s ease; }
+        #hudXpBar { transition: width 0.3s ease; }
+        /* 킬 배너 트랜지션 */
+        #systemKillBanner { transition: opacity 0.3s ease, transform 0.3s ease; }
+        /* 모바일 조이스틱 안내 오버레이 */
+        #joyGuide { pointer-events:none; position:absolute; left:0; bottom:0; width:50%; height:100%; display:flex; align-items:flex-end; padding-bottom:40px; padding-left:20px; }
+        .joy-circle { width:100px; height:100px; border-radius:50%; border:3px solid rgba(255,255,255,0.2); background:rgba(255,255,255,0.05); display:flex; align-items:center; justify-content:center; }
+    </style>
+</head>
+<body>
+
+<!-- 가로모드 강제 오버레이 -->
+<div id="portraitLock" class="hidden absolute inset-0 z-[100] bg-slate-950 text-white flex-col items-center justify-center text-center px-4">
+    <div class="text-7xl mb-6 animate-bounce">📱</div>
+    <h2 class="text-2xl font-black text-amber-400 mb-3 orbitron">가로 모드로 회전해주세요</h2>
+    <p class="text-slate-400 text-sm">5:5 전장은 가로 화면에서만 플레이할 수 있습니다.</p>
+    <div class="mt-6 text-4xl animate-spin" style="animation-duration:2s">🔄</div>
+</div>
+
+<!-- ══════════ 타이틀 화면 ══════════ -->
+<div id="titleScreen" class="absolute inset-0 z-50 flex flex-col items-center justify-center overflow-y-auto text-white"
+     style="background: radial-gradient(ellipse at 50% 0%, rgba(16,185,129,0.12) 0%, transparent 60%), radial-gradient(ellipse at 80% 100%, rgba(139,92,246,0.1) 0%, transparent 60%), linear-gradient(135deg,#050c0b,#04070f,#0a0518);">
+    <!-- 배경 격자 -->
+    <div class="absolute inset-0 pointer-events-none"
+         style="background-image:linear-gradient(rgba(255,255,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.03) 1px,transparent 1px);background-size:60px 60px;"></div>
+
+    <div class="relative z-10 w-full max-w-3xl px-4 py-8 flex flex-col items-center gap-5">
+        <!-- 타이틀 -->
+        <div class="text-center">
+            <h1 class="orbitron text-4xl md:text-6xl font-black tracking-widest mb-1"
+                style="background:linear-gradient(135deg,#34d399,#818cf8,#f472b6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">
+                운빨 아발론
+            </h1>
+            <p class="text-[11px] md:text-sm text-slate-400 tracking-[0.3em] uppercase font-bold">5v5 Extreme RNG · AOS · Web MOBA</p>
+        </div>
+
+        <!-- 플랫폼 선택 -->
+        <div class="flex gap-3 bg-slate-900/70 p-2 rounded-2xl border border-slate-800 w-full max-w-xs backdrop-blur-md">
+            <button id="btnPlatPC" onclick="selectPlatform('PC')"
+                    class="px-4 py-2.5 rounded-xl font-bold bg-indigo-600 border border-indigo-400 text-white w-1/2 text-sm transition-all active:scale-95">💻 PC</button>
+            <button id="btnPlatMobile" onclick="selectPlatform('MOBILE')"
+                    class="px-4 py-2.5 rounded-xl font-bold bg-slate-800 border border-slate-700 text-slate-400 w-1/2 text-sm transition-all active:scale-95">📱 모바일</button>
+        </div>
+
+        <!-- 진영 선택 -->
+        <div class="w-full max-w-sm bg-slate-900/70 border border-slate-800 rounded-2xl p-4 backdrop-blur-md">
+            <h3 class="text-xs font-bold text-slate-400 mb-3 tracking-widest uppercase">진영 선택</h3>
+            <div class="grid grid-cols-2 gap-3">
+                <button id="btnFactionBlue" onclick="selectFaction('BLUE')"
+                        class="py-3 px-3 rounded-xl border-2 border-emerald-500 bg-emerald-950/40 flex flex-col items-center gap-0.5 transition-all active:scale-95">
+                    <span class="text-emerald-400 font-black text-sm tracking-wider">🔵 블루팀</span>
+                    <span class="text-[9px] text-emerald-600">좌하단 본진</span>
+                </button>
+                <button id="btnFactionRed" onclick="selectFaction('RED')"
+                        class="py-3 px-3 rounded-xl border-2 border-transparent bg-slate-800/50 flex flex-col items-center gap-0.5 transition-all active:scale-95">
+                    <span class="text-slate-400 font-black text-sm tracking-wider">🔴 레드팀</span>
+                    <span class="text-[9px] text-slate-600">우상단 본진</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- 영웅 선택 -->
+        <div class="w-full max-w-2xl bg-slate-900/70 border border-slate-800 rounded-2xl p-4 backdrop-blur-md">
+            <h3 class="text-xs font-bold text-slate-400 mb-3 tracking-widest uppercase">영웅 선택 (나머지 9명은 AI 무작위 배정)</h3>
+            <div class="grid grid-cols-3 md:grid-cols-6 gap-2">
+                <button id="btnHeroBERSERKER" onclick="selectHero('BERSERKER')"
+                        class="py-2 px-1 rounded-xl border-2 border-emerald-500 bg-slate-800/60 flex flex-col items-center transition-all active:scale-90">
+                    <span class="text-lg">🗡️</span><span class="text-[10px] font-bold text-white mt-0.5">광전사</span>
+                </button>
+                <button id="btnHeroARCHER" onclick="selectHero('ARCHER')"
+                        class="py-2 px-1 rounded-xl border-2 border-transparent bg-slate-800/60 flex flex-col items-center transition-all active:scale-90">
+                    <span class="text-lg">🏹</span><span class="text-[10px] font-bold text-white mt-0.5">궁수</span>
+                </button>
+                <button id="btnHeroNECROMANCER" onclick="selectHero('NECROMANCER')"
+                        class="py-2 px-1 rounded-xl border-2 border-transparent bg-slate-800/60 flex flex-col items-center transition-all active:scale-90">
+                    <span class="text-lg">💀</span><span class="text-[10px] font-bold text-purple-300 mt-0.5">네크로</span>
+                </button>
+                <button id="btnHeroMECHANIC" onclick="selectHero('MECHANIC')"
+                        class="py-2 px-1 rounded-xl border-2 border-transparent bg-slate-800/60 flex flex-col items-center transition-all active:scale-90">
+                    <span class="text-lg">🔧</span><span class="text-[10px] font-bold text-yellow-300 mt-0.5">메카닉</span>
+                </button>
+                <button id="btnHeroVAMPIRE" onclick="selectHero('VAMPIRE')"
+                        class="py-2 px-1 rounded-xl border-2 border-transparent bg-slate-800/60 flex flex-col items-center transition-all active:scale-90">
+                    <span class="text-lg">🧛</span><span class="text-[10px] font-bold text-rose-300 mt-0.5">뱀파이어</span>
+                </button>
+                <button id="btnHeroTHOR" onclick="selectHero('THOR')"
+                        class="py-2 px-1 rounded-xl border-2 border-transparent bg-slate-800/60 flex flex-col items-center transition-all active:scale-90">
+                    <span class="text-lg">⚡</span><span class="text-[10px] font-bold text-blue-300 mt-0.5">토르</span>
+                </button>
+            </div>
+            <div class="mt-3 p-2.5 bg-slate-950/60 rounded-xl text-left min-h-[64px] border border-slate-800">
+                <div id="heroDescription" class="text-[11px] text-slate-300 leading-relaxed"></div>
+            </div>
+        </div>
+
+        <!-- 핵심 차별점 요약 -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-2 w-full max-w-2xl text-center">
+            <div class="bg-slate-900/50 border border-slate-800 rounded-xl p-2.5">
+                <div class="text-xl mb-1">🎲</div>
+                <div class="text-[9px] text-slate-300 font-bold">극한 운빨 성장</div>
+                <div class="text-[8px] text-slate-500">레벨업마다 무작위 스탯</div>
+            </div>
+            <div class="bg-slate-900/50 border border-slate-800 rounded-xl p-2.5">
+                <div class="text-xl mb-1">🤖</div>
+                <div class="text-[9px] text-slate-300 font-bold">고도화 AI 9명</div>
+                <div class="text-[8px] text-slate-500">자율 전략 동료+적</div>
+            </div>
+            <div class="bg-slate-900/50 border border-slate-800 rounded-xl p-2.5">
+                <div class="text-xl mb-1">🐲</div>
+                <div class="text-[9px] text-slate-300 font-bold">에픽 보스</div>
+                <div class="text-[8px] text-slate-500">드래곤·고블린·서든데스</div>
+            </div>
+            <div class="bg-slate-900/50 border border-slate-800 rounded-xl p-2.5">
+                <div class="text-xl mb-1">⚠️</div>
+                <div class="text-[9px] text-slate-300 font-bold">20분 서든데스</div>
+                <div class="text-[8px] text-slate-500">강제 한타 크리쳐</div>
+            </div>
+        </div>
+
+        <!-- 시작 버튼 -->
+        <button onclick="startGame()"
+                class="relative px-14 py-4 rounded-full font-black text-xl tracking-widest active:scale-95 transition-all orbitron overflow-hidden"
+                style="background:linear-gradient(135deg,#10b981,#6366f1);box-shadow:0 0 30px rgba(16,185,129,0.4);">
+            <span class="relative z-10">⚔️ 전장 진입</span>
+        </button>
+    </div>
+</div>
+
+<!-- ══════════ 인게임 HUD ══════════ -->
+<div id="gameHUD" class="absolute inset-0 z-10 pointer-events-none hidden select-none flex-col justify-between p-2">
+
+    <!-- 상단 HUD -->
+    <div class="flex justify-between items-start pointer-events-auto w-full relative">
+
+        <!-- 좌상단: 플레이어 정보 + 미니맵 -->
+        <div class="flex flex-col gap-1.5">
+            <!-- 캐릭터 정보 카드 -->
+            <div class="flex items-center gap-2 bg-slate-950/90 border border-slate-800 rounded-xl p-2 shadow-2xl backdrop-blur-md">
+                <div class="w-36">
+                    <div class="flex items-center justify-between mb-1">
+                        <div class="flex items-center gap-1.5">
+                            <span id="hudHeroName" class="font-black text-white text-xs">영웅</span>
+                            <span id="hudLevelBadge" class="text-[8px] px-1.5 py-0.5 rounded-md bg-amber-500 text-slate-950 font-black">Lv.1</span>
+                        </div>
+                        <span id="hudKDA" class="text-[8px] text-slate-400 font-mono bg-slate-900 px-1 rounded border border-slate-700">K:0 D:0</span>
+                    </div>
+                    <!-- HP바 -->
+                    <div class="h-3 bg-slate-900 rounded-full overflow-hidden relative border border-slate-800 mb-1">
+                        <div id="hudHpBar" class="h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full w-full"></div>
+                        <span id="hudHpText" class="absolute inset-0 text-[8px] font-mono font-black text-white flex items-center justify-center drop-shadow">100/100</span>
+                    </div>
+                    <!-- XP바 -->
+                    <div class="h-1.5 bg-slate-900 rounded-full overflow-hidden">
+                        <div id="hudXpBar" class="h-full bg-gradient-to-r from-amber-400 to-yellow-300 rounded-full" style="width:0%"></div>
+                    </div>
+                    <!-- 비전투 회복 표시 -->
+                    <div id="regenIndicator" class="hidden text-[8px] text-emerald-400 font-bold mt-0.5">♻ 회복 중...</div>
+                </div>
+            </div>
+
+            <!-- 미니맵 -->
+            <div class="bg-slate-950/90 border border-slate-800 rounded-xl p-1.5 shadow-2xl backdrop-blur-md w-28 md:w-36">
+                <div class="flex justify-between items-center w-full mb-1 px-0.5">
+                    <span class="text-[7px] text-slate-400 font-bold tracking-widest uppercase">MINIMAP</span>
+                    <span id="gameTimerMini" class="text-[7px] text-amber-400 font-mono font-bold">00:00</span>
+                </div>
+                <div class="relative w-full h-24 md:h-32 bg-slate-900/80 border border-slate-800 rounded overflow-hidden">
+                    <canvas id="minimapCanvas" class="w-full h-full"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- 중앙 상단: 스코어 + 타이머 -->
+        <div class="absolute left-1/2 -translate-x-1/2 top-0 flex flex-col items-center gap-1">
+            <div class="bg-slate-950/90 border border-slate-800 rounded-2xl px-5 py-1.5 text-center shadow-2xl flex items-center gap-6 text-white backdrop-blur-md">
+                <div class="text-emerald-400 font-black text-lg flex flex-col leading-none">
+                    <span class="text-[7px] text-slate-400 tracking-widest font-bold">BLUE</span>
+                    <span id="scoreBlue">0</span>
+                </div>
+                <div class="flex flex-col items-center">
+                    <span id="gameTimer" class="font-mono text-xl font-black text-slate-200 orbitron">00:00</span>
+                    <div id="suddenDeathWarn" class="hidden text-[8px] text-red-500 font-black animate-pulse">⚠ 서든데스</div>
+                </div>
+                <div class="text-rose-400 font-black text-lg flex flex-col leading-none">
+                    <span class="text-[7px] text-slate-400 tracking-widest font-bold">RED</span>
+                    <span id="scoreRed">0</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 우상단: 상점 + 인벤토리 -->
+        <div class="flex flex-col items-end gap-1.5">
+            <div class="flex gap-1.5">
+                <button onclick="playNextBGM()" id="btnManualBGM"
+                        class="bg-gradient-to-r from-slate-700 to-slate-800 text-slate-300 font-black text-[10px] px-2 py-2 rounded-xl shadow-lg border border-slate-600 active:scale-95 transition-transform">
+                    🎵 BGM 켜기/변경
+                </button>
+                <button onclick="toggleShop()"
+                        class="bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 font-black text-[10px] px-3 py-2 rounded-xl shadow-lg flex items-center gap-1.5 border border-amber-300 active:scale-95 transition-transform">
+                    <span>🛒 상점</span>
+                    <span id="hudGoldText" class="bg-slate-950 text-amber-400 font-mono px-1.5 py-0.5 rounded text-[9px]">0G</span>
+                </button>
+            </div>
+            <!-- 인벤토리 슬롯 -->
+            <div class="flex gap-1 bg-slate-950/80 p-1 rounded-xl border border-slate-800" id="inventorySlots">
+                <!-- JS가 채움 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 상점 패널 -->
+    <div id="shopUI" class="absolute right-2 top-20 z-40 bg-slate-950/98 border border-slate-700 rounded-2xl p-3 w-64 md:w-72 text-white hidden pointer-events-auto shadow-2xl backdrop-blur-xl">
+        <div class="flex justify-between items-center border-b border-slate-800 pb-2 mb-2">
+            <h2 class="text-sm font-black text-amber-400">🛒 보급소</h2>
+            <div class="text-[9px] text-slate-400">중복구매 = 강화 시스템 (+1~+9)</div>
+            <button onclick="toggleShop()" class="text-slate-400 hover:text-white text-lg font-bold ml-2">&times;</button>
+        </div>
+        <div class="flex flex-col gap-1.5 max-h-80 overflow-y-auto pr-0.5" id="shopItemContainer"></div>
+    </div>
+
+    <!-- 하단 HUD (조작 가이드 + 스킬) -->
+    <div class="flex justify-between items-end pointer-events-none w-full mt-auto relative">
+
+        <!-- PC 가이드 -->
+        <div id="pcGuideText" class="hidden md:block pointer-events-auto bg-slate-950/90 border border-slate-800 rounded-xl p-3 text-[9px] text-slate-400 shadow-lg backdrop-blur-md">
+            <div class="font-black text-white mb-1 text-xs">🎮 조작</div>
+            <div>이동: <kbd class="bg-slate-800 px-1 rounded border border-slate-700 font-mono">WASD</kbd></div>
+            <div class="mt-0.5">스킬1: <kbd class="bg-slate-800 px-1 rounded border border-slate-700 font-mono">O</kbd>
+                &nbsp;스킬2: <kbd class="bg-slate-800 px-1 rounded border border-slate-700 font-mono">P</kbd></div>
+            <div class="mt-0.5">줌: <kbd class="bg-slate-800 px-1 rounded border border-slate-700 font-mono">마우스 휠</kbd></div>
+            <div class="mt-0.5 text-amber-400 font-bold">자동 평타 + 5초 비전투 자동회복</div>
+        </div>
+
+        <!-- 모바일 조이스틱 안내 -->
+        <div id="joyGuide" class="hidden pointer-events-none">
+            <div class="joy-circle"><span class="text-white/40 text-xs font-bold">이동</span></div>
+        </div>
+
+        <!-- 스킬 버튼 영역 -->
+        <div id="uiSkillBar" class="pointer-events-auto flex items-end gap-3 bg-slate-950/90 border border-slate-800 p-3 rounded-2xl shadow-2xl backdrop-blur-md absolute bottom-0 right-0">
+            <!-- 스킬 1 -->
+            <button id="btnSkill1" onclick="triggerSkill(1)"
+                    class="skill-btn relative overflow-hidden bg-gradient-to-br from-slate-800 to-slate-900 border-2 border-emerald-500/50 shadow-lg">
+                <span id="txtSkill1Icon" class="text-xl">✨</span>
+                <span class="text-[7px] text-emerald-400 font-bold">스킬1(O)</span>
+                <div id="maskSkill1" class="hidden absolute inset-0 bg-slate-950/85 flex items-center justify-center font-mono font-black text-amber-400 text-sm rounded-full"></div>
+            </button>
+            <!-- 스킬 2 -->
+            <button id="btnSkill2" onclick="triggerSkill(2)"
+                    class="skill-btn relative overflow-hidden bg-gradient-to-br from-slate-800 to-slate-900 border-2 border-indigo-500/50 shadow-lg">
+                <span id="txtSkill2Icon" class="text-xl">💫</span>
+                <span class="text-[7px] text-indigo-400 font-bold">스킬2(P)</span>
+                <div id="maskSkill2" class="hidden absolute inset-0 bg-slate-950/85 flex items-center justify-center font-mono font-black text-amber-400 text-sm rounded-full"></div>
+            </button>
+        </div>
+    </div>
+
+    <!-- 부활 오버레이 -->
+    <div id="respawnOverlay" class="hidden absolute inset-0 z-30 bg-red-950/75 backdrop-blur-sm flex-col items-center justify-center pointer-events-none">
+        <h2 class="text-6xl md:text-8xl font-black text-rose-500 tracking-widest mb-6 orbitron"
+            style="text-shadow:0 0 30px rgba(239,68,68,0.8)">DEAD</h2>
+        <p class="text-lg font-mono text-white bg-slate-900/80 px-8 py-4 rounded-2xl border border-slate-700 shadow-2xl">
+            부활까지: <span id="respawnTimeText" class="text-amber-400 font-black text-3xl ml-2">0.0</span>초
+        </p>
+    </div>
+
+    <!-- 킬 알림 배너 -->
+    <div id="systemKillBanner" class="absolute top-20 left-1/2 -translate-x-1/2 z-20 pointer-events-none" style="opacity:0;transform:translateX(-50%) scale(0.95);">
+        <div id="killBannerBox" class="bg-gradient-to-r from-emerald-900 to-slate-900 border border-emerald-500 px-8 py-2.5 rounded-full shadow-2xl flex items-center gap-3">
+            <span id="killBannerIcon" class="text-xl">⚔️</span>
+            <span id="killBannerText" class="font-black text-white text-sm tracking-widest"></span>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════ 게임 오버 화면 ══════════ -->
+<div id="gameOverScreen" class="hidden absolute inset-0 z-50 flex flex-col items-center justify-center bg-slate-950/97 p-4 text-white">
+    <div class="text-center flex flex-col items-center w-full max-w-lg bg-slate-900/90 border border-slate-800 rounded-3xl p-8 shadow-2xl">
+        <h2 id="txtGameResult" class="text-6xl font-black tracking-widest mb-6 orbitron">VICTORY</h2>
+        <div id="scoreboardArea" class="w-full mb-6"></div>
+        <button onclick="location.reload()"
+                class="px-12 py-3.5 rounded-full font-black text-lg tracking-widest active:scale-95 transition-all orbitron"
+                style="background:linear-gradient(135deg,#10b981,#6366f1);box-shadow:0 0 20px rgba(16,185,129,0.4);">
+            🔄 다시 시작
+        </button>
+    </div>
+</div>
+
+<!-- BGM Fallback -->
+<iframe id="bgmFallback" class="hidden" allow="autoplay"></iframe>
+
+<!-- 메인 캔버스 -->
+<canvas id="gameCanvas" class="absolute inset-0 z-0" style="width:100%;height:100%;"></canvas>
+
+<script>
+window.onerror = function(msg, url, line, col, error) {
+    alert("자바스크립트 오류 발생: " + msg + "\n줄 번호: " + line);
+};
+</script>
+<script src="game.js?v=1001"></script>
+</body>
+</html>

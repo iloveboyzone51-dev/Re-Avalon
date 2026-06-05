@@ -1,0 +1,1236 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Nexus Rush - 4v4 Web MOBA</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden;
+            background-color: #05070c; user-select: none; -webkit-user-select: none;
+            touch-action: none; font-family: system-ui, -apple-system, sans-serif;
+            -webkit-touch-callout: none; /* iOS 꾹 누르기 메뉴 방지 */
+        }
+        canvas { display: block; image-rendering: auto; }
+        .no-touch-select { touch-action: none; pointer-events: auto; }
+        
+        /* 모바일 스킬 버튼 최적화 스타일 */
+        .mobile-btn { width: 65px; height: 65px; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .mobile-btn-main { width: 85px; height: 85px; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    </style>
+</head>
+<body>
+
+    <!-- ========================================== -->
+    <!-- 0. 가로 모드 유도 오버레이 (모바일 전용) -->
+    <!-- ========================================== -->
+    <div id="portraitLock" class="hidden absolute inset-0 z-[100] bg-slate-950 text-white flex-col items-center justify-center text-center px-4">
+        <span class="text-6xl mb-4 animate-bounce">📱 🔄</span>
+        <h2 class="text-2xl font-extrabold text-amber-400 mb-2">화면을 가로로 회전해주세요!</h2>
+        <p class="text-slate-400 text-sm">쾌적한 전장 시야를 위해 가로 모드만 지원합니다.</p>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- 1. TITLE SCREEN (플랫폼, 진영 & 캐릭터 선택) -->
+    <!-- ========================================== -->
+    <div id="titleScreen" class="absolute inset-0 z-50 flex flex-col items-center justify-center bg-gradient-to-br from-[#050c0b] via-[#040508] to-[#0c0512] p-4 text-white overflow-y-auto">
+        <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(16,185,129,0.15),transparent_75%)] pointer-events-none"></div>
+        <div class="absolute inset-0 bg-[linear-gradient(rgba(18,24,38,0.25)_1px,transparent_1px),linear-gradient(90deg,rgba(18,24,38,0.25)_1px,transparent_1px)] bg-[size:40px_40px] pointer-events-none"></div>
+        
+        <div class="z-10 w-full max-w-4xl text-center flex flex-col items-center py-8">
+            <h1 class="text-4xl md:text-6xl font-extrabold tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-indigo-200 to-fuchsia-400 mb-2 drop-shadow-lg animate-pulse">
+                NEXUS RUSH
+            </h1>
+            <p class="text-xs md:text-sm text-gray-400 tracking-widest uppercase mb-6 font-semibold">4v4 Ultimate Web MOBA</p>
+
+            <!-- 플랫폼 선택 -->
+            <div class="flex justify-center gap-4 mb-6 bg-slate-900/60 p-2 rounded-2xl border border-slate-700 w-full max-w-sm">
+                <button id="btnPlatPC" onclick="selectPlatform('PC')" class="px-6 py-3 rounded-xl font-bold bg-indigo-600 border border-indigo-400 text-white w-1/2 transition-colors">💻 PC 모드</button>
+                <button id="btnPlatMobile" onclick="selectPlatform('MOBILE')" class="px-6 py-3 rounded-xl font-bold bg-slate-800 border border-slate-700 text-gray-400 w-1/2 transition-colors">📱 모바일 모드</button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 w-full mb-6 max-w-3xl">
+                <!-- 진영 선택 -->
+                <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 backdrop-blur-md">
+                    <h3 class="text-base font-semibold text-slate-300 mb-3 tracking-wider">1. 전장 진영 선택</h3>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button id="btnFactionBlue" onclick="selectFaction('BLUE')" class="relative overflow-hidden group py-3 px-4 rounded-xl border-2 border-emerald-500 bg-emerald-950/30 transition-all flex flex-col items-center">
+                            <span class="text-emerald-400 font-bold tracking-wider text-base">오리엔스</span>
+                            <span class="text-[9px] text-emerald-300/70">자연과 무신</span>
+                        </button>
+                        <button id="btnFactionRed" onclick="selectFaction('RED')" class="relative overflow-hidden group py-3 px-4 rounded-xl border-2 border-transparent bg-slate-800/40 transition-all flex flex-col items-center">
+                            <span class="text-slate-400 font-bold tracking-wider text-base">이오니아</span>
+                            <span class="text-[9px] text-slate-500">마법과 기계</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 영웅 선택 -->
+                <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 backdrop-blur-md">
+                    <h3 class="text-base font-semibold text-slate-300 mb-3 tracking-wider">2. 클래스 영웅 선택 (4v4)</h3>
+                    <div class="grid grid-cols-4 gap-2">
+                        <button id="btnHeroWarrior" onclick="selectHero('WARRIOR')" class="py-2 px-1 rounded-xl border-2 border-emerald-500 bg-slate-800/40 flex flex-col items-center transition-all"><span id="heroNameWarrior" class="text-xs font-bold text-white">검귀</span></button>
+                        <button id="btnHeroMage" onclick="selectHero('MAGE')" class="py-2 px-1 rounded-xl border-2 border-transparent bg-slate-800/40 flex flex-col items-center transition-all"><span id="heroNameMage" class="text-xs font-bold text-white">야수</span></button>
+                        <button id="btnHeroHunter" onclick="selectHero('HUNTER')" class="py-2 px-1 rounded-xl border-2 border-transparent bg-slate-800/40 flex flex-col items-center transition-all"><span id="heroNameHunter" class="text-xs font-bold text-white">궁수</span></button>
+                        <button id="btnHeroSummoner" onclick="selectHero('SUMMONER')" class="py-2 px-1 rounded-xl border-2 border-transparent bg-slate-800/40 flex flex-col items-center transition-all"><span id="heroNameSummoner" class="text-xs font-bold text-purple-300">소환사</span></button>
+                    </div>
+                    <div class="mt-3 p-2 bg-slate-950/50 rounded-lg text-left min-h-[50px]">
+                        <p id="heroDescription" class="text-[10px] text-slate-400 leading-relaxed"></p>
+                    </div>
+                </div>
+            </div>
+
+            <button onclick="startGame()" class="relative group px-12 py-4 rounded-full bg-gradient-to-r from-emerald-600 to-indigo-600 hover:from-emerald-500 hover:to-indigo-500 font-bold text-xl tracking-widest shadow-lg shadow-emerald-500/20 active:scale-95 transition-all">
+                전장 진입 (PLAY)
+            </button>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- 2. INGAME SCREEN HUD & CANVAS OVERLAY -->
+    <!-- ========================================== -->
+    <div id="gameHUD" class="absolute inset-0 z-10 pointer-events-none hidden select-none flex-col justify-between p-2 md:p-4">
+        
+        <!-- 상단 HUD 영역 -->
+        <div class="flex justify-between items-start pointer-events-auto w-full relative">
+            
+            <!-- (좌상단) 미니맵 및 플레이어 정보 통합 -->
+            <div class="flex flex-col gap-2">
+                <!-- 내 캐릭터 정보 -->
+                <div id="uiPlayerInfo" class="flex items-center gap-2 bg-slate-950/90 border border-slate-800 rounded-xl p-2 shadow-2xl backdrop-blur-md">
+                    <canvas id="hudAvatarCanvas" class="w-10 h-10 md:w-12 md:h-12 rounded bg-slate-900 border border-slate-700"></canvas>
+                    <div class="w-32 md:w-40">
+                        <div class="flex items-center justify-between mb-0.5">
+                            <div class="flex items-center gap-1">
+                                <span id="hudHeroName" class="font-bold text-white text-[11px] md:text-sm">영웅명</span>
+                                <span id="hudLevelBadge" class="text-[8px] px-1 rounded bg-amber-500 text-slate-950 font-bold">Lv.1</span>
+                            </div>
+                            <span id="hudKDA" class="text-[8px] text-gray-400 font-mono bg-slate-900 px-1 rounded border border-slate-700">K:0 D:0</span>
+                        </div>
+                        <!-- 체력바 -->
+                        <div class="h-2.5 md:h-3 bg-slate-900 rounded-full overflow-hidden relative border border-slate-800 mb-0.5">
+                            <div id="hudHpBar" class="h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full w-full transition-all"></div>
+                            <span id="hudHpText" class="absolute inset-0 text-[8px] font-mono font-bold text-white flex items-center justify-center">100 / 100</span>
+                        </div>
+                        <!-- 경험치바 -->
+                        <div class="h-1 bg-slate-900 rounded-full overflow-hidden relative">
+                            <div id="hudXpBar" class="h-full bg-gradient-to-r from-amber-400 to-yellow-500 rounded-full w-[10%]"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 미니맵 (좌상단 배치) -->
+                <div id="uiMinimap" class="bg-slate-950/90 border border-slate-800 rounded-xl p-2 shadow-2xl flex flex-col items-center backdrop-blur-md w-28 md:w-36">
+                    <div class="flex justify-between w-full mb-1">
+                        <span class="text-[8px] text-gray-400 font-bold tracking-widest uppercase">MINIMAP</span>
+                        <span class="text-[8px] text-amber-400 font-bold animate-pulse hidden" id="bossWarnTxt">BOSS!</span>
+                    </div>
+                    <div id="minimapContainer" class="relative w-full h-24 md:h-32 bg-slate-900 border border-slate-800 rounded overflow-hidden mb-1">
+                        <canvas id="minimapCanvas" class="w-full h-full"></canvas>
+                    </div>
+                    <!-- AI 지휘 버튼 (미니맵 하단) -->
+                    <div class="w-full border-t border-slate-800 pt-1 mt-1 flex justify-between gap-1" id="uiAiCommands">
+                        <button onclick="setGlobalAiMode('AUTO')" id="btnAiAuto" class="flex-1 text-[8px] py-1 bg-emerald-900/50 border border-emerald-500 text-white rounded">자율</button>
+                        <button onclick="setGlobalAiMode('AGGRESSIVE')" id="btnAiAggro" class="flex-1 text-[8px] py-1 bg-slate-800 border border-slate-700 text-gray-300 rounded">돌격</button>
+                        <button onclick="setGlobalAiMode('DEFENSIVE')" id="btnAiDef" class="flex-1 text-[8px] py-1 bg-slate-800 border border-slate-700 text-gray-300 rounded">방어</button>
+                        <button onclick="setGlobalAiMode('FOLLOW')" id="btnAiFollow" class="flex-1 text-[8px] py-1 bg-slate-800 border border-slate-700 text-gray-300 rounded">집합</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- (중앙 상단) 스코어 및 버프 -->
+            <div class="absolute left-1/2 -translate-x-1/2 top-0 flex flex-col items-center gap-1">
+                <div class="bg-slate-950/90 border border-slate-800 rounded-2xl px-4 py-1 md:px-6 md:py-2 text-center shadow-xl flex items-center gap-4 md:gap-6 text-white backdrop-blur-md">
+                    <div class="text-emerald-400 font-extrabold text-sm md:text-lg flex flex-col"><span class="text-[7px] md:text-[9px] text-slate-400 tracking-wider">ORIENS</span><span id="scoreBlue">0</span></div>
+                    <div class="flex flex-col items-center">
+                        <span id="gameTimer" class="font-mono text-base md:text-xl font-bold text-slate-200">00:00</span>
+                    </div>
+                    <div class="text-fuchsia-400 font-extrabold text-sm md:text-lg flex flex-col"><span class="text-[7px] md:text-[9px] text-slate-400 tracking-wider">IONIA</span><span id="scoreRed">0</span></div>
+                </div>
+                <div id="bossBuffUI" class="bg-gradient-to-r from-orange-600 to-red-600 px-3 py-0.5 rounded-full border border-yellow-400 shadow-[0_0_10px_rgba(239,68,68,0.5)] hidden items-center gap-1 transition-all">
+                    <span class="text-[10px]">🐲</span><span class="text-[9px] font-bold text-white">고룡의 축복(+20%)</span><span id="bossBuffTimer" class="text-[9px] font-mono text-yellow-200 font-bold">180s</span>
+                </div>
+            </div>
+
+            <!-- (우상단) 상점/귀환/인벤토리 -->
+            <div class="flex flex-col items-end gap-1.5">
+                <div class="flex gap-1 md:gap-2">
+                    <button onclick="toggleShop()" class="bg-gradient-to-r from-amber-500 to-amber-400 text-slate-950 font-extrabold text-[10px] md:text-xs px-2 py-1.5 md:px-3 md:py-2 rounded-lg shadow-lg flex items-center gap-1 border border-amber-300">
+                        <span>🛒 상점</span><span id="hudGoldText" class="bg-slate-950 text-amber-400 font-mono px-1 rounded text-[9px] md:text-[10px]">0 G</span>
+                    </button>
+                    <button id="btnRecall" onclick="startRecall()" class="relative bg-indigo-600 text-white font-bold text-[10px] md:text-xs px-2 py-1.5 md:px-3 md:py-2 rounded-lg shadow-lg border border-indigo-400 overflow-hidden">
+                        🌀 귀환(B)
+                        <div id="maskRecall" class="absolute inset-0 bg-slate-900/80 flex items-center justify-center font-mono font-bold text-amber-400 hidden">60s</div>
+                    </button>
+                </div>
+                <!-- 인벤토리 -->
+                <div class="flex gap-1 bg-slate-950/80 p-1 rounded-lg border border-slate-800">
+                    <div id="inv0" class="relative w-6 h-6 md:w-8 md:h-8 rounded bg-slate-900/60 border border-slate-800 flex items-center justify-center text-[10px] md:text-base"></div>
+                    <div id="inv1" class="relative w-6 h-6 md:w-8 md:h-8 rounded bg-slate-900/60 border border-slate-800 flex items-center justify-center text-[10px] md:text-base"></div>
+                    <div id="inv2" class="relative w-6 h-6 md:w-8 md:h-8 rounded bg-slate-900/60 border border-slate-800 flex items-center justify-center text-[10px] md:text-base"></div>
+                    <div id="inv3" class="relative w-6 h-6 md:w-8 md:h-8 rounded bg-slate-900/60 border border-slate-800 flex items-center justify-center text-[10px] md:text-base"></div>
+                    <div id="inv4" class="relative w-6 h-6 md:w-8 md:h-8 rounded bg-slate-900/60 border border-slate-800 flex items-center justify-center text-[10px] md:text-base"></div>
+                    <div id="inv5" class="relative w-6 h-6 md:w-8 md:h-8 rounded bg-slate-900/60 border border-slate-800 flex items-center justify-center text-[10px] md:text-base"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 하단 HUD 영역 (가이드 & 모바일 스킬 버튼) -->
+        <div class="flex justify-between items-end pointer-events-none w-full mt-auto relative">
+            
+            <!-- (좌하단) PC 가이드 (모바일선 숨김) -->
+            <div id="pcGuideText" class="hidden md:block pointer-events-auto bg-slate-950/90 border border-slate-800 rounded-xl p-3 text-[10px] text-gray-400 shadow-lg">
+                <div class="font-bold text-white mb-1">🎮 전장 조작 가이드</div>
+                - 이동: <kbd class="px-1 bg-slate-800 rounded border border-slate-700 font-mono text-[9px]">W</kbd><kbd class="px-1 bg-slate-800 rounded border border-slate-700 font-mono text-[9px]">A</kbd><kbd class="px-1 bg-slate-800 rounded border border-slate-700 font-mono text-[9px]">S</kbd><kbd class="px-1 bg-slate-800 rounded border border-slate-700 font-mono text-[9px]">D</kbd><br>
+                - 스킬: <kbd class="px-1 bg-slate-800 rounded border border-slate-700 font-mono text-[9px]">Q</kbd> / <kbd class="px-1 bg-slate-800 rounded border border-slate-700 font-mono text-[9px]">E</kbd> (마우스 방향)<br>
+                - <span class="text-amber-400 font-bold">오토 어택</span>: 사거리 내 적 자동 타격
+            </div>
+
+            <!-- (우하단) 스킬 및 타격 컨트롤 버튼 -->
+            <div id="uiSkillBar" class="pointer-events-auto flex items-end gap-2 md:gap-4 bg-slate-950/90 border border-slate-800 p-2 md:px-6 md:py-3 rounded-2xl shadow-2xl backdrop-blur-md absolute bottom-0 right-0 md:relative">
+                <!-- Q 스킬 -->
+                <button id="btnSkillQ" onclick="triggerPlayerSkill('q')" class="mobile-btn bg-gradient-to-br from-slate-800 to-slate-900 border-2 border-emerald-500/40 relative overflow-hidden active:scale-90 transition-transform shadow-lg">
+                    <span id="txtSkillQIcon" class="text-lg md:text-xl">🔥</span><span id="txtSkillQName" class="text-[8px] md:text-[9px] text-emerald-400 font-bold mt-0.5">스킬(Q)</span>
+                    <div id="maskSkillQ" class="absolute inset-0 bg-slate-950/80 flex items-center justify-center font-mono font-black text-amber-400 text-xs hidden">1.5s</div>
+                </button>
+                
+                <!-- E 스킬 -->
+                <button id="btnSkillE" onclick="triggerPlayerSkill('e')" class="mobile-btn bg-gradient-to-br from-slate-800 to-slate-900 border-2 border-indigo-500/40 relative overflow-hidden active:scale-90 transition-transform shadow-lg">
+                    <span id="txtSkillEIcon" class="text-lg md:text-xl">🌪️</span><span id="txtSkillEName" class="text-[8px] md:text-[9px] text-indigo-400 font-bold mt-0.5">스킬(E)</span>
+                    <div id="maskSkillE" class="absolute inset-0 bg-slate-950/80 flex items-center justify-center font-mono font-black text-amber-400 text-xs hidden">1.5s</div>
+                </button>
+
+                <!-- 기본 공격 (오토어택 토글/수동강제) -->
+                <button id="btnBasicAttack" onclick="triggerPlayerBasicAttack()" class="mobile-btn-main bg-gradient-to-br from-rose-900 to-slate-900 border-2 border-rose-500/50 relative overflow-hidden active:scale-90 transition-transform shadow-[0_0_15px_rgba(225,29,72,0.4)] ml-1 md:ml-2">
+                    <span class="text-2xl md:text-3xl">⚔️</span><span class="text-[9px] md:text-[10px] text-rose-300 font-bold mt-1">AUTO</span>
+                </button>
+            </div>
+        </div>
+        
+        <!-- 상점 모달 -->
+        <div id="shopUI" class="absolute right-4 md:right-auto md:left-4 top-24 z-40 bg-slate-950/95 border border-slate-800 rounded-xl p-3 w-64 md:w-80 text-white hidden pointer-events-auto shadow-2xl backdrop-blur-xl">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-2 mb-2">
+                <h2 class="text-sm font-bold text-amber-400">🛒 보급소 (중복구매 시 +강화)</h2>
+                <button onclick="toggleShop()" class="text-slate-400 hover:text-white font-bold text-lg">&times;</button>
+            </div>
+            <div class="flex flex-col gap-1.5 max-h-72 overflow-y-auto pr-1" id="shopItemContainer"></div>
+        </div>
+
+        <!-- 부활 오버레이 -->
+        <div id="respawnOverlay" class="absolute inset-0 z-30 bg-red-950/80 backdrop-blur-md hidden flex-col items-center justify-center pointer-events-none">
+            <h2 class="text-5xl md:text-7xl font-black text-rose-500 tracking-widest drop-shadow-[0_0_20px_rgba(225,29,72,0.8)] mb-4">YOU DIED</h2>
+            <p class="text-lg md:text-xl font-mono text-white bg-slate-900/80 px-6 py-3 rounded-xl border border-slate-700 shadow-2xl">전장 복귀까지: <span id="respawnTimeText" class="text-amber-400 font-bold text-2xl md:text-4xl ml-2">10.0</span>초</p>
+        </div>
+
+        <!-- 시스템 킬 알림 배너 -->
+        <div id="systemKillBanner" class="absolute top-24 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center opacity-0 transition-all duration-300 scale-95 pointer-events-none">
+            <div id="killBannerBox" class="bg-gradient-to-r border px-6 py-2 rounded-full shadow-2xl flex items-center gap-2">
+                <span id="killBannerIcon" class="text-base md:text-xl">🚨</span><span id="killBannerText" class="font-extrabold text-white text-xs md:text-sm tracking-widest drop-shadow">WARNING!</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- 3. GAME OVER OVERLAY -->
+    <!-- ========================================== -->
+    <div id="gameOverScreen" class="absolute inset-0 z-50 flex flex-col items-center justify-center bg-slate-950/95 p-4 text-white hidden">
+        <div class="text-center flex flex-col items-center max-w-md w-full bg-slate-900 border border-slate-800 rounded-3xl p-8 shadow-2xl backdrop-blur-lg">
+            <h2 id="txtGameResult" class="text-5xl font-black tracking-widest mb-4 drop-shadow-md">VICTORY</h2>
+            <div class="w-full bg-slate-950/60 rounded-2xl p-5 mb-8 border border-slate-800 flex flex-col gap-3">
+                <div class="flex justify-between text-sm"><span class="text-slate-400">최종 스코어</span><span id="txtFinalScore" class="font-bold text-indigo-300">0 : 0</span></div>
+                <div class="flex justify-between text-sm"><span class="text-slate-400">플레이 타임</span><span id="txtFinalTime" class="font-mono text-emerald-400">00:00</span></div>
+            </div>
+            <div class="flex gap-3 w-full justify-center">
+                <button onclick="exitGame()" class="px-7 py-3 bg-slate-700 hover:bg-slate-600 font-bold rounded-full text-base tracking-wider active:scale-95 transition-all border border-slate-600">🏠 메뉴</button>
+                <button onclick="restartGame()" class="px-10 py-3 bg-gradient-to-r from-emerald-600 to-indigo-600 hover:from-emerald-500 hover:to-indigo-500 font-bold rounded-full text-base tracking-wider active:scale-95 transition-all">🔄 다시 시작</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- 4. MAIN GAME CANVAS -->
+    <!-- ========================================== -->
+    <canvas id="gameCanvas" class="w-full h-full"></canvas>
+
+    <!-- ========================================== -->
+    <!-- 5. CORE ENGINE & SYSTEMS LOGIC (JS) -->
+    <!-- ========================================== -->
+    <script>
+        // --- GLOBAL UTILITIES (호이스팅 및 접근성 보장) ---
+        const MAP_SIZE = 3000;
+        let lastTime = performance.now();
+        let lastNexusWarnTime = 0; 
+        let globalAiMode = 'AUTO'; // 'AUTO', 'AGGRESSIVE', 'DEFENSIVE', 'FOLLOW'
+        const teamBuffs = { BLUE: 0, RED: 0 };
+
+        function getDist(a, b) { return Math.sqrt((b.x - a.x) ** 2 + (b.y - a.y) ** 2); }
+        function getFlashColor(timer) { return timer > 0 ? 'rgba(239, 68, 68, 0.75)' : null; }
+        
+        function showFloatingText(x, y, text, color, size = 14) {
+            floatingTexts.push({ x: x, y: y, text: text, color: color, size: size, alpha: 1.0, vy: -40 });
+        }
+        function createHitSparks(x, y, color) {
+            const count = 5 + Math.floor(Math.random() * 4);
+            for (let i = 0; i < count; i++) {
+                const angle = Math.random() * Math.PI * 2; const speed = 80 + Math.random() * 120;
+                impactParticles.push({ x: x, y: y - 10, vx: Math.cos(angle)*speed, vy: Math.sin(angle)*speed, radius: 2+Math.random()*2, color: color, alpha: 1.0, life: 0.3, maxLife: 0.3 });
+            }
+        }
+        function createSlashTrail(x, y, angle, color) {
+            slashTrails.push({ x: x, y: y - 10, angle: angle, alpha: 1.0, scale: 1.0, color: color, maxLife: 0.2, life: 0.2 });
+        }
+        function fireProjectile(attacker, target, damage, type) {
+            projectiles.push({ x: attacker.x, y: attacker.y - 15, target: target, speed: 550, damage: damage, attacker: attacker, faction: attacker.faction, type: type, radius: 8 });
+        }
+
+        function getEnemiesInRadius(caster, cx, cy, radius) {
+            const allUnits = [...heroes, ...minions, ...monsters, ...towers];
+            return allUnits.filter(e => {
+                if (e.faction === caster.faction || e.isDead) return false;
+                if (e.faction === 'NEUTRAL' && !caster.faction) return false;
+                return getDist({x: cx, y: cy}, e) <= radius + (e.radius || 10);
+            });
+        }
+
+        function getAlliesInRadius(caster, cx, cy, radius) {
+            return [...heroes, ...minions].filter(e =>
+                e.faction === caster.faction && !e.isDead && getDist({x: cx, y: cy}, e) <= radius
+            );
+        }
+
+        function getEnemiesInSegment(caster, x1, y1, x2, y2, width) {
+            const allUnits = [...heroes, ...minions, ...monsters];
+            return allUnits.filter(e => {
+                if (e.faction === caster.faction || e.isDead) return false;
+                const dx = x2 - x1, dy = y2 - y1, len2 = dx*dx + dy*dy;
+                if (len2 === 0) return getDist({x: x1, y: y1}, e) <= width;
+                const t = Math.max(0, Math.min(1, ((e.x-x1)*dx + (e.y-y1)*dy) / len2));
+                const px = x1 + t*dx, py = y1 + t*dy;
+                return Math.sqrt((e.x-px)**2 + (e.y-py)**2) <= width + (e.radius || 10);
+            });
+        }
+
+        function getEnemiesInCone(caster, angle, halfAngleDeg, range) {
+            const halfRad = halfAngleDeg * Math.PI / 180;
+            return [...heroes, ...minions, ...monsters].filter(e => {
+                if (e.faction === caster.faction || e.isDead) return false;
+                const d = getDist(caster, e);
+                if (d > range) return false;
+                let diff = Math.abs(Math.atan2(e.y - caster.y, e.x - caster.x) - angle);
+                if (diff > Math.PI) diff = Math.PI * 2 - diff;
+                return diff <= halfRad;
+            });
+        }
+
+        let _killBannerTO = null;
+        function triggerKillBanner(text, isBlue) {
+            const banner = document.getElementById('systemKillBanner');
+            const box = document.getElementById('killBannerBox');
+            const textEl = document.getElementById('killBannerText');
+            const iconEl = document.getElementById('killBannerIcon');
+            if (!banner || !box || !textEl) return;
+            const parts = text.match(/^(\S+)\s(.+)$/);
+            if (parts && iconEl) { iconEl.textContent = parts[1]; textEl.textContent = parts[2]; }
+            else if (textEl) { if(iconEl) iconEl.textContent = '⚔️'; textEl.textContent = text; }
+            const bC = isBlue ? 'from-emerald-900 to-slate-900 border-emerald-500' : 'from-purple-900 to-slate-900 border-purple-500';
+            box.className = `bg-gradient-to-r ${bC} border px-6 py-2 rounded-full shadow-2xl flex items-center gap-2`;
+            banner.style.opacity = '1'; banner.style.transform = 'translateX(-50%) scale(1)';
+            if (_killBannerTO) clearTimeout(_killBannerTO);
+            _killBannerTO = setTimeout(() => { banner.style.opacity = '0'; banner.style.transform = 'translateX(-50%) scale(0.95)'; }, 3000);
+        }
+
+
+
+        // --- 아이템 & 영웅 데이터 ---
+        // 7+4 = 11대 핵심 아이템 (신규 4종 포함)
+        const SHOP_ITEMS = [
+            { id: 'boots', name: '비상 장화', desc: '이속 +65', cost: 400, stat: 'speed', value: 65, icon: '🥾' },
+            { id: 'sword', name: '거검', desc: '공격력 +30', cost: 550, stat: 'damage', value: 30, icon: '⚔️' },
+            { id: 'tome', name: '마법서', desc: '마공 +40', cost: 600, stat: 'damage', value: 40, icon: '📖' },
+            { id: 'armor', name: '가시 갑옷', desc: '방어율 +20%', cost: 500, stat: 'defense', value: 20, icon: '🛡️' },
+            { id: 'ruby', name: '심장 루비', desc: '체력 +350', cost: 500, stat: 'maxHp', value: 350, icon: '❤️' },
+            { id: 'dagger', name: '단검', desc: '공속 +30%', cost: 450, stat: 'attackCooldown', value: 0.7, icon: '🗡️' },
+            { id: 'scepter', name: '흡혈 낫', desc: '피해 흡혈 +15%', cost: 600, stat: 'lifesteal', value: 0.15, icon: '🧛' },
+            { id: 'fire_cape', name: '홍염의 갑옷', desc: '주변 지속 화염피해', cost: 700, stat: 'burn', value: 30, icon: '🔥' },
+            { id: 'reflect_cloak', name: '반사의 망토', desc: '피해 15% 반사', cost: 650, stat: 'reflect', value: 0.15, icon: '🪞' },
+            { id: 'stun_ring', name: '정적의 반지', desc: '15% 확률 기절', cost: 800, stat: 'stun', value: 0.15, icon: '⚡' },
+            { id: 'slow_glove', name: '감속의 장갑', desc: '25% 확률 이속저하', cost: 750, stat: 'slow', value: 0.25, icon: '🧤' }
+        ];
+
+        // 4v4 전장 템플릿 (소환사 추가)
+        const FACTION_HERO_TEMPLATES = {
+            BLUE: {
+                WARRIOR: { name: "검귀", color: "#10b981", radius: 28, speed: 208, maxHp: 850, damage: 45, attackRange: 90, attackCooldown: 0.9, desc: "[Q]돌격 쾌선참 [E]원형 검기", skills: { q: { name: "쾌선참", icon: "⚡", maxCd: 6.0, range: 300 }, e: { name: "아수라풍", icon: "🌀", maxCd: 8.0, range: 160 } } },
+                MAGE: { name: "야수", color: "#059669", radius: 29, speed: 184, maxHp: 950, damage: 40, attackRange: 80, attackCooldown: 1.2, desc: "[패시브] 평타 65px 지면강타 광역피해. [Q]포효 [E]기절강타", skills: { q: { name: "야수 포효", icon: "🦁", maxCd: 7.0, range: 170 }, e: { name: "지면 붕괴", icon: "💥", maxCd: 11.0, range: 240 } } },
+                HUNTER: { name: "궁수", color: "#34d399", radius: 26, speed: 220, maxHp: 520, damage: 38, attackRange: 360, attackCooldown: 0.8, desc: "[Q]관통화살 [E]회피기동", skills: { q: { name: "정밀 사격", icon: "🏹", maxCd: 5.0, range: 450 }, e: { name: "비정 회피", icon: "🏃", maxCd: 10.0, range: 150 } } },
+                SUMMONER: { name: "소환사", color: "#1e293b", radius: 26, speed: 195, maxHp: 650, damage: 25, attackRange: 320, attackCooldown: 1.1, desc: "[패시브] 15초마다 진화하는 망령 소환(최대3). [Q]망령 광폭화 [E]어둠의 파동", skills: { q: { name: "군단 광폭화", icon: "🔥", maxCd: 12.0, range: 400 }, e: { name: "그림자 파동", icon: "🌌", maxCd: 8.0, range: 380 } } }
+            },
+            RED: {
+                WARRIOR: { name: "기사", color: "#a855f7", radius: 29, speed: 192, maxHp: 900, damage: 38, attackRange: 80, attackCooldown: 1.1, desc: "[Q]다음평타 기절 [E]부채꼴 베기", skills: { q: { name: "용맹 돌진", icon: "🛡️", maxCd: 7.0, range: 100 }, e: { name: "비전 가르기", icon: "⚔️", maxCd: 8.0, range: 150 } } },
+                MAGE: { name: "마법사", color: "#d946ef", radius: 24, speed: 172, maxHp: 550, damage: 62, attackRange: 310, attackCooldown: 1.4, desc: "[Q]폭발탄 [E]메테오", skills: { q: { name: "폭발탄", icon: "🔮", maxCd: 5.0, range: 420 }, e: { name: "메테오", icon: "☄️", maxCd: 12.0, range: 380 } } },
+                HUNTER: { name: "사제", color: "#f43f5e", radius: 26, speed: 216, maxHp: 540, damage: 44, attackRange: 340, attackCooldown: 0.9, desc: "[Q]광역힐 [E]사슬속박", skills: { q: { name: "구원", icon: "💚", maxCd: 9.0, range: 220 }, e: { name: "결계", icon: "⛓️", maxCd: 11.0, range: 400 } } },
+                SUMMONER: { name: "흑마법사", color: "#312e81", radius: 26, speed: 195, maxHp: 650, damage: 25, attackRange: 320, attackCooldown: 1.1, desc: "[패시브] 15초마다 진화하는 망령 소환(최대3). [Q]망령 광폭화 [E]어둠의 파동", skills: { q: { name: "군단 광폭화", icon: "🔥", maxCd: 12.0, range: 400 }, e: { name: "그림자 파동", icon: "🌌", maxCd: 8.0, range: 380 } } }
+            }
+        };
+
+        const gameState = { platform: 'PC', screen: 'TITLE', selectedFaction: 'BLUE', selectedHero: 'WARRIOR', scoreBlue: 0, scoreRed: 0, secondsElapsed: 0, spawnTimer: 0, spawnInterval: 20, gameOver: false, bossTimer: 60 };
+        const camera = { x: MAP_SIZE/2, y: MAP_SIZE/2, zoom: 0.65, minZoom: 0.3, maxZoom: 1.5, targetZoom: 0.65, lerpSpeed: 0.1 };
+
+        let player = null;
+        const heroes = [], minions = [], towers = [], nexuses = [], monsters = [], projectiles = [], floatingTexts = [], aimDecals = [], slashTrails = [], impactParticles = [], staticScenery = [], aoeIndicators = [];
+
+        const WAYPOINTS = {
+            BLUE_TOP: [{x:300,y:2700}, {x:300,y:300}, {x:2700,y:300}], BLUE_BOT: [{x:300,y:2700}, {x:2700,y:2700}, {x:2700,y:300}],
+            RED_TOP: [{x:2700,y:300}, {x:300,y:300}, {x:300,y:2700}], RED_BOT: [{x:2700,y:300}, {x:2700,y:2700}, {x:300,y:2700}]
+        };
+        const JUNGLE_CAMPS = [
+            { x: 900, y: 1900, type: 'GOLEM' }, { x: 2100, y: 1100, type: 'WOLF' }, { x: 500, y: 1100, type: 'WRAITH' }, { x: 1900, y: 500, type: 'LIZARD' },
+            { x: 1100, y: 2500, type: 'WOLF' }, { x: 2500, y: 1900, type: 'GOLEM' }, { x: 1500, y: 1500, type: 'WRAITH' }, { x: 800, y: 800, type: 'LIZARD' },
+            { x: 2200, y: 2200, type: 'GOLEM' }, { x: 1200, y: 500, type: 'WOLF' }, { x: 500, y: 1800, type: 'LIZARD' }, { x: 1800, y: 2500, type: 'WRAITH' }
+        ].map(c => ({...c, respawnTimer: 0, maxRespawn: 25}));
+
+        const keys = { KeyW: false, KeyA: false, KeyS: false, KeyD: false };
+        const joystick = { active: false, touchId: null, startX: 0, startY: 0, currentX: 0, currentY: 0, maxLimit: 60, inputX: 0, inputY: 0 };
+        const touchZoom = { active: false, startDistance: 0, startZoom: 1.0 };
+
+        const canvas = document.getElementById('gameCanvas'); const ctx = canvas.getContext('2d');
+        const mCanvas = document.getElementById('minimapCanvas'); const mCtx = mCanvas.getContext('2d');
+
+        function baseEffects() { return { stunned: 0, rooted: 0, slowed: 0, slowPower: 1, speedBuff: 0, beastPassive: 0, beastPassiveCd: 0, regenCd: 0, empoweredAttack: false, slashCount: 0 }; }
+
+        // --- 모바일 UI/UX 셋팅 ---
+        function selectPlatform(p) {
+            gameState.platform = p;
+            document.getElementById('btnPlatPC').className = p === 'PC' ? "px-6 py-3 rounded-xl font-bold bg-indigo-600 border border-indigo-400 text-white w-1/2 transition-colors" : "px-6 py-3 rounded-xl font-bold bg-slate-800 border border-slate-700 text-gray-400 w-1/2 transition-colors";
+            document.getElementById('btnPlatMobile').className = p === 'MOBILE' ? "px-6 py-3 rounded-xl font-bold bg-emerald-600 border border-emerald-400 text-white w-1/2 transition-colors" : "px-6 py-3 rounded-xl font-bold bg-slate-800 border border-slate-700 text-gray-400 w-1/2 transition-colors";
+            checkOrientation();
+        }
+
+        function checkOrientation() {
+            if(gameState.platform === 'MOBILE' && window.innerHeight > window.innerWidth) {
+                document.getElementById('portraitLock').classList.remove('hidden'); document.getElementById('portraitLock').classList.add('flex');
+            } else {
+                document.getElementById('portraitLock').classList.add('hidden'); document.getElementById('portraitLock').classList.remove('flex');
+            }
+        }
+        window.addEventListener('resize', () => { resizeCanvas(); checkOrientation(); });
+
+        function selectFaction(faction) {
+            gameState.selectedFaction = faction;
+            document.getElementById('btnFactionBlue').className = faction === 'BLUE' ? "relative overflow-hidden group py-3 px-4 rounded-xl border-2 border-emerald-500 bg-emerald-950/30 transition-all flex flex-col items-center" : "relative overflow-hidden group py-3 px-4 rounded-xl border-2 border-transparent bg-slate-800/40 transition-all flex flex-col items-center";
+            document.getElementById('btnFactionRed').className = faction === 'RED' ? "relative overflow-hidden group py-3 px-4 rounded-xl border-2 border-fuchsia-500 bg-fuchsia-950/30 transition-all flex flex-col items-center" : "relative overflow-hidden group py-3 px-4 rounded-xl border-2 border-transparent bg-slate-800/40 transition-all flex flex-col items-center";
+            selectHero(gameState.selectedHero);
+        }
+
+        function selectHero(heroKey) {
+            gameState.selectedHero = heroKey;
+            ['WARRIOR', 'MAGE', 'HUNTER', 'SUMMONER'].forEach(h => {
+                const btn = document.getElementById(`btnHero${h.charAt(0) + h.slice(1).toLowerCase()}`);
+                const isSelected = h === heroKey;
+                const aB = gameState.selectedFaction === 'BLUE' ? 'border-emerald-500 bg-emerald-950/30' : 'border-fuchsia-500 bg-fuchsia-950/30';
+                btn.className = `py-2 px-1 rounded-xl border-2 ${isSelected ? aB : 'border-transparent bg-slate-800/40'} flex flex-col items-center transition-all`;
+            });
+            const t = FACTION_HERO_TEMPLATES[gameState.selectedFaction][heroKey];
+            document.getElementById('heroNameWarrior').textContent = FACTION_HERO_TEMPLATES[gameState.selectedFaction]['WARRIOR'].name;
+            document.getElementById('heroNameMage').textContent = FACTION_HERO_TEMPLATES[gameState.selectedFaction]['MAGE'].name;
+            document.getElementById('heroNameHunter').textContent = FACTION_HERO_TEMPLATES[gameState.selectedFaction]['HUNTER'].name;
+            document.getElementById('heroNameSummoner').textContent = FACTION_HERO_TEMPLATES[gameState.selectedFaction]['SUMMONER'].name;
+            document.getElementById('heroDescription').innerHTML = `<span class="text-amber-400 font-bold">[${t.name}]</span> ${t.desc}`;
+        }
+
+        function toggleShop() {
+            if (gameState.gameOver) return;
+            const s = document.getElementById('shopUI');
+            if (s.classList.contains('hidden')) { s.classList.remove('hidden'); updateShopItems(); } else s.classList.add('hidden');
+        }
+
+        function setGlobalAiMode(mode) {
+            globalAiMode = mode;
+            ['AUTO', 'AGGRESSIVE', 'DEFENSIVE', 'FOLLOW'].forEach(m => {
+                const btnId = 'btnAi' + (m==='AUTO'?'Auto':m==='AGGRESSIVE'?'Aggro':m==='DEFENSIVE'?'Def':'Follow');
+                const btn = document.getElementById(btnId);
+                if(btn) btn.className = m === mode ? "flex-1 text-[8px] py-1 bg-emerald-900/50 border border-emerald-500 text-white rounded" : "flex-1 text-[8px] py-1 bg-slate-800 border border-slate-700 text-gray-300 rounded";
+            });
+            let txt = mode==='AUTO'?'자율 행동':mode==='AGGRESSIVE'?'총공격 (돌격)':mode==='DEFENSIVE'?'기지 방어':'집합 (호위)';
+            showFloatingText(player.x, player.y - 80, `AI 명령: ${txt}`, "#fcd34d", 16);
+        }
+
+        function updateShopItems() {
+            const container = document.getElementById('shopItemContainer'); container.innerHTML = '';
+            document.getElementById('hudGoldText').textContent = `${Math.floor(player.gold)}G`;
+            const heroTemplate = FACTION_HERO_TEMPLATES[player.faction][player.heroClass];
+            const hnEl = document.getElementById('hudHeroName'); if(hnEl) hnEl.textContent = heroTemplate ? heroTemplate.name : player.heroClass;
+            SHOP_ITEMS.forEach(i => {
+                const ex = player.inventory.find(inv => inv.id === i.id);
+                const upLvl = ex ? ex.upgrade : 0;
+                const canBuy = player.gold >= i.cost && (ex || player.inventory.length < 6);
+                const btnClass = canBuy ? "bg-amber-500 text-slate-950 font-bold active:bg-amber-400" : "bg-slate-800 text-slate-500 cursor-not-allowed";
+                const upTxt = upLvl > 0 ? `<span class="text-rose-400 ml-1">(+${upLvl})</span>` : '';
+
+                const el = document.createElement('div'); el.className = "bg-slate-900 border border-slate-800 rounded-lg p-2 flex justify-between items-center";
+                el.innerHTML = `
+                    <div class="flex items-center gap-2">
+                        <div class="w-8 h-8 rounded bg-slate-950 border border-slate-700 flex items-center justify-center text-lg relative">
+                            ${i.icon}${upLvl > 0 ? `<div class="absolute -top-1 -right-1 bg-rose-600 text-[8px] px-1 rounded-full text-white">+${upLvl}</div>` : ''}
+                        </div>
+                        <div class="leading-tight">
+                            <div class="text-[10px] font-bold text-slate-100">${i.name}${upTxt}</div>
+                            <div class="text-[8px] text-slate-400">${i.desc}</div>
+                            <div class="text-[9px] text-amber-400">${i.cost}G</div>
+                        </div>
+                    </div>
+                    <button onclick="buyItem('${i.id}')" class="${btnClass} text-[9px] px-2 py-1 rounded transition-colors shadow">구매</button>
+                `;
+                container.appendChild(el);
+            });
+        }
+
+        function buyItem(id) {
+            const item = SHOP_ITEMS.find(i => i.id === id); if (!item) return;
+            let ex = player.inventory.find(i => i.id === id);
+            if (ex) {
+                if (player.gold < item.cost) { showFloatingText(player.x, player.y - 40, "골드 부족!", "#ef4444"); return; }
+                player.gold -= item.cost; ex.upgrade += 1;
+                showFloatingText(player.x, player.y - 50, `+${item.name} +${ex.upgrade} 강화!`, "#f43f5e");
+            } else {
+                if (player.gold < item.cost) { showFloatingText(player.x, player.y - 40, "골드 부족!", "#ef4444"); return; }
+                if (player.inventory.length >= 6) { showFloatingText(player.x, player.y - 40, "가방 꽉참!", "#ef4444"); return; }
+                player.gold -= item.cost; player.inventory.push({ ...item, upgrade: 0 });
+                showFloatingText(player.x, player.y - 50, `+ ${item.name} 장착!`, "#f59e0b");
+            }
+            applyItemStats(); updateShopItems(); updateHUD();
+        }
+
+        function applyItemStats() {
+            const t = FACTION_HERO_TEMPLATES[player.faction][player.heroClass];
+            const oldHp = player.maxHp;
+            player.speed = t.speed; player.damage = t.damage; player.maxHp = t.maxHp; player.attackCooldown = t.attackCooldown; player.lifesteal = 0; player.defenseMultiplier = 1;
+            player.burnAura = 0; player.reflectRate = 0; player.stunChance = 0; player.slowChance = 0;
+            
+            player.inventory.forEach(i => {
+                const mult = 1 + (i.upgrade * 0.15); // +1강 당 효율 15% 상승
+                if(i.stat==='speed') player.speed += i.value * mult;
+                if(i.stat==='damage') player.damage += i.value * mult;
+                if(i.stat==='maxHp') player.maxHp += i.value * mult;
+                if(i.stat==='attackCooldown') player.attackCooldown = Math.max(0.3, player.attackCooldown * Math.pow(i.value, Math.min(mult, 2.0)));
+                if(i.stat==='lifesteal') player.lifesteal += i.value * mult;
+                if(i.stat==='defense') player.defenseMultiplier *= Math.pow((1 - i.value/100), mult);
+                if(i.stat==='burn') player.burnAura += i.value * mult;
+                if(i.stat==='reflect') player.reflectRate += i.value * mult;
+                if(i.stat==='stun') player.stunChance += i.value * mult;
+                if(i.stat==='slow') player.slowChance += i.value * mult;
+            });
+            if(player.maxHp > oldHp) player.hp += (player.maxHp - oldHp);
+        }
+
+
+        // --- AI 아이템 구매 시스템 ---
+        const AI_ITEM_PRIORITY = {
+            WARRIOR: ['ruby', 'sword', 'armor', 'scepter', 'boots', 'stun_ring'],
+            MAGE:    ['tome', 'ruby', 'boots', 'reflect_cloak', 'slow_glove', 'scepter'],
+            HUNTER:  ['boots', 'sword', 'tome', 'scepter', 'slow_glove', 'ruby'],
+            SUMMONER:['ruby', 'tome', 'boots', 'fire_cape', 'armor', 'reflect_cloak']
+        };
+        function runAIItemPurchase(ai) {
+            if (ai.gold < 400 || (ai.inventory && ai.inventory.length >= 6)) return;
+            const prio = AI_ITEM_PRIORITY[ai.heroClass] || AI_ITEM_PRIORITY.WARRIOR;
+            for (const id of prio) {
+                const item = SHOP_ITEMS.find(i => i.id === id);
+                if (!item || ai.gold < item.cost) continue;
+                if (!ai.inventory) ai.inventory = [];
+                const ex = ai.inventory.find(i => i.id === id);
+                if (ex) { if(ai.gold >= item.cost) { ai.gold -= item.cost; ex.upgrade += 1; applyAIItemStats(ai); } }
+                else if (ai.inventory.length < 6) { ai.gold -= item.cost; ai.inventory.push({...item, upgrade: 0}); applyAIItemStats(ai); }
+                break;
+            }
+        }
+        function applyAIItemStats(ai) {
+            const t = FACTION_HERO_TEMPLATES[ai.faction][ai.heroClass];
+            ai.speed = t.speed; ai.damage = t.damage; ai.maxHp = t.maxHp; ai.attackCooldown = t.attackCooldown;
+            ai.lifesteal = 0; ai.defenseMultiplier = 1; ai.burnAura = 0;
+            if (!ai.inventory) return;
+            ai.inventory.forEach(i => {
+                const mult = 1 + (i.upgrade * 0.12);
+                if(i.stat==='speed') ai.speed += i.value * mult;
+                if(i.stat==='damage') ai.damage += i.value * mult;
+                if(i.stat==='maxHp') ai.maxHp += i.value * mult;
+                if(i.stat==='attackCooldown') ai.attackCooldown *= Math.pow(i.value, mult);
+                if(i.stat==='lifesteal') ai.lifesteal = (ai.lifesteal||0) + i.value * mult;
+                if(i.stat==='defense') ai.defenseMultiplier *= Math.pow((1 - i.value/100), mult);
+                if(i.stat==='burn') ai.burnAura = (ai.burnAura||0) + i.value * mult;
+            });
+            // Scale max HP with level bonus
+            ai.maxHp += (ai.level - 1) * 110;
+        }
+
+        function setupBattlefield() {
+            heroes.length=0; minions.length=0; towers.length=0; nexuses.length=0; monsters.length=0; projectiles.length=0; floatingTexts.length=0; staticScenery.length=0; aoeIndicators.length=0; slashTrails.length=0; impactParticles.length=0; teamBuffs.BLUE=0; teamBuffs.RED=0;
+            
+            // 모바일 최적화 UI 배치
+            if (gameState.platform === 'MOBILE') {
+                document.getElementById('pcGuideText').classList.add('hidden');
+                document.getElementById('uiSkillBar').className = "pointer-events-auto flex items-end gap-2 bg-slate-950/90 border border-slate-800 p-2 rounded-2xl shadow-2xl backdrop-blur-md absolute bottom-4 right-4 z-20";
+                try { if(document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(e=>{}); if(screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(e=>{}); } catch(e) {}
+            } else {
+                document.getElementById('pcGuideText').classList.remove('hidden');
+            }
+
+            const sc = [{t:'tree_oriens',x:800,y:2200}, {t:'rock',x:1200,y:2500}, {t:'crystal_ionia',x:2200,y:800}, {t:'rock',x:1800,y:500}, {t:'lake',x:1500,y:800}, {t:'lake',x:1500,y:2200}, {t:'bush',x:1000,y:1500}, {t:'bush',x:2000,y:1500}];
+            sc.forEach((s,i) => staticScenery.push({id:`sc_${i}`, type:s.t, x:s.x, y:s.y, radius:s.t==='lake'?120:s.t==='bush'?80:45}));
+
+            nexuses.push({x:300, y:2700, radius:85, faction:'BLUE', hp:5000, maxHp:5000, isDead:false});
+            nexuses.push({x:2700, y:300, radius:85, faction:'RED', hp:5000, maxHp:5000, isDead:false});
+            towers.push({x:300, y:1700, radius:45, faction:'BLUE', hp:1200, maxHp:1200, lastAttackTime:0, range:380, isDead:false});
+            towers.push({x:1300, y:2700, radius:45, faction:'BLUE', hp:1200, maxHp:1200, lastAttackTime:0, range:380, isDead:false});
+            towers.push({x:1700, y:300, radius:45, faction:'RED', hp:1200, maxHp:1200, lastAttackTime:0, range:380, isDead:false});
+            towers.push({x:2700, y:1300, radius:45, faction:'RED', hp:1200, maxHp:1200, lastAttackTime:0, range:380, isDead:false});
+            [{x: 550, y: 2700}, {x: 450, y: 2450}, {x: 300, y: 2450}].forEach(p => towers.push({x:p.x, y:p.y, radius:35, faction:'BLUE', hp:2000, maxHp:2000, lastAttackTime:0, range:450, isDead:false, isGuard:true}));
+            [{x: 2450, y: 300}, {x: 2550, y: 550}, {x: 2700, y: 550}].forEach(p => towers.push({x:p.x, y:p.y, radius:35, faction:'RED', hp:2000, maxHp:2000, lastAttackTime:0, range:450, isDead:false, isGuard:true}));
+            JUNGLE_CAMPS.forEach((c,i) => monsters.push({x:c.x, y:c.y, type:c.type, radius:32, faction:'NEUTRAL', hp:300, maxHp:300, damage:15, attackRange:75, attackCooldown:1.2, lastAttackTime:0, attackAnimTimer:0, isDead:false, campIndex:i, spawnX:c.x, spawnY:c.y, flashTimer:0, effects:baseEffects()}));
+
+            const pT = FACTION_HERO_TEMPLATES[gameState.selectedFaction][gameState.selectedHero];
+            player = {
+                isPlayer: true, x: gameState.selectedFaction==='BLUE'?300:2700, y: gameState.selectedFaction==='BLUE'?2700:300, vx:0, vy:0, radius:pT.radius, speed:pT.speed, hp:pT.maxHp, maxHp:pT.maxHp, damage:pT.damage, attackRange:pT.attackRange, attackCooldown:pT.attackCooldown, lastAttackTime:0, lastCombatTime:0, attackAnimTimer:0, faction:gameState.selectedFaction, heroClass:gameState.selectedHero, angle:0, level:1, xp:0, gold:500, kills:0, deaths:0, inventory:[], lifesteal:0, defenseMultiplier:1, burnAura:0, reflectRate:0, stunChance:0, slowChance:0, isDead:false, respawnTimer:0, recalling:false, recallTimer:0, recallCd:0, flashTimer:0, inBush:false, summonTimer:0,
+                skills: { q: {cd:0, maxCd:pT.skills.q.maxCd, range:pT.skills.q.range, name:pT.skills.q.name, icon:pT.skills.q.icon}, e: {cd:0, maxCd:pT.skills.e.maxCd, range:pT.skills.e.range, name:pT.skills.e.name, icon:pT.skills.e.icon} },
+                effects: baseEffects()
+            };
+            heroes.push(player);
+
+            const allClass = ['WARRIOR', 'MAGE', 'HUNTER', 'SUMMONER'];
+            const allyClasses = allClass.filter(c => c !== gameState.selectedHero);
+            const enemyFac = gameState.selectedFaction === 'BLUE' ? 'RED' : 'BLUE';
+
+            createAIHero(gameState.selectedFaction, allyClasses[0], 'TOP');
+            createAIHero(gameState.selectedFaction, allyClasses[1], 'BOT');
+            createAIHero(gameState.selectedFaction, allyClasses[2], 'JUNGLE');
+            createAIHero(enemyFac, 'WARRIOR', 'TOP');
+            createAIHero(enemyFac, 'MAGE', 'BOT');
+            createAIHero(enemyFac, 'HUNTER', 'JUNGLE');
+            createAIHero(enemyFac, 'SUMMONER', 'TOP');
+
+            gameState.secondsElapsed = 0; gameState.bossTimer = 60; spawnMinionWave(); gameState.spawnTimer = gameState.spawnInterval; gameState.gameOver = false; lastNexusWarnTime = 0;
+            document.getElementById('gameOverScreen').classList.add('hidden');
+            document.getElementById('txtSkillQIcon').textContent = player.skills.q.icon; document.getElementById('txtSkillQName').textContent = player.skills.q.name;
+            document.getElementById('txtSkillEIcon').textContent = player.skills.e.icon; document.getElementById('txtSkillEName').textContent = player.skills.e.name;
+
+            if (player) { camera.x = player.x; camera.y = player.y; camera.targetZoom = 0.65; camera.zoom = 0.65; }
+        }
+
+        function createAIHero(fac, hClass, lane) {
+            const t = FACTION_HERO_TEMPLATES[fac][hClass];
+            heroes.push({
+                isPlayer: false, x: fac==='BLUE'?300+(Math.random()*120-60):2700+(Math.random()*120-60), y: fac==='BLUE'?2700+(Math.random()*120-60):300+(Math.random()*120-60),
+                vx:0, vy:0, radius:t.radius, speed:t.speed, hp:t.maxHp, maxHp:t.maxHp, damage:t.damage, attackRange:t.attackRange, attackCooldown:t.attackCooldown, lastAttackTime:0, lastCombatTime:0, attackAnimTimer:0, faction:fac, heroClass:hClass, angle:0, level:1, xp:0, gold:300, kills:0, deaths:0, isDead:false, respawnTimer:0, flashTimer:0, inBush:false, summonTimer:0,
+                state: 'GOTO_LANE', assignedLane: lane, waypointIndex: 1, target: null, searchRange: 450, fleeHpRatio: 0.25, recallTimer: 0,
+                skills: { q: {cd:0, maxCd:t.skills.q.maxCd, range:t.skills.q.range}, e: {cd:0, maxCd:t.skills.e.maxCd, range:t.skills.e.range} },
+                effects: baseEffects()
+            });
+        }
+
+        function spawnMinionWave() {
+            // 미니언 최대 수 제한 (성능 최적화)
+            const aliveMinionCount = minions.filter(m => !m.isDead && !m.isSummon).length;
+            if (aliveMinionCount > 80) return;
+            const hSc = 1.0 + Math.floor(gameState.secondsElapsed/60)*0.1; const dSc = 1.0 + Math.floor(gameState.secondsElapsed/60)*0.05; 
+            ['TOP', 'BOT'].forEach(ln => { ['BLUE', 'RED'].forEach(fac => {
+                const sx = fac==='BLUE'?300:2700, sy = fac==='BLUE'?2700:300;
+                for(let i=0; i<3; i++) {
+                    const r = i===2; minions.push({
+                        x: sx+(Math.random()*60-30), y: sy+(Math.random()*60-30), vx: 0, vy: 0, radius: r?12:14, speed: 96,
+                        hp: (r?120:200)*hSc, maxHp: (r?120:200)*hSc, damage: (r?15:10)*dSc, attackRange: r?280:75, attackCooldown: r?1.5:1.2,
+                        lastAttackTime: 0, attackAnimTimer: 0, faction: fac, isRanged: r, lane: ln, waypointIndex: 1, target: null, isDead: false, angle: 0, flashTimer: 0, effects: baseEffects(), isSummon: false
+                    });
+                }
+            });});
+        }
+
+        function triggerPlayerSkill(skillKey) {
+            if(gameState.gameOver || !player || player.isDead) return;
+            let finalTarget = findClosestEnemy(player, player.skills[skillKey].range * 1.5);
+            let tx = finalTarget ? finalTarget.x : player.x + Math.cos(player.angle)*player.skills[skillKey].range;
+            let ty = finalTarget ? finalTarget.y : player.y + Math.sin(player.angle)*player.skills[skillKey].range;
+            useSkill(player, skillKey, tx, ty);
+        }
+
+        function triggerPlayerBasicAttack() {
+            if(gameState.gameOver || !player || player.isDead) return;
+            let finalTarget = findClosestEnemy(player, player.attackRange * 1.5);
+            if(finalTarget) { const now = performance.now()/1000; if(now - player.lastAttackTime >= player.attackCooldown) { player.lastAttackTime = now; player.angle = Math.atan2(finalTarget.y - player.y, finalTarget.x - player.x); executeBasicAttack(player, finalTarget); } }
+        }
+
+        function startRecall() {
+            if(gameState.gameOver || !player || player.isDead || player.recalling) return;
+            if(player.recallCd > 0) { showFloatingText(player.x, player.y-45, "쿨다운!", "#ef4444"); return; }
+            player.recalling = true; player.recallTimer = 5.0; player.vx = 0; player.vy = 0; showFloatingText(player.x, player.y-45, "귀환 캐스팅...", "#60a5fa", 14);
+        }
+
+        function useSkill(caster, skillKey, tx, ty) {
+            const skill = caster.skills[skillKey]; if(skill.cd > 0 || caster.effects.stunned > 0) return false;
+            if(caster.effects.rooted > 0 && caster.heroClass === 'WARRIOR' && caster.faction === 'BLUE' && skillKey === 'q') return false;
+            skill.cd = skill.maxCd; caster.angle = Math.atan2(ty - caster.y, tx - caster.x); if(caster.recalling) caster.recalling = false;
+            if(caster.isPlayer) showFloatingText(caster.x, caster.y - 50, `${skill.name}!`, caster.faction==='BLUE'?'#34d399':'#c084fc', 14);
+            caster.lastCombatTime = performance.now()/1000;
+
+            if(caster.faction === 'BLUE') {
+                if(caster.heroClass === 'WARRIOR') {
+                    if(skillKey === 'q') { const sx=caster.x, sy=caster.y, dist=Math.min(skill.range, Math.sqrt((tx-caster.x)**2+(ty-caster.y)**2)); caster.x+=Math.cos(caster.angle)*dist; caster.y+=Math.sin(caster.angle)*dist; createSlashTrail(sx,sy,caster.angle,'#10b981'); createSlashTrail(caster.x,caster.y,caster.angle,'#34d399'); getEnemiesInSegment(caster,sx,sy,caster.x,caster.y,65).forEach(e=>dealDamage(e,85,caster,true)); }
+                    else { createSlashTrail(caster.x,caster.y,0,'#059669'); createSlashTrail(caster.x,caster.y,Math.PI,'#34d399'); getEnemiesInRadius(caster,caster.x,caster.y,skill.range).forEach(e=>dealDamage(e,100,caster,true)); }
+                } else if(caster.heroClass === 'HUNTER') {
+                    if(skillKey === 'q') projectiles.push({x:caster.x, y:caster.y-15, vx:Math.cos(caster.angle)*750, vy:Math.sin(caster.angle)*750, damage:90, attacker:caster, faction:caster.faction, radius:10, type:'ARROW_Q', hitTargets:new Set()});
+                    else { const rA=caster.angle+Math.PI; caster.x+=Math.cos(rA)*skill.range; caster.y+=Math.sin(rA)*skill.range; caster.effects.speedBuff=3; createSlashTrail(caster.x,caster.y,caster.angle,'#10b981'); }
+                } else if(caster.heroClass === 'MAGE') { 
+                    if(skillKey === 'q') { getEnemiesInRadius(caster,caster.x,caster.y,skill.range).forEach(e=>{dealDamage(e,45,caster,true); if(e.effects){e.effects.slowed=2; e.effects.slowPower=0.6;} }); aoeIndicators.push({x:caster.x, y:caster.y, radius:skill.range, timer:0.3, maxTimer:0.3, type:'SHOCKWAVE', color:'#fbbf24'}); }
+                    else { const cx=caster.x+Math.cos(caster.angle)*Math.min(skill.range, getDist(caster, {x:tx,y:ty})), cy=caster.y+Math.sin(caster.angle)*Math.min(skill.range, getDist(caster, {x:tx,y:ty})); getEnemiesInRadius(caster,cx,cy,100).forEach(e=>{dealDamage(e,85,caster,true); if(e.effects)e.effects.stunned=1; }); aoeIndicators.push({x:cx,y:cy,radius:100,timer:0.4,maxTimer:0.4,type:'CRACK',color:'#b45309'}); }
+                } else if(caster.heroClass === 'SUMMONER') {
+                    if(skillKey === 'q') { minions.forEach(m=>{if(m.owner===caster && !m.isDead){m.effects.speedBuff=5; m.damage+=20; m.hp=Math.min(m.maxHp,m.hp+80); createHitSparks(m.x,m.y,'#fbbf24');}}); aoeIndicators.push({x:caster.x,y:caster.y,radius:200,timer:0.4,maxTimer:0.4,type:'SHOCKWAVE',color:'#8b5cf6'}); }
+                    else { projectiles.push({x:caster.x, y:caster.y-15, vx:Math.cos(caster.angle)*580, vy:Math.sin(caster.angle)*580, damage:90, attacker:caster, faction:caster.faction, radius:16, type:'BOLT_Q'}); }
+                }
+            } else {
+                if(caster.heroClass === 'WARRIOR') {
+                    if(skillKey === 'q') caster.effects.empoweredAttack = true;
+                    else { getEnemiesInCone(caster,caster.angle,90,skill.range).forEach(e=>dealDamage(e,95,caster,true)); createSlashTrail(caster.x,caster.y,caster.angle,'#a855f7'); }
+                } else if(caster.heroClass === 'MAGE') {
+                    if(skillKey === 'q') projectiles.push({x:caster.x,y:caster.y-15,vx:Math.cos(caster.angle)*650,vy:Math.sin(caster.angle)*650,damage:90,attacker:caster,faction:caster.faction,radius:12,type:'BOLT_Q'});
+                    else { const cx=caster.x+Math.cos(caster.angle)*Math.min(skill.range, getDist(caster, {x:tx,y:ty})), cy=caster.y+Math.sin(caster.angle)*Math.min(skill.range, getDist(caster, {x:tx,y:ty})); aoeIndicators.push({x:cx,y:cy,radius:130,timer:1.5,maxTimer:1.5,damage:170,attacker:caster,type:'METEOR',color:'rgba(239, 68, 68, 0.45)'}); }
+                } else if(caster.heroClass === 'HUNTER') {
+                    if(skillKey === 'q') { getAlliesInRadius(caster,caster.x,caster.y,skill.range).forEach(a=>{if(!a.isDead){a.hp=Math.min(a.maxHp,a.hp+140); createHitSparks(a.x,a.y,'#10b981');}}); aoeIndicators.push({x:caster.x,y:caster.y,radius:skill.range,timer:0.4,maxTimer:0.4,type:'HEAL_RING',color:'#10b981'}); }
+                    else projectiles.push({x:caster.x,y:caster.y-15,vx:Math.cos(caster.angle)*600,vy:Math.sin(caster.angle)*600,damage:65,attacker:caster,faction:caster.faction,radius:10,type:'CHAIN_E'});
+                } else if(caster.heroClass === 'SUMMONER') {
+                    if(skillKey === 'q') {
+                        // RED 흑마법사 Q: 망령 강화 + 주변 적에게 어둠 피해
+                        minions.forEach(m=>{if(m.owner===caster && !m.isDead){m.effects.speedBuff=5; m.damage+=18; createHitSparks(m.x,m.y,'#c084fc');}});
+                        getEnemiesInRadius(caster,caster.x,caster.y,skill.range*0.5).forEach(e=>dealDamage(e,50,caster,true));
+                        aoeIndicators.push({x:caster.x,y:caster.y,radius:skill.range*0.5,timer:0.4,maxTimer:0.4,type:'SHOCKWAVE',color:'#7c3aed'});
+                    }
+                    else { // E: 어둠의 파동 - 관통 볼트
+                        projectiles.push({x:caster.x, y:caster.y-15, vx:Math.cos(caster.angle)*580, vy:Math.sin(caster.angle)*580, damage:85, attacker:caster, faction:caster.faction, radius:16, type:'BOLT_Q'});
+                    }
+                }
+            }
+            return true;
+        }
+
+        function executeBasicAttack(attacker, target) {
+            attacker.attackAnimTimer = 0.15; attacker.lastCombatTime = performance.now() / 1000;
+            if (attacker.heroClass === 'MAGE' && attacker.faction === 'BLUE') {
+                aoeIndicators.push({ x: target.x, y: target.y, radius: 65, timer: 0.25, maxTimer: 0.25, type: 'GROUND_SLAM', color: '#10b981' });
+                getEnemiesInRadius(attacker, target.x, target.y, 65).forEach(e => dealDamage(e, attacker.damage, attacker, false));
+            } else if (attacker.heroClass === 'MAGE' || attacker.heroClass === 'SUMMONER') fireProjectile(attacker, target, attacker.damage, 'MAGIC');
+            else if (attacker.heroClass === 'HUNTER') fireProjectile(attacker, target, attacker.damage, 'ARROW');
+            else {
+                createSlashTrail(attacker.x, attacker.y, attacker.angle, attacker.faction==='BLUE'?'#10b981':'#a855f7');
+                let dmg = attacker.damage;
+                if (attacker.effects.empoweredAttack) { attacker.effects.empoweredAttack=false; dmg+=60; if(target.effects) target.effects.stunned=1; }
+                if (attacker.stunChance && Math.random() < attacker.stunChance && target.effects) target.effects.stunned = Math.max(target.effects.stunned, 0.5);
+                if (attacker.slowChance && Math.random() < attacker.slowChance && target.effects) { target.effects.slowed = 2.0; target.effects.slowPower = 0.5; }
+                dealDamage(target, dmg, attacker, false);
+            }
+        }
+
+        function dealDamage(t, dmg, a, isSkill) {
+            if(t.isDead || gameState.gameOver) return;
+            t.lastCombatTime = performance.now() / 1000; if(a.heroClass) a.lastCombatTime = performance.now() / 1000;
+            let df = t.defenseMultiplier || 1; if(t.heroClass==='MAGE' && t.faction==='BLUE' && t.effects && t.effects.beastPassive>0) df*=0.6;
+            let actual = dmg * df; if (a.faction && teamBuffs[a.faction] > 0) actual *= 1.2;
+
+            if(a.heroClass==='WARRIOR' && a.faction==='BLUE' && !isSkill) { a.effects.slashCount=(a.effects.slashCount+1)%3; if(a.effects.slashCount===0) actual+=30; }
+            if(a.heroClass==='HUNTER' && a.faction==='BLUE' && !isSkill) { const b=Math.min(0.4, (getDist(a,t)/a.attackRange)*0.4); actual*=(1+b); }
+            t.hp -= actual; t.flashTimer = 0.15;
+            
+            if(t.reflectRate && t.reflectRate > 0) dealDamage(a, actual * t.reflectRate, t, true);
+            if(a.heroClass==='MAGE' && a.faction==='RED' && isSkill) { if(a.skills.q.cd>0) a.skills.q.cd=Math.max(0,a.skills.q.cd-1); if(a.skills.e.cd>0) a.skills.e.cd=Math.max(0,a.skills.e.cd-1); }
+            if(t.heroClass==='WARRIOR' && t.faction==='RED' && t.effects) t.effects.regenCd = 0;
+            if(t.faction==='NEUTRAL' && t.idleTimer!==undefined) t.idleTimer=0; 
+
+            if(t.speed!==undefined && !t.isDead && !t.type) { const aDir=Math.atan2(t.y-a.y, t.x-a.x); const f=isSkill?20:10; t.x+=Math.cos(aDir)*f; t.y+=Math.sin(aDir)*f; }
+            if(t.x) { t.x = Math.max(t.radius, Math.min(MAP_SIZE - t.radius, t.x)); t.y = Math.max(t.radius, Math.min(MAP_SIZE - t.radius, t.y)); }
+
+            showFloatingText(t.x+(Math.random()*20-10), t.y-30, `${Math.round(actual)}`, a.faction==='BLUE'?'#10b981':'#f43f5e'); createHitSparks(t.x, t.y, a.faction==='BLUE'?'#10b981':'#f43f5e');
+            if(a.lifesteal>0 && !a.isDead && a.hp!==undefined) { const healAmt = actual*a.lifesteal; a.hp=Math.min(a.maxHp, a.hp+healAmt); }
+            
+            if(t.maxHp === 5000 && t.faction === player.faction) {
+                const nw = performance.now();
+                if(nw - lastNexusWarnTime > 15000) { lastNexusWarnTime = nw; triggerKillBanner('🚨 비상! 아군 본진이 공격받고 있습니다! 🚨', t.faction === 'BLUE'); }
+            }
+            if(t.faction === 'NEUTRAL' && a.isPlayer) t.target = a;
+            if(t.hp<=0) { t.hp=0; t.isDead=true; handleKill(t, a); }
+        }
+
+        function handleKill(t, k) {
+            let g=0, x=0, ann="";
+            if(t.heroClass) { g=300; x=150; ann=k.faction==='BLUE'?"적 영웅 처치!":"아군 영웅 제압됨!"; if(k.faction==='BLUE')gameState.scoreBlue++; else gameState.scoreRed++; triggerKillBanner(t.faction==='RED'?'🏆 ENEMY SLAIN':'💀 ALLY DOWN', t.faction==='RED'); t.respawnTimer=10 + (t.level||1)*2; t.target=null; if(t.deaths!==undefined)t.deaths++; if(k.kills!==undefined)k.kills++; }
+            else if(t.lane && !t.isSummon) { g=55; x=35; } else if(t.type==='BOSS') { g=300; x=500; teamBuffs[k.faction]=180; ann="고룡 처치! 팀 버프!"; triggerKillBanner('🐲 DRAGON SLAIN!', k.faction==='BLUE'); t.respawnTimer=180; } else if(t.campIndex!==undefined) { g=85; x=60; JUNGLE_CAMPS[t.campIndex].respawnTimer=JUNGLE_CAMPS[t.campIndex].maxRespawn; }
+            else if(t.maxHp===1200 || t.maxHp===2000) { g=150; triggerKillBanner(t.faction==='BLUE'?'🏯 TOWER FALLEN':'🏯 TOWER DESTROYED', t.faction==='RED'); }
+            else if(t.maxHp===5000) { gameState.gameOver = true;
+                    const isVictory = player.faction !== t.faction;
+                    const goEl = document.getElementById('txtGameResult');
+                    if(goEl) { goEl.textContent = isVictory ? 'VICTORY' : 'DEFEAT'; goEl.style.color = isVictory ? '#10b981' : '#ef4444'; }
+                    const fsEl = document.getElementById('txtFinalScore');
+                    if(fsEl) fsEl.textContent = `${gameState.scoreBlue} : ${gameState.scoreRed}`;
+                    const tm = Math.floor(gameState.secondsElapsed/60), ts = Math.floor(gameState.secondsElapsed%60);
+                    const ftEl = document.getElementById('txtFinalTime');
+                    if(ftEl) ftEl.textContent = `${tm<10?'0':''}${tm}:${ts<10?'0':''}${ts}`;
+                    document.getElementById('gameOverScreen').classList.remove('hidden'); }
+            if(k && k.level!==undefined) { k.gold+=g; k.xp+=x; 
+                if(k.xp >= k.level*180) { k.xp-=k.level*180; k.level++; k.maxHp+=110; k.hp=k.maxHp; k.damage+=8; }
+            }
+        }
+
+        function runHeroAISystem(ai, dt) {
+            if(ai.isDead || gameState.gameOver) return;
+            if(ai.effects.stunned>0) { ai.effects.stunned-=dt; ai.vx=0; ai.vy=0; return; }
+            if(ai.effects.rooted>0) { ai.effects.rooted-=dt; ai.vx=0; ai.vy=0; }
+            
+            // RED HUNTER(사제)는 아군 체력 체크 후 치유 우선
+            if(ai.heroClass==='HUNTER' && ai.faction!==player.faction) {
+                const woundedAlly = heroes.find(h => h.faction===ai.faction && !h.isDead && h.hp<h.maxHp*0.55);
+                if(woundedAlly && ai.skills.q.cd<=0) { ai.state='SUPPORT_HEAL'; }
+            }
+            if (ai.faction === player.faction) {
+                if (globalAiMode === 'AGGRESSIVE') { ai.searchRange = 800; ai.fleeHpRatio = 0; }
+                else if (globalAiMode === 'DEFENSIVE') { ai.searchRange = 300; ai.fleeHpRatio = 0.8; if(ai.hp<ai.maxHp*0.8) { ai.state='RETREAT'; ai.target=null; } }
+                else if (globalAiMode === 'FOLLOW') { ai.state = 'FOLLOW'; }
+                else { ai.searchRange = 450; ai.fleeHpRatio = 0.25; }
+            }
+
+            if(ai.hp<ai.maxHp*ai.fleeHpRatio && ai.state!=='RETREAT' && ai.state!=='RECALLING' && ai.state!=='FOLLOW') { ai.state='RETREAT'; ai.target=null; }
+            
+            if(ai.state==='GOTO_LANE') {
+                const path=WAYPOINTS[`${ai.faction}_${ai.assignedLane}`]||WAYPOINTS.BLUE_TOP; if(ai.assignedLane==='JUNGLE') {ai.state='JUNGLE'; return;}
+                const pt=path[ai.waypointIndex], dx=pt.x-ai.x, dy=pt.y-ai.y, d=Math.sqrt(dx*dx+dy*dy);
+                if(d<80 && ai.waypointIndex<path.length-1) ai.waypointIndex++;
+                if(ai.effects.rooted<=0 && d>0) { ai.vx=(dx/d)*ai.speed; ai.vy=(dy/d)*ai.speed; ai.angle=Math.atan2(dy,dx); ai.x+=ai.vx*dt; ai.y+=ai.vy*dt; }
+                const t=findClosestEnemy(ai, ai.searchRange); if(t) { ai.state='ATTACK'; ai.target=t; }
+            } else if(ai.state==='ATTACK') {
+                const t=ai.target; if(!t||t.isDead||t.hp<=0) { ai.target=null; ai.state='GOTO_LANE'; return; }
+                const dx=t.x-ai.x, dy=t.y-ai.y, d=Math.sqrt(dx*dx+dy*dy);
+                // 스킬 사용: 범위 내 적이 있을 때
+                if(ai.skills.q.cd<=0 && d<=ai.skills.q.range*1.2) useSkill(ai, 'q', t.x, t.y);
+                if(ai.skills.e.cd<=0 && d<=ai.skills.e.range*1.2) useSkill(ai, 'e', t.x, t.y);
+                // 원거리 AI 키팅: 적이 너무 가까이 오면 후퇴하며 공격
+                const isRanged = ai.attackRange > 150;
+                if(isRanged && d < ai.attackRange * 0.5) {
+                    // 멀어지며 공격
+                    const rA = Math.atan2(ai.y - t.y, ai.x - t.x);
+                    if(ai.effects.rooted<=0){ ai.vx=Math.cos(rA)*ai.speed*0.7; ai.vy=Math.sin(rA)*ai.speed*0.7; ai.x+=ai.vx*dt; ai.y+=ai.vy*dt; }
+                    const n=performance.now()/1000; if(n-ai.lastAttackTime>=ai.attackCooldown) { ai.lastAttackTime=n; ai.angle=Math.atan2(dy,dx); executeBasicAttack(ai, t); }
+                } else if(d>ai.attackRange) {
+                    if(ai.effects.rooted<=0 && d>0) { ai.vx=(dx/d)*ai.speed; ai.vy=(dy/d)*ai.speed; ai.angle=Math.atan2(dy,dx); ai.x+=ai.vx*dt; ai.y+=ai.vy*dt; }
+                } else {
+                    ai.vx=0; ai.vy=0; ai.angle=Math.atan2(dy,dx);
+                    const n=performance.now()/1000; if(n-ai.lastAttackTime>=ai.attackCooldown) { ai.lastAttackTime=n; executeBasicAttack(ai, t); }
+                }
+                if(d>ai.searchRange*1.5) { ai.target=null; ai.state='GOTO_LANE'; }
+                // 타워 아래 경계 처리
+                let underTower = towers.filter(tw => tw.faction !== ai.faction && !tw.isDead && getDist(ai, tw) < tw.range).length > 0;
+                if(underTower) { const tanking = minions.some(m => m.faction === ai.faction && !m.isDead && getDist(m, t) < 250); if(!tanking && ai.hp < ai.maxHp * 0.75) { ai.state='RETREAT'; ai.target=null; } }
+                // 저체력 도망
+                if(ai.hp < ai.maxHp * ai.fleeHpRatio) { ai.state='RETREAT'; ai.target=null; }
+            } else if(ai.state==='RETREAT') {
+                const sx=ai.faction==='BLUE'?300:2700, sy=ai.faction==='BLUE'?2700:300, dx=sx-ai.x, dy=sy-ai.y, d=Math.sqrt(dx*dx+dy*dy);
+                if(d<200) { ai.vx=0; ai.vy=0; ai.state='RECALLING'; ai.recallTimer=5; } else if(ai.effects.rooted<=0 && d>0) { ai.vx=(dx/d)*ai.speed; ai.vy=(dy/d)*ai.speed; ai.angle=Math.atan2(dy,dx); ai.x+=ai.vx*dt; ai.y+=ai.vy*dt; }
+            } else if(ai.state==='RECALLING') {
+                ai.recallTimer-=dt; if(ai.recallTimer<=0) { ai.hp=ai.maxHp; ai.state='GOTO_LANE'; ai.waypointIndex=1; }
+            } else if(ai.state==='SUPPORT_HEAL') {
+                // RED 사제 치유 서포트 로직
+                if(player.isDead) { ai.state='GOTO_LANE'; return; }
+                const lowAlly = [...heroes].filter(h => h.faction===ai.faction && !h.isDead && h.hp<h.maxHp*0.6 && getDist(ai,h)<ai.skills.q.range*1.1);
+                if(lowAlly.length>0 && ai.skills.q.cd<=0) {
+                    const healTarget = lowAlly.sort((a,b)=>a.hp/a.maxHp-b.hp/b.maxHp)[0];
+                    const dd=getDist(ai,healTarget);
+                    if(dd > ai.skills.q.range) { ai.vx=(healTarget.x-ai.x)/dd*ai.speed; ai.vy=(healTarget.y-ai.y)/dd*ai.speed; ai.x+=ai.vx*dt; ai.y+=ai.vy*dt; }
+                    else { useSkill(ai,'q',healTarget.x,healTarget.y); }
+                } else { const t=findClosestEnemy(ai,ai.searchRange); if(t){ai.target=t;ai.state='ATTACK';}else{ai.state='GOTO_LANE';} }
+            } else if(ai.state==='JUNGLE') {
+                const mob=monsters.find(m=>m.campIndex===(ai.faction==='BLUE'?0:1));
+                if(!mob||mob.isDead) { const t=findClosestEnemy(ai,ai.searchRange); if(t){ai.state='ATTACK'; ai.target=t;}else{ai.assignedLane=Math.random()>0.5?'TOP':'BOT'; ai.state='GOTO_LANE'; ai.waypointIndex=1;} return; }
+                const dx=mob.x-ai.x, dy=mob.y-ai.y, d=Math.sqrt(dx*dx+dy*dy);
+                if(ai.skills.q.cd<=0 && d<=ai.skills.q.range) useSkill(ai, 'q', mob.x, mob.y);
+                if(d>ai.attackRange) { if(ai.effects.rooted<=0 && d>0) { ai.vx=(dx/d)*ai.speed; ai.vy=(dy/d)*ai.speed; ai.angle=Math.atan2(dy,dx); ai.x+=ai.vx*dt; ai.y+=ai.vy*dt; } }
+                else { ai.vx=0; ai.vy=0; const n=performance.now()/1000; if(n-ai.lastAttackTime>=ai.attackCooldown) { ai.lastAttackTime=n; dealDamage(mob, ai.damage, ai); } }
+            } else if(ai.state==='FOLLOW') {
+                if(player.isDead) { ai.state = 'GOTO_LANE'; return; }
+                const dx = player.x - ai.x, dy = player.y - ai.y, dist = Math.sqrt(dx*dx+dy*dy);
+                if (dist > 250) { if(ai.effects.rooted<=0 && dist>0) { ai.vx=(dx/dist)*ai.speed; ai.vy=(dy/dist)*ai.speed; ai.angle=Math.atan2(dy,dx); ai.x+=ai.vx*dt; ai.y+=ai.vy*dt; } }
+                else { const t=findClosestEnemy(ai, ai.searchRange); if(t) {ai.target=t; ai.state='ATTACK';} else {ai.vx=0; ai.vy=0;} }
+            }
+        }
+
+        function runMinionAISystem(m, dt) {
+            if(m.isDead || gameState.gameOver) return;
+            let t = m.target; if(!t||t.isDead) { m.target = findMinionEnemy(m); t = m.target; }
+            if(t) {
+                const d = getDist(m, t);
+                if(d>m.attackRange) { if(d>0){ m.x+=(t.x-m.x)/d*m.speed*dt; m.y+=(t.y-m.y)/d*m.speed*dt; m.angle=Math.atan2(t.y-m.y,t.x-m.x); } }
+                else { const n=performance.now()/1000; if(n-m.lastAttackTime>=m.attackCooldown) { m.lastAttackTime=n; m.attackAnimTimer=0.15; if(m.isRanged) fireProjectile(m,t,m.damage,'MAGIC'); else {createSlashTrail(m.x,m.y,m.angle,m.faction==='BLUE'?'#34d399':'#f43f5e'); dealDamage(t,m.damage,m);} } }
+            } else {
+                if(m.isSummon) {
+                    if(m.owner && !m.owner.isDead) { const d=getDist(m,m.owner); if(d>150) { m.x+=(m.owner.x-m.x)/d*m.speed*dt; m.y+=(m.owner.y-m.y)/d*m.speed*dt; m.angle=Math.atan2(m.owner.y-m.y,m.owner.x-m.x); } } else m.hp=-1; 
+                } else {
+                    const path=WAYPOINTS[`${m.faction}_${m.lane}`], pt=path[m.waypointIndex], d=getDist(m,pt);
+                    if(d<40) { if(m.waypointIndex<path.length-1) m.waypointIndex++; else { const nx=nexuses.find(n=>n.faction!==(m.faction)); if(nx) m.target=nx; } }
+                    if(d>0) { m.x+=(pt.x-m.x)/d*m.speed*dt; m.y+=(pt.y-m.y)/d*m.speed*dt; m.angle=Math.atan2(pt.y-m.y, pt.x-m.x); }
+                }
+            }
+        }
+
+        function runMonsterSystem(mob, dt) {
+            if(mob.isDead || gameState.gameOver) return;
+            if(mob.type==='BOSS') {
+                mob.idleTimer+=dt;
+                if(mob.idleTimer>60) {
+                    const aliveHeroes = heroes.filter(h => !h.isDead);
+                    let targetHero = aliveHeroes.length > 0 ? aliveHeroes.reduce((prev, curr) => prev.level > curr.level ? prev : curr) : null;
+                    if(targetHero && !targetHero.isDead) {
+                        mob.target = targetHero; const d = getDist(mob,targetHero);
+                        if(d>mob.attackRange) { mob.x+=(targetHero.x-mob.x)/d*70*dt; mob.y+=(targetHero.y-mob.y)/d*70*dt; mob.angle=Math.atan2(targetHero.y-mob.y,targetHero.x-mob.x); }
+                        else { 
+                            const n=performance.now()/1000; 
+                            if(n-mob.lastAttackTime>=mob.attackCooldown){ 
+                                mob.lastAttackTime=n; mob.attackAnimTimer=0.15; 
+                                const r = Math.random();
+                                if(r<0.3) { aoeIndicators.push({x: targetHero.x, y: targetHero.y, radius: 80, timer: 0.5, maxTimer: 0.5, type: 'CRACK', color: '#b45309'}); getEnemiesInRadius(mob, targetHero.x, targetHero.y, 80).forEach(e => dealDamage(e, mob.damage*1.5, mob)); }
+                                else if(r<0.6) fireProjectile(mob, targetHero, mob.damage*1.2, 'MAGIC');
+                                else dealDamage(targetHero,mob.damage,mob); 
+                            } 
+                        } return;
+                    }
+                }
+            }
+
+            const ds = getDist(mob, {x:mob.spawnX, y:mob.spawnY});
+            if(ds > 500 && mob.type!=='BOSS') { mob.target=null; mob.hp=Math.min(mob.maxHp, mob.hp+mob.maxHp*0.1*dt); mob.x+=(mob.spawnX-mob.x)/ds*120*dt; mob.y+=(mob.spawnY-mob.y)/ds*120*dt; return; }
+            let t = mob.target; if(!t||t.isDead||getDist(mob,t)>500) { t=findClosestEnemy(mob, 250); mob.target=t; }
+            if(t) { const d=getDist(mob,t); if(d>mob.attackRange){ mob.x+=(t.x-mob.x)/d*80*dt; mob.y+=(t.y-mob.y)/d*80*dt; mob.angle=Math.atan2(t.y-mob.y,t.x-mob.x); } else { const n=performance.now()/1000; if(n-mob.lastAttackTime>=mob.attackCooldown){ mob.lastAttackTime=n; mob.attackAnimTimer=0.15; if(mob.type==='WRAITH') fireProjectile(mob,t,mob.damage,'MAGIC'); else dealDamage(t,mob.damage,mob); } } } else if(ds>10 && mob.type!=='BOSS') { mob.x+=(mob.spawnX-mob.x)/ds*80*dt; mob.y+=(mob.spawnY-mob.y)/ds*80*dt; }
+        }
+
+        function runTowerSystem(t) {
+            if(t.isDead || gameState.gameOver) return;
+            const n=performance.now()/1000; if(n-t.lastAttackTime<1.2) return;
+            const eR = [...heroes,...minions,...monsters].filter(e=>e.faction!==t.faction && !e.isDead && getDist(t,e)<=t.range);
+            if(eR.length>0) {
+                let tar = eR[0], mD = Infinity;
+                eR.forEach(e => { let sc=getDist(t,e); if(e.heroClass) { if(n-(e.lastCombatTime||0)<3.0) sc-=1000; else sc+=500; } if(sc<mD) {mD=sc; tar=e;} });
+                t.lastAttackTime=n; 
+                projectiles.push({x:t.x, y:t.y-120, target:tar, speed:480, damage:t.isGuard?180:90, attacker:t, faction:t.faction, type:'TOWER', radius:10});
+            }
+        }
+
+        function applyCirclePhysics() {
+            const ents = [...heroes,...minions,...monsters,...staticScenery];
+            for(let i=0; i<ents.length; i++) {
+                for(let j=i+1; j<ents.length; j++) {
+                    const e1=ents[i], e2=ents[j]; if(e1.isDead||e2.isDead) continue;
+                    if(e1.type==='bush'||e2.type==='bush'||e1.type==='lake'||e2.type==='lake') continue;
+                    const dx=e2.x-e1.x, dy=e2.y-e1.y, dist=Math.sqrt(dx*dx+dy*dy), min_d=(e1.radius||20)+(e2.radius||20);
+                    if(dist<min_d && dist>0) {
+                        const overlap=min_d-dist, nx=dx/dist, ny=dy/dist;
+                        if(e1.type&&(e1.type.includes('tree')||e1.type==='rock'||e1.type.includes('crystal'))) { e2.x+=nx*overlap; e2.y+=ny*overlap; }
+                        else if(e2.type&&(e2.type.includes('tree')||e2.type==='rock'||e2.type.includes('crystal'))) { e1.x-=nx*overlap; e1.y-=ny*overlap; }
+                        else { e1.x-=nx*(overlap/2); e1.y-=ny*(overlap/2); e2.x+=nx*(overlap/2); e2.y+=ny*(overlap/2); }
+                    }
+                }
+            }
+        }
+
+        function findClosestEnemy(ai, searchRange) {
+            let bestTarget = null, bestScore = Infinity;
+            const pt = [...heroes, ...minions, ...towers];
+            pt.forEach(t => {
+                if (t.faction !== ai.faction && t.faction !== 'NEUTRAL' && !t.isDead) {
+                    // 미니언 레인 필터 (영웅과 타워는 항상 타겟)
+                    if (!t.heroClass && !t.maxHp && t.lane && ai.assignedLane && t.lane !== ai.assignedLane && dist > 300) return;
+                    const dist = getDist(ai, t);
+                    if (dist <= searchRange) { let score = dist; if (t.isPlayer || t.heroClass) score -= 500; const hpRatio = t.hp / t.maxHp; if (hpRatio <= 0.3) score -= 300; if (score < bestScore) { bestScore = score; bestTarget = t; } }
+                }
+            }); return bestTarget;
+        }
+
+        function findMinionEnemy(m) {
+            let best = null, minDist = 220;
+            [...heroes, ...minions, ...towers].forEach(t => {
+                if (t.faction !== m.faction && !t.isDead && getDist(m, t) < minDist) {
+                    if (!t.lane || t.lane === m.lane || t.heroClass) { minDist = getDist(m, t); best = t; }
+                }
+            }); return best;
+        }
+
+        function update(dt) {
+            if(gameState.screen !== 'INGAME' || gameState.gameOver) return;
+            gameState.secondsElapsed += dt;
+            const mins = Math.floor(gameState.secondsElapsed/60), secs = Math.floor(gameState.secondsElapsed%60); document.getElementById('gameTimer').textContent = `${mins<10?'0':''}${mins}:${secs<10?'0':''}${secs}`;
+            
+            if(teamBuffs.BLUE > 0) teamBuffs.BLUE-=dt; if(teamBuffs.RED > 0) teamBuffs.RED-=dt;
+            const myBuff = teamBuffs[player.faction]; const bu = document.getElementById('bossBuffUI'); if(myBuff>0){ bu.classList.remove('hidden'); bu.classList.add('flex'); document.getElementById('bossBuffTimer').textContent=`${Math.floor(myBuff)}s`; } else { bu.classList.add('hidden'); bu.classList.remove('flex'); }
+
+            gameState.spawnTimer-=dt; if(gameState.spawnTimer<=0) { spawnMinionWave(); gameState.spawnTimer=gameState.spawnInterval; }
+            JUNGLE_CAMPS.forEach((c,i)=>{ if(c.respawnTimer>0){ c.respawnTimer-=dt; if(c.respawnTimer<=0) monsters.push({x:c.x,y:c.y,type:c.type,radius:32,faction:'NEUTRAL',hp:300,maxHp:300,damage:15,attackRange:75,attackCooldown:1.2,lastAttackTime:0,attackAnimTimer:0,isDead:false,campIndex:i,spawnX:c.x,spawnY:c.y,flashTimer:0,effects:baseEffects(),idleTimer:0}); } });
+            
+
+            // 보스 리스폰 처리
+            monsters.forEach(m => {
+                if (m.isDead && m.type === 'BOSS' && m.respawnTimer !== undefined) {
+                    m.respawnTimer -= dt;
+                    if (m.respawnTimer <= 0) {
+                        m.isDead = false; m.hp = m.maxHp;
+                        m.x = m.spawnX; m.y = m.spawnY;
+                        m.idleTimer = 0; m.target = null;
+                        showFloatingText(m.x, m.y - 80, '🐲 고룡 부활!', '#ef4444', 18);
+                    }
+                }
+            });
+
+            gameState.bossTimer -= dt;
+            if(gameState.bossTimer <= 0) {
+                gameState.bossTimer = 60;
+                const bosses = monsters.filter(m => m.type === 'BOSS' && !m.isDead);
+                if(bosses.length < 3) {
+                    const spawns = [{x:1500,y:1500}, {x:1500,y:800}, {x:1500,y:2200}];
+                    let loc = spawns.find(l => !bosses.some(b => getDist(b, l) < 200));
+                    if(loc) monsters.push({ x: loc.x, y: loc.y, type: 'BOSS', radius: 65, faction: 'NEUTRAL', hp: 4000, maxHp: 4000, damage: 80, attackRange: 120, attackCooldown: 1.5, lastAttackTime: 0, isDead: false, spawnX: loc.x, spawnY: loc.y, flashTimer: 0, idleTimer: 0, effects: baseEffects() });
+                }
+            }
+
+            const nowTime = performance.now() / 1000;
+            heroes.forEach(h => {
+                if(h.attackAnimTimer>0) h.attackAnimTimer-=dt;
+                if(h.skills.q.cd>0) h.skills.q.cd=Math.max(0,h.skills.q.cd-dt); if(h.skills.e.cd>0) h.skills.e.cd=Math.max(0,h.skills.e.cd-dt);
+                if(h.effects.stunned>0) h.effects.stunned=Math.max(0,h.effects.stunned-dt); if(h.effects.rooted>0) h.effects.rooted=Math.max(0,h.effects.rooted-dt);
+                if(h.effects.slowed>0) h.effects.slowed=Math.max(0,h.effects.slowed-dt); if(h.effects.speedBuff>0) h.effects.speedBuff=Math.max(0,h.effects.speedBuff-dt);
+                if(h.effects.beastPassive>0) h.effects.beastPassive=Math.max(0,h.effects.beastPassive-dt);
+                if(h.heroClass==='WARRIOR' && h.faction==='RED') { h.effects.regenCd+=dt; if(h.effects.regenCd>=5 && !h.isDead) h.hp=Math.min(h.maxHp, h.hp+20*dt); }
+                if(h.recallCd>0) h.recallCd-=dt;
+                
+                if(h.heroClass==='SUMMONER' && !h.isDead) {
+                    h.summonTimer+=dt;
+                    if(h.summonTimer>=15) {
+                        h.summonTimer=0; const act=minions.filter(m=>m.owner===h&&!m.isDead).length;
+                        if(act<3) { const tr=h.level>=11?3:(h.level>=6?2:1); minions.push({ x:h.x+(Math.random()*60-30), y:h.y+(Math.random()*60-30), vx:0, vy:0, radius:10+(tr*4), speed:180+(tr*10), hp:300*tr, maxHp:300*tr, damage:25*tr, attackRange:45, attackCooldown:1.0, lastAttackTime:0, faction:h.faction, isRanged:false, target:null, isDead:false, angle:0, flashTimer:0, owner:h, isSummon:true, tier:tr, effects:baseEffects() }); }
+                    }
+                }
+
+                if(!h.isDead) {
+                    if(nowTime - (h.lastCombatTime || 0) >= 5.0 && h.hp < h.maxHp) { h.hp = Math.min(h.maxHp, h.hp + h.maxHp*0.02*dt); h.regenAcc=(h.regenAcc||0)+h.maxHp*0.02*dt; if(h.regenAcc>=15){ showFloatingText(h.x,h.y-35,`+${Math.floor(h.regenAcc)} 💚`,'#10b981',11); h.regenAcc=0; } } else h.regenAcc = 0;
+                    const myNx = nexuses.find(n => n.faction === h.faction);
+                    if(myNx && getDist(h, myNx) <= 250 && h.hp < h.maxHp) { h.hp = Math.min(h.maxHp, h.hp + h.maxHp*0.1*dt); h.regenAcc=(h.regenAcc||0)+h.maxHp*0.1*dt; if(h.regenAcc>=30){ showFloatingText(h.x,h.y-45,`+${Math.floor(h.regenAcc)} 💚`,'#34d399',13); h.regenAcc=0; } }
+                }
+                
+                if(h.burnAura > 0 && !h.isDead) getEnemiesInRadius(h, h.x, h.y, 150).forEach(e => dealDamage(e, h.burnAura*dt, h, true));
+                h.inBush = false; staticScenery.forEach(s => { if(s.type==='bush' && getDist(h,s)<s.radius) h.inBush=true; });
+            });
+
+            if(!player.isDead) {
+                let mx=0, my=0;
+                if(player.effects.stunned<=0 && player.effects.rooted<=0) {
+                    if(keys.KeyW) my-=1; if(keys.KeyS) my+=1; if(keys.KeyA) mx-=1; if(keys.KeyD) mx+=1;
+                    if(mx!==0 && my!==0) { const l=Math.sqrt(mx*mx+my*my); mx/=l; my/=l; }
+                    if(joystick.active) { mx=joystick.inputX; my=joystick.inputY; }
+                }
+                let aSpd=player.speed; if(player.effects.speedBuff>0) aSpd*=1.5; if(player.effects.slowed>0) aSpd*=player.effects.slowPower; if(teamBuffs[player.faction]>0) aSpd*=1.1;
+                player.vx=mx*aSpd; player.vy=my*aSpd;
+                if(player.recalling && (mx!==0||my!==0)) { player.recalling=false; showFloatingText(player.x,player.y-45,"귀환 캔슬!","#ef4444"); }
+                player.x+=player.vx*dt; player.y+=player.vy*dt;
+                player.x=Math.max(player.radius, Math.min(MAP_SIZE-player.radius, player.x)); player.y=Math.max(player.radius, Math.min(MAP_SIZE-player.radius, player.y));
+                if(mx!==0||my!==0) player.angle=Math.atan2(my,mx);
+                if(player.recalling) { player.recallTimer-=dt; if(player.recallTimer<=0) { player.recalling=false; player.recallCd=60.0; player.x=player.faction==='BLUE'?300:2700; player.y=player.faction==='BLUE'?2700:300; player.hp=player.maxHp; } }
+
+                if(!player.recalling && player.effects.stunned<=0) {
+                    let target = findClosestEnemy(player, player.attackRange);
+                    if(target && nowTime - player.lastAttackTime >= player.attackCooldown) { player.lastAttackTime = nowTime; if(mx===0 && my===0) player.angle = Math.atan2(target.y-player.y, target.x-player.x); executeBasicAttack(player, target); }
+                }
+            } else { player.respawnTimer-=dt; if(player.respawnTimer<=0) { player.isDead=false; player.x=player.faction==='BLUE'?300:2700; player.y=player.faction==='BLUE'?2700:300; player.hp=player.maxHp; } }
+
+            heroes.forEach(h => { if(h.flashTimer>0) h.flashTimer-=dt; if(!h.isPlayer) {if(!h.isDead) { runHeroAISystem(h,dt); if(!h.aiItemTimer){h.aiItemTimer=0;} h.aiItemTimer-=dt; if(h.aiItemTimer<=0){h.aiItemTimer=8+Math.random()*5; runAIItemPurchase(h);} } else {h.respawnTimer-=dt; if(h.respawnTimer<=0){h.isDead=false; h.hp=h.maxHp; h.x=h.faction==='BLUE'?300:2700; h.y=h.faction==='BLUE'?2700:300; h.state='GOTO_LANE';}}} });
+            minions.forEach(m => { if(m.attackAnimTimer>0) m.attackAnimTimer-=dt; if(m.flashTimer>0) m.flashTimer-=dt; runMinionAISystem(m, dt); });
+            monsters.forEach(m => { if(m.attackAnimTimer>0) m.attackAnimTimer-=dt; if(m.flashTimer>0) m.flashTimer-=dt; runMonsterSystem(m, dt); });
+            towers.forEach(t => runTowerSystem(t));
+            applyCirclePhysics();
+
+            for(let i=projectiles.length-1; i>=0; i--) {
+                const p=projectiles[i];
+                if(p.type==='ARROW_Q') {
+                    p.x+=p.vx*dt; p.y+=p.vy*dt;
+                    [...heroes,...minions,...monsters].forEach(e=>{ if(e.faction!==p.faction && !e.isDead && !p.hitTargets.has(e) && getDist(e,p)<=p.radius+e.radius) { dealDamage(e,p.damage,p.attacker,true); p.hitTargets.add(e); } });
+                    if(p.x<0||p.x>MAP_SIZE||p.y<0||p.y>MAP_SIZE) projectiles.splice(i,1);
+                } else if(p.type==='BOLT_Q') {
+                    p.x+=p.vx*dt; p.y+=p.vy*dt; let hit=false;
+                    for(let e of [...heroes,...minions,...monsters]) { if(e.faction!==p.faction && !e.isDead && getDist(e,p)<=p.radius+e.radius) { getEnemiesInRadius(p.attacker,p.x,p.y,110).forEach(t=>dealDamage(t,p.damage,p.attacker,true)); aoeIndicators.push({x:p.x,y:p.y,radius:110,timer:0.3,maxTimer:0.3,type:'EXPLOSION',color:'#d946ef'}); hit=true; break; } }
+                    if(hit||p.x<0||p.x>MAP_SIZE||p.y<0||p.y>MAP_SIZE) projectiles.splice(i,1);
+                } else if(p.type==='CHAIN_E') {
+                    p.x+=p.vx*dt; p.y+=p.vy*dt; let hit=false;
+                    for(let e of [...heroes,...minions,...monsters]) { if(e.faction!==p.faction && !e.isDead && getDist(e,p)<=p.radius+e.radius) { dealDamage(e,p.damage,p.attacker,true); if(e.effects){e.effects.rooted=1.5;} hit=true; break; } }
+                    if(hit||p.x<0||p.x>MAP_SIZE||p.y<0||p.y>MAP_SIZE) projectiles.splice(i,1);
+                } else {
+                    const t=p.target; if(!t||t.isDead){ projectiles.splice(i,1); continue; }
+                    const dx=t.x-p.x, dy=(t.y-15)-p.y, d=Math.sqrt(dx*dx+dy*dy);
+                    if(d<t.radius){ dealDamage(t,p.damage,p.attacker,false); projectiles.splice(i,1); } else { p.x+=(dx/d)*p.speed*dt; p.y+=(dy/d)*p.speed*dt; }
+                }
+            }
+
+            for(let i=aoeIndicators.length-1; i>=0; i--) {
+                const ind=aoeIndicators[i]; ind.timer-=dt;
+                if(ind.type==='METEOR') { if(ind.timer<=0) { getEnemiesInRadius(ind.attacker,ind.x,ind.y,ind.radius).forEach(t=>dealDamage(t,ind.damage,ind.attacker,true)); for(let k=0;k<12;k++){ createHitSparks(ind.x+Math.cos(Math.random()*Math.PI*2)*Math.random()*ind.radius, ind.y+Math.sin(Math.random()*Math.PI*2)*Math.random()*ind.radius, '#ef4444'); } aoeIndicators.splice(i,1); } }
+                else if(ind.timer<=0) aoeIndicators.splice(i,1);
+            }
+
+            for(let i=slashTrails.length-1; i>=0; i--) { const s=slashTrails[i]; s.life-=dt; if(s.life<=0) slashTrails.splice(i,1); else {s.alpha=s.life/s.maxLife; s.scale=1+(1-s.alpha)*0.4;} }
+            for(let i=impactParticles.length-1; i>=0; i--) { const p=impactParticles[i]; p.life-=dt; if(p.life<=0) impactParticles.splice(i,1); else {p.x+=p.vx*dt; p.y+=p.vy*dt; p.alpha=p.life/p.maxLife;} }
+            for(let i=floatingTexts.length-1; i>=0; i--) { const f=floatingTexts[i]; f.y+=f.vy*dt; f.alpha-=0.7*dt; if(f.alpha<=0) floatingTexts.splice(i,1); }
+            for(let i=aimDecals.length-1; i>=0; i--) { const d=aimDecals[i]; d.radius+=(d.maxRadius-d.radius)*0.15; d.alpha-=0.05; if(d.alpha<=0) aimDecals.splice(i,1); }
+
+            camera.x += (player.x - camera.x) * 0.08; camera.y += (player.y - camera.y) * 0.08; camera.zoom += (camera.targetZoom - camera.zoom) * camera.lerpSpeed;
+            const hw=(canvas.width/2)/camera.zoom, hh=(canvas.height/2)/camera.zoom; camera.x=Math.max(-500+hw, Math.min(MAP_SIZE+500-hw, camera.x)); camera.y=Math.max(-500+hh, Math.min(MAP_SIZE+500-hh, camera.y));
+
+            for(let i=towers.length-1; i>=0; i--) if(towers[i].isDead) towers.splice(i,1);
+            for(let i=minions.length-1; i>=0; i--) if(minions[i].isDead) minions.splice(i,1);
+            for(let i=monsters.length-1; i>=0; i--) if(monsters[i].isDead && monsters[i].type!=='BOSS') monsters.splice(i,1);
+
+            updateHUD();
+        }
+
+        function updateHUD() {
+            document.getElementById('hudGoldText').textContent = `${Math.floor(player.gold)}G`;
+            const heroTemplate = FACTION_HERO_TEMPLATES[player.faction][player.heroClass];
+            const hnEl = document.getElementById('hudHeroName'); if(hnEl) hnEl.textContent = heroTemplate ? heroTemplate.name : player.heroClass;
+            document.getElementById('scoreBlue').textContent = gameState.scoreBlue; document.getElementById('scoreRed').textContent = gameState.scoreRed;
+            document.getElementById('hudLevelBadge').textContent = `Lv.${player.level}`; document.getElementById('hudKDA').textContent = `K:${player.kills} D:${player.deaths}`;
+            const hpP = player.hp/player.maxHp; const hb = document.getElementById('hudHpBar'); hb.style.width = `${hpP*100}%`; document.getElementById('hudHpText').textContent = `${Math.round(player.hp)} / ${player.maxHp}`;
+            if(hpP<=0.5) { hb.classList.remove('from-emerald-500','to-teal-400'); hb.classList.add('from-red-600','to-rose-500'); } else { hb.classList.add('from-emerald-500','to-teal-400'); hb.classList.remove('from-red-600','to-rose-500'); }
+            document.getElementById('hudXpBar').style.width = `${(player.xp/(player.level*180))*100}%`;
+            for(let i=0; i<6; i++) { const s=document.getElementById(`inv${i}`); if(player.inventory[i]){s.innerHTML=`${player.inventory[i].icon}${player.inventory[i].upgrade>0?`<div class="absolute -top-1.5 -right-1.5 bg-rose-600 text-white text-[8px] md:text-[9px] font-bold px-1 rounded-full">+${player.inventory[i].upgrade}</div>`:''}`; s.className="relative w-6 h-6 md:w-8 md:h-8 rounded bg-amber-500/20 border border-amber-500 flex items-center justify-center";} else {s.innerHTML=''; s.className="relative w-6 h-6 md:w-8 md:h-8 rounded bg-slate-900/60 border border-slate-800 flex items-center justify-center";} }
+            const mq=document.getElementById('maskSkillQ'); if(player.skills.q.cd>0){mq.textContent=`${player.skills.q.cd.toFixed(1)}s`; mq.classList.remove('hidden');} else mq.classList.add('hidden');
+            const me=document.getElementById('maskSkillE'); if(player.skills.e.cd>0){me.textContent=`${player.skills.e.cd.toFixed(1)}s`; me.classList.remove('hidden');} else me.classList.add('hidden');
+            const mR=document.getElementById('maskRecall'); if(player.recallCd>0){mR.textContent=`${player.recallCd.toFixed(0)}s`; mR.classList.remove('hidden');} else mR.classList.add('hidden');
+            renderHudAvatar();
+            const ro = document.getElementById('respawnOverlay'); if(player.isDead) { ro.classList.remove('hidden'); ro.classList.add('flex'); document.getElementById('respawnTimeText').textContent = Math.max(0, player.respawnTimer).toFixed(1); } else { ro.classList.add('hidden'); ro.classList.remove('flex'); }
+        }
+
+        function draw() {
+            ctx.fillStyle='#1b261f'; ctx.fillRect(0,0,canvas.width,canvas.height);
+            if(gameState.screen !== 'INGAME') return;
+
+            ctx.save(); ctx.translate(canvas.width/2, canvas.height/2); ctx.scale(camera.zoom, camera.zoom); ctx.translate(-camera.x, -camera.y);
+
+            const gs=150; ctx.strokeStyle='#27382c'; ctx.lineWidth=2.5;
+            for(let x=0;x<=MAP_SIZE;x+=gs){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,MAP_SIZE); ctx.stroke(); }
+            for(let y=0;y<=MAP_SIZE;y+=gs){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(MAP_SIZE,y); ctx.stroke(); }
+            ctx.fillStyle='rgba(46,68,51,0.4)'; for(let x=0;x<MAP_SIZE;x+=gs*2) for(let y=0;y<MAP_SIZE;y+=gs*2){ ctx.fillRect(x,y,gs,gs); ctx.fillRect(x+gs,y+gs,gs,gs); }
+
+            ctx.strokeStyle = 'rgba(255,255,255,0.15)'; ctx.lineWidth = 10; ctx.strokeRect(0, 0, MAP_SIZE, MAP_SIZE);
+            ctx.strokeStyle='rgba(251,191,36,0.015)'; ctx.lineWidth=20; ctx.beginPath(); ctx.moveTo(300,2700); ctx.lineTo(300,300); ctx.lineTo(2700,300); ctx.stroke(); ctx.beginPath(); ctx.moveTo(300,2700); ctx.lineTo(2700,2700); ctx.lineTo(2700,300); ctx.stroke();
+            towers.forEach(t => { if(!t.isDead) { ctx.beginPath(); ctx.arc(t.x, t.y, t.range, 0, Math.PI*2); ctx.fillStyle=t.faction==='BLUE'?'rgba(16,185,129,0.05)':'rgba(217,70,239,0.05)'; ctx.fill(); ctx.strokeStyle=t.faction==='BLUE'?'rgba(16,185,129,0.15)':'rgba(217,70,239,0.15)'; ctx.lineWidth=2; ctx.stroke(); } });
+
+            aimDecals.forEach(d=>{ ctx.save(); ctx.globalAlpha=Math.max(0,d.alpha); ctx.strokeStyle=d.color; ctx.lineWidth=2.5; ctx.beginPath(); ctx.arc(d.x,d.y,d.radius,0,Math.PI*2); ctx.stroke(); ctx.restore(); });
+
+            aoeIndicators.forEach(ind=>{
+                ctx.save();
+                if(ind.type==='METEOR') { ctx.fillStyle=ind.color; ctx.strokeStyle='#ef4444'; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(ind.x,ind.y,ind.radius,0,Math.PI*2); ctx.fill(); ctx.stroke(); const p=ind.timer/ind.maxTimer; ctx.strokeStyle='#fb923c'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(ind.x,ind.y,ind.radius*p,0,Math.PI*2); ctx.stroke(); if(p<0.4) { const fy=(ind.timer/0.4)*200; ctx.shadowBlur=20; ctx.shadowColor='#f97316'; ctx.fillStyle='#ea580c'; ctx.beginPath(); ctx.arc(ind.x,ind.y-fy,20,0,Math.PI*2); ctx.fill(); } }
+                else if(ind.type==='HEAL_RING') { ctx.strokeStyle=ind.color; ctx.lineWidth=4; ctx.globalAlpha=ind.timer/ind.maxTimer; ctx.beginPath(); ctx.arc(ind.x,ind.y,ind.radius*(1-ind.timer/ind.maxTimer),0,Math.PI*2); ctx.stroke(); }
+                else if(ind.type==='SHOCKWAVE') { ctx.strokeStyle=ind.color; ctx.lineWidth=3; ctx.globalAlpha=ind.timer/ind.maxTimer; ctx.beginPath(); ctx.arc(ind.x,ind.y,ind.radius*(1-ind.timer/ind.maxTimer),0,Math.PI*2); ctx.stroke(); }
+                else if(ind.type==='CRACK') { ctx.strokeStyle='#78350f'; ctx.lineWidth=3.5; ctx.globalAlpha=ind.timer/ind.maxTimer; ctx.beginPath(); ctx.moveTo(ind.x-40,ind.y); ctx.lineTo(ind.x+40,ind.y); ctx.moveTo(ind.x,ind.y-40); ctx.lineTo(ind.x,ind.y+40); ctx.moveTo(ind.x-20,ind.y-20); ctx.lineTo(ind.x+20,ind.y+20); ctx.stroke(); }
+                else if(ind.type==='GROUND_SLAM') { ctx.fillStyle = 'rgba(16, 185, 129, 0.3)'; ctx.beginPath(); ctx.arc(ind.x, ind.y, ind.radius, 0, Math.PI*2); ctx.fill(); ctx.strokeStyle = '#047857'; ctx.lineWidth = 4 + (ind.timer / ind.maxTimer) * 12; ctx.beginPath(); ctx.arc(ind.x, ind.y, ind.radius * (1 - ind.timer/ind.maxTimer), 0, Math.PI*2); ctx.stroke(); ctx.strokeStyle = '#064e3b'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(ind.x, ind.y); ctx.lineTo(ind.x-25, ind.y-25); ctx.moveTo(ind.x, ind.y); ctx.lineTo(ind.x+30, ind.y-10); ctx.moveTo(ind.x, ind.y); ctx.lineTo(ind.x-10, ind.y+30); ctx.stroke(); }
+                else if(ind.type==='EXPLOSION') { const prog=1-ind.timer/ind.maxTimer; ctx.globalAlpha=ind.timer/ind.maxTimer; const g2=ctx.createRadialGradient(ind.x,ind.y,0,ind.x,ind.y,ind.radius); g2.addColorStop(0,'rgba(255,255,255,0.9)'); g2.addColorStop(0.3,ind.color||'#d946ef'); g2.addColorStop(1,'transparent'); ctx.fillStyle=g2; ctx.beginPath(); ctx.arc(ind.x,ind.y,Math.max(5,ind.radius*Math.min(1,prog*2.5)),0,Math.PI*2); ctx.fill(); }
+                ctx.restore();
+            });
+
+            staticScenery.forEach(s=>{ if(s.type==='lake') { ctx.fillStyle='rgba(14, 165, 233, 0.4)'; ctx.beginPath(); ctx.ellipse(s.x,s.y,s.radius,s.radius*0.7,0,0,Math.PI*2); ctx.fill(); ctx.strokeStyle='rgba(56, 189, 248, 0.5)'; ctx.lineWidth=3; ctx.stroke(); } });
+
+            const rQ = [];
+            nexuses.forEach(n=>rQ.push({y:n.y, draw:()=>drawNexus(n)})); towers.forEach(t=>rQ.push({y:t.y, draw:()=>drawTower(t)}));
+            monsters.forEach(m=>{if(!m.isDead) rQ.push({y:m.y, draw:()=>drawMonster(m)})}); minions.forEach(m=>{if(!m.isDead) rQ.push({y:m.y, draw:()=>drawMinion(m)})});
+            heroes.forEach(h=>{if(!h.isDead && (!h.inBush || h.faction===player.faction || (h.inBush && player.inBush && getDist(h,player)<150))) rQ.push({y:h.y, draw:()=>drawHero(h)})}); 
+            staticScenery.forEach(s=>{ if(s.type!=='lake') rQ.push({y:s.y, draw:()=>drawSceneryObstacle(s)}); });
+            rQ.sort((a,b)=>a.y-b.y); rQ.forEach(i=>i.draw());
+
+            slashTrails.forEach(s=>{ ctx.save(); ctx.translate(s.x,s.y); ctx.rotate(s.angle); ctx.scale(s.scale,s.scale); ctx.globalAlpha=Math.max(0,s.alpha); ctx.strokeStyle=s.color; ctx.lineWidth=4.5; ctx.lineCap='round'; ctx.shadowBlur=12; ctx.shadowColor=s.color; ctx.beginPath(); ctx.arc(0,0,48,-Math.PI/2.5,Math.PI/2.5); ctx.stroke(); ctx.restore(); });
+            impactParticles.forEach(p=>{ ctx.save(); ctx.globalAlpha=Math.max(0,p.alpha); ctx.fillStyle=p.color; ctx.beginPath(); ctx.arc(p.x,p.y,p.radius,0,Math.PI*2); ctx.fill(); ctx.restore(); });
+            projectiles.forEach(p=>drawProjectile(p));
+
+            floatingTexts.forEach(ft=>{ 
+                ctx.save(); ctx.globalAlpha=Math.max(0,ft.alpha); ctx.font=`900 ${ft.size+4}px 'Inter', sans-serif`; ctx.textAlign='center';
+                ctx.strokeStyle = '#000000'; ctx.lineWidth = 3; ctx.strokeText(ft.text, ft.x, ft.y);
+                ctx.fillStyle=ft.color; ctx.fillText(ft.text,ft.x,ft.y); ctx.restore(); 
+            });
+
+            ctx.restore();
+            if(joystick.active) { ctx.save(); ctx.globalAlpha=0.45; ctx.fillStyle='#1e293b'; ctx.strokeStyle='#475569'; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(joystick.startX,joystick.startY,joystick.maxLimit,0,Math.PI*2); ctx.fill(); ctx.stroke(); ctx.globalAlpha=0.85; const dx=joystick.currentX-joystick.startX, dy=joystick.currentY-joystick.startY, d=Math.sqrt(dx*dx+dy*dy); let kx=joystick.startX, ky=joystick.startY; if(d>0){const l=Math.min(d,joystick.maxLimit), a=Math.atan2(dy,dx); kx+=Math.cos(a)*l; ky+=Math.sin(a)*l;} const g=ctx.createRadialGradient(kx-4,ky-4,2,kx,ky,22); g.addColorStop(0,'#818cf8'); g.addColorStop(1,'#3730a3'); ctx.fillStyle=g; ctx.strokeStyle='#c7d2fe'; ctx.lineWidth=1.5; ctx.beginPath(); ctx.arc(kx,ky,22,0,Math.PI*2); ctx.fill(); ctx.stroke(); ctx.restore(); }
+            
+            mCtx.fillStyle='#070b13'; mCtx.fillRect(0,0,mCanvas.width,mCanvas.height); mCtx.strokeStyle='rgba(255,255,255,0.08)'; mCtx.lineWidth=2; mCtx.beginPath(); mCtx.moveTo(0,mCanvas.height); mCtx.lineTo(0,0); mCtx.lineTo(mCanvas.width,0); mCtx.stroke(); mCtx.beginPath(); mCtx.moveTo(0,mCanvas.height); mCtx.lineTo(mCanvas.width,mCanvas.height); mCtx.lineTo(mCanvas.width,0); mCtx.stroke();
+            nexuses.forEach(n=>{ mCtx.fillStyle=n.faction==='BLUE'?'#10b981':'#a855f7'; mCtx.fillRect((n.x/MAP_SIZE)*mCanvas.width-4,(n.y/MAP_SIZE)*mCanvas.height-4,8,8); });
+            towers.forEach(t=>{ if(t.isDead)return; mCtx.fillStyle=t.faction==='BLUE'?'#34d399':'#d946ef'; const mx=(t.x/MAP_SIZE)*mCanvas.width, my=(t.y/MAP_SIZE)*mCanvas.height; mCtx.beginPath(); mCtx.moveTo(mx,my-3); mCtx.lineTo(mx+3,my+3); mCtx.lineTo(mx-3,my+3); mCtx.fill(); });
+            monsters.forEach(m=>{ if(m.isDead)return; mCtx.fillStyle=m.type==='BOSS'?'#ef4444':'#fbbf24'; mCtx.beginPath(); mCtx.arc((m.x/MAP_SIZE)*mCanvas.width,(m.y/MAP_SIZE)*mCanvas.height,m.type==='BOSS'?3:2,0,Math.PI*2); mCtx.fill(); });
+            minions.forEach(m=>{ if(m.isDead)return; mCtx.fillStyle=m.faction==='BLUE'?'#10b981':'#a855f7'; mCtx.beginPath(); mCtx.arc((m.x/MAP_SIZE)*mCanvas.width,(m.y/MAP_SIZE)*mCanvas.height,1,0,Math.PI*2); mCtx.fill(); });
+            heroes.forEach(h=>{ if(h.isDead)return; mCtx.strokeStyle='#fff'; mCtx.lineWidth=1; mCtx.fillStyle=h.faction==='BLUE'?'#059669':'#7c3aed'; mCtx.beginPath(); mCtx.arc((h.x/MAP_SIZE)*mCanvas.width,(h.y/MAP_SIZE)*mCanvas.height,h.isPlayer?4:3,0,Math.PI*2); mCtx.fill(); mCtx.stroke(); });
+        }
+
+        function drawSceneryObstacle(s) { ctx.save(); ctx.scale(1,0.5); if(s.type!=='bush'){ctx.fillStyle='rgba(0,0,0,0.5)'; ctx.beginPath(); ctx.arc(s.x,s.y*2,s.radius*1.3,0,Math.PI*2); ctx.fill();} ctx.restore(); if(s.type==='tree_oriens'){ ctx.strokeStyle='#2b1d0c'; ctx.lineWidth=10; ctx.lineCap='round'; ctx.beginPath(); ctx.moveTo(s.x,s.y); ctx.quadraticCurveTo(s.x-20,s.y-40,s.x-10,s.y-80); ctx.stroke(); ctx.lineWidth=5; ctx.beginPath(); ctx.moveTo(s.x-10,s.y-80); ctx.lineTo(s.x-30,s.y-110); ctx.moveTo(s.x-10,s.y-80); ctx.lineTo(s.x+20,s.y-105); ctx.stroke(); ctx.shadowBlur=10; ctx.shadowColor='#047857'; ctx.fillStyle='#065f46'; ctx.beginPath(); ctx.arc(s.x-30,s.y-115,35,0,Math.PI*2); ctx.arc(s.x+20,s.y-110,30,0,Math.PI*2); ctx.arc(s.x-5,s.y-130,40,0,Math.PI*2); ctx.fill(); ctx.fillStyle='#10b981'; ctx.beginPath(); ctx.arc(s.x-28,s.y-120,25,0,Math.PI*2); ctx.arc(s.x+18,s.y-115,20,0,Math.PI*2); ctx.arc(s.x-5,s.y-135,30,0,Math.PI*2); ctx.fill(); } else if(s.type==='crystal_ionia') { ctx.shadowBlur=15; ctx.shadowColor='#d946ef'; ctx.fillStyle='#a855f7'; ctx.beginPath(); ctx.moveTo(s.x,s.y-95); ctx.lineTo(s.x+22,s.y-50); ctx.lineTo(s.x+10,s.y); ctx.lineTo(s.x-10,s.y); ctx.lineTo(s.x-22,s.y-50); ctx.fill(); ctx.fillStyle='#f472b6'; ctx.beginPath(); ctx.moveTo(s.x,s.y-95); ctx.lineTo(s.x,s.y); ctx.lineTo(s.x-22,s.y-50); ctx.fill(); ctx.fillStyle='#7e22ce'; ctx.beginPath(); ctx.moveTo(s.x-20,s.y-40); ctx.lineTo(s.x-5,s.y); ctx.lineTo(s.x-35,s.y); ctx.fill(); } else if(s.type==='bush') { ctx.fillStyle='rgba(6, 78, 59, 0.7)'; ctx.beginPath(); ctx.ellipse(s.x,s.y,s.radius,s.radius*0.6,0,0,Math.PI*2); ctx.fill(); ctx.fillStyle='rgba(16, 185, 129, 0.4)'; const ofs = [[-10,-5],[10,-2],[0,8],[-15,5],[12,10]]; for(let k=0;k<5;k++){ ctx.beginPath(); ctx.arc(s.x+ofs[k][0], s.y+ofs[k][1]*0.6, 20+(k*2), 0, Math.PI*2); ctx.fill(); } } else { ctx.fillStyle='#475569'; ctx.beginPath(); ctx.ellipse(s.x,s.y-10,s.radius*0.9,s.radius*0.65,0,0,Math.PI*2); ctx.fill(); ctx.fillStyle='#334155'; ctx.beginPath(); ctx.ellipse(s.x,s.y-10,s.radius*0.9,s.radius*0.65,0,Math.PI/4,(Math.PI*5)/4); ctx.fill(); ctx.fillStyle='#15803d'; ctx.beginPath(); ctx.ellipse(s.x,s.y-20,s.radius*0.6,s.radius*0.3,0,0,Math.PI*2); ctx.fill(); } ctx.shadowBlur=0; }
+        function drawNexus(n) { ctx.save(); ctx.scale(1,0.5); ctx.fillStyle='rgba(0,0,0,0.55)'; ctx.beginPath(); ctx.arc(n.x,n.y*2,n.radius*1.3,0,Math.PI*2); ctx.fill(); ctx.restore(); const r=performance.now()*0.0025, by=Math.sin(r)*15; if(n.faction==='BLUE'){ ctx.fillStyle='#14532d'; ctx.strokeStyle='#34d399'; ctx.lineWidth=4; ctx.beginPath(); ctx.ellipse(n.x,n.y,n.radius,n.radius*0.5,0,0,Math.PI*2); ctx.fill(); ctx.stroke(); ctx.fillStyle='#064e3b'; ctx.beginPath(); ctx.ellipse(n.x,n.y-15,n.radius*0.75,n.radius*0.38,0,0,Math.PI*2); ctx.fill(); ctx.save(); ctx.shadowBlur=35; ctx.shadowColor='#059669'; ctx.fillStyle='#10b981'; ctx.beginPath(); ctx.moveTo(n.x,n.y-120+by); ctx.lineTo(n.x+40,n.y-70+by); ctx.lineTo(n.x,n.y-20+by); ctx.lineTo(n.x-40,n.y-70+by); ctx.fill(); ctx.fillStyle='#a7f3d0'; ctx.beginPath(); ctx.moveTo(n.x,n.y-120+by); ctx.lineTo(n.x,n.y-20+by); ctx.lineTo(n.x-40,n.y-70+by); ctx.fill(); ctx.restore(); } else { ctx.fillStyle='#3b0764'; ctx.strokeStyle='#d946ef'; ctx.lineWidth=4; ctx.beginPath(); ctx.ellipse(n.x,n.y,n.radius,n.radius*0.5,0,0,Math.PI*2); ctx.fill(); ctx.stroke(); ctx.fillStyle='#4c1d95'; ctx.beginPath(); ctx.ellipse(n.x,n.y-15,n.radius*0.75,n.radius*0.38,0,0,Math.PI*2); ctx.fill(); ctx.save(); ctx.shadowBlur=35; ctx.shadowColor='#d946ef'; ctx.fillStyle='#a855f7'; ctx.beginPath(); ctx.moveTo(n.x,n.y-130+by); ctx.lineTo(n.x+35,n.y-75+by); ctx.lineTo(n.x+15,n.y-15+by); ctx.lineTo(n.x-15,n.y-15+by); ctx.lineTo(n.x-35,n.y-75+by); ctx.fill(); ctx.fillStyle='#f472b6'; ctx.beginPath(); ctx.moveTo(n.x,n.y-130+by); ctx.lineTo(n.x-15,n.y-15+by); ctx.lineTo(n.x-35,n.y-75+by); ctx.fill(); ctx.restore(); } drawHealthBar(n.x,n.y-145,n.hp,n.maxHp,n.faction); }
+        function drawTower(t) { ctx.save(); ctx.scale(1,0.5); ctx.fillStyle='rgba(0,0,0,0.5)'; ctx.beginPath(); ctx.arc(t.x,t.y*2,t.radius*1.15,0,Math.PI*2); ctx.fill(); ctx.restore(); const p=10+Math.sin(performance.now()*0.005)*5; if(t.faction==='BLUE'){ ctx.fillStyle='#2f3e46'; ctx.strokeStyle='#10b981'; ctx.lineWidth=2.5; ctx.beginPath(); ctx.ellipse(t.x,t.y,t.radius,t.radius*0.45,0,0,Math.PI*2); ctx.fill(); ctx.stroke(); ctx.fillStyle='#4c5c68'; ctx.fillRect(t.x-t.radius*0.6,t.y-80,t.radius*1.2,80); ctx.fillStyle='#115e59'; ctx.beginPath(); ctx.moveTo(t.x-t.radius*0.8,t.y-80); ctx.quadraticCurveTo(t.x,t.y-110,t.x+t.radius*0.8,t.y-80); ctx.lineTo(t.x+t.radius*0.4,t.y-95); ctx.lineTo(t.x-t.radius*0.4,t.y-95); ctx.fill(); ctx.fillStyle='#2f3e46'; ctx.fillRect(t.x-t.radius*0.3,t.y-120,t.radius*0.6,30); ctx.save(); ctx.shadowBlur=p; ctx.shadowColor='#34d399'; ctx.fillStyle='#10b981'; ctx.beginPath(); ctx.arc(t.x,t.y-132,t.isGuard?15:13,0,Math.PI*2); ctx.fill(); ctx.restore(); } else { ctx.fillStyle='#3b0764'; ctx.strokeStyle='#d946ef'; ctx.lineWidth=2.5; ctx.beginPath(); ctx.ellipse(t.x,t.y,t.radius,t.radius*0.45,0,0,Math.PI*2); ctx.fill(); ctx.stroke(); ctx.fillStyle='#4c1d95'; ctx.fillRect(t.x-t.radius*0.55,t.y-100,t.radius*1.1,100); ctx.fillStyle='#d946ef'; ctx.fillRect(t.x-t.radius*0.1,t.y-90,t.radius*0.2,80); ctx.save(); ctx.shadowBlur=p; ctx.shadowColor='#d946ef'; ctx.fillStyle='#c084fc'; ctx.beginPath(); ctx.arc(t.x,t.y-125,t.isGuard?15:14,0,Math.PI*2); ctx.fill(); ctx.restore(); } drawHealthBar(t.x,t.y-155,t.hp,t.maxHp,t.faction); }
+        function drawMonster(m) { ctx.save(); ctx.translate(m.x, m.y); ctx.scale(1, 0.5); ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.beginPath(); ctx.arc(0, 0, m.radius * 1.2, 0, Math.PI*2); ctx.fill(); ctx.restore(); ctx.save(); ctx.translate(m.x, m.y - 15); if(m.attackAnimTimer > 0) { const prog = m.attackAnimTimer / 0.15; if(m.type==='WRAITH') ctx.translate(-prog*5, 0); else ctx.translate(prog*10, 0); } const fc = getFlashColor(m.flashTimer); if (m.type==='BOSS') { ctx.fillStyle = fc || '#1c1917'; ctx.beginPath(); ctx.ellipse(0, 0, 40, 25, 0, 0, Math.PI*2); ctx.fill(); ctx.fillStyle='#7f1d1d'; ctx.beginPath(); ctx.moveTo(-20, -10); ctx.lineTo(-40, -40); ctx.lineTo(-5, -20); ctx.fill(); ctx.beginPath(); ctx.moveTo(20, -10); ctx.lineTo(40, -40); ctx.lineTo(5, -20); ctx.fill(); ctx.fillStyle='#ef4444'; ctx.shadowBlur=20; ctx.shadowColor='#ef4444'; ctx.beginPath(); ctx.arc(-10,-5,6,0,Math.PI*2); ctx.arc(10,-5,6,0,Math.PI*2); ctx.fill(); ctx.shadowBlur=0; ctx.strokeStyle='#b91c1c'; ctx.lineWidth=4; ctx.beginPath(); ctx.moveTo(-30, 20); ctx.lineTo(-50, 40); ctx.moveTo(30, 20); ctx.lineTo(50, 40); ctx.stroke(); } else if(m.type==='GOLEM') { ctx.fillStyle = fc || '#334155'; ctx.beginPath(); ctx.arc(0, 0, 18, 0, Math.PI*2); ctx.fill(); ctx.fillStyle = '#f59e0b'; ctx.beginPath(); ctx.arc(0, -5, 4, 0, Math.PI*2); ctx.fill(); } else if (m.type==='WOLF') { ctx.fillStyle = fc || '#52525b'; ctx.beginPath(); ctx.moveTo(15, 0); ctx.lineTo(-15, -10); ctx.lineTo(-15, 10); ctx.fill(); ctx.fillStyle = '#ef4444'; ctx.beginPath(); ctx.arc(5, -3, 2, 0, Math.PI*2); ctx.fill(); } else if (m.type==='WRAITH') { ctx.fillStyle = fc || '#0ea5e9'; ctx.globalAlpha = 0.8; ctx.beginPath(); ctx.arc(0, -10, 14, Math.PI, 0); ctx.lineTo(14, 15); ctx.lineTo(-14, 15); ctx.fill(); ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(-5, -5, 3, 0, Math.PI*2); ctx.arc(5, -5, 3, 0, Math.PI*2); ctx.fill(); } else if (m.type==='LIZARD') { ctx.fillStyle = fc || '#65a30d'; ctx.beginPath(); ctx.ellipse(0, 0, 16, 10, 0, 0, Math.PI*2); ctx.fill(); ctx.fillStyle = '#fcd34d'; ctx.beginPath(); ctx.arc(10, -3, 2, 0, Math.PI*2); ctx.fill(); } else { ctx.fillStyle = fc || '#334155'; ctx.beginPath(); ctx.arc(0, 0, 15, 0, Math.PI*2); ctx.fill(); } ctx.restore(); drawHealthBar(m.x, m.y-(m.type==='BOSS'?65:45), m.hp, m.maxHp, 'NEUTRAL'); }
+        function drawMinion(m) {
+            ctx.save(); ctx.translate(m.x, m.y); ctx.scale(1, 0.5); ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.beginPath(); ctx.arc(0, 0, m.radius * 1.1, 0, Math.PI*2); ctx.fill(); ctx.restore();
+            ctx.save(); ctx.translate(m.x, m.y - 12); if (m.target || m.vx!==0 || m.vy!==0) ctx.translate(0, -Math.abs(Math.sin(performance.now()*0.02))*3); ctx.rotate(m.angle);
+            if (m.attackAnimTimer > 0) ctx.translate(Math.sin(m.attackAnimTimer/0.15*Math.PI)*10, 0); const fc = getFlashColor(m.flashTimer);
+            if(m.isSummon) {
+                ctx.fillStyle = fc || '#1e293b'; ctx.beginPath(); ctx.arc(0, 0, m.radius, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = '#8b5cf6'; ctx.beginPath(); ctx.arc(m.radius/2, -m.radius/3, 2+m.tier, 0, Math.PI*2); ctx.fill();
+            } else {
+                const isB = m.faction === 'BLUE'; ctx.fillStyle = fc || (isB ? '#059669' : '#7c3aed'); ctx.beginPath(); ctx.moveTo(8, 5); ctx.lineTo(-12, 10); ctx.lineTo(-15, 0); ctx.lineTo(-12, -10); ctx.lineTo(8, -5); ctx.fill();
+                ctx.save(); if (m.attackAnimTimer > 0) { const p = m.attackAnimTimer/0.15; if (m.isRanged) ctx.translate(-p*6, 0); else ctx.translate(p*10, 0); }
+                if(m.isRanged) { ctx.strokeStyle = '#78350f'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(0, 12); ctx.lineTo(25, 12); ctx.stroke(); ctx.fillStyle = isB ? '#34d399' : '#d946ef'; ctx.beginPath(); ctx.arc(25, 12, 4, 0, Math.PI*2); ctx.fill(); } else { ctx.strokeStyle = '#94a3b8'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-5, 10); ctx.lineTo(20, 10); ctx.stroke(); ctx.fillStyle = '#e2e8f0'; ctx.beginPath(); ctx.moveTo(20, 10); ctx.lineTo(26, 12); ctx.lineTo(20, 14); ctx.fill(); ctx.fillStyle = isB ? '#34d399' : '#d946ef'; ctx.beginPath(); ctx.ellipse(8, -8, 4, 8, 0, 0, Math.PI*2); ctx.fill(); } ctx.restore();
+                ctx.fillStyle = fc || '#fcd34d'; ctx.beginPath(); ctx.arc(2, 0, 6, 0, Math.PI*2); ctx.fill(); ctx.fillStyle = fc || '#1e293b'; ctx.beginPath(); ctx.arc(2, 0, 6.5, -Math.PI/2, Math.PI/2, true); ctx.fill();
+            }
+            ctx.restore(); drawMiniHealthBar(m.x, m.y-25, m.hp, m.maxHp);
+        }
+        function drawHero(h) { ctx.save(); if(h.inBush && h!==player) ctx.globalAlpha=0.4; ctx.scale(1,0.5); ctx.fillStyle='rgba(0,0,0,0.6)'; ctx.beginPath(); ctx.ellipse(h.x,h.y*2,h.radius*1.1,h.radius*0.9,0,0,Math.PI*2); ctx.fill(); ctx.restore(); ctx.strokeStyle=h.faction==='BLUE'?'#10b981':'#a855f7'; ctx.lineWidth=2.5; ctx.beginPath(); ctx.arc(h.x,h.y,h.radius,0,Math.PI*2); ctx.stroke(); if(h.recalling || h.state==='RECALLING') { const r=(performance.now()*0.005)%(Math.PI*2); ctx.save(); ctx.translate(h.x,h.y); ctx.scale(1,0.5); ctx.rotate(r); ctx.strokeStyle=h.faction==='BLUE'?'#34d399':'#d946ef'; ctx.lineWidth=4; ctx.beginPath(); ctx.arc(0,0,h.radius*1.3,0,Math.PI/1.5); ctx.stroke(); ctx.beginPath(); ctx.arc(0,0,h.radius*1.3,Math.PI,Math.PI*1.6); ctx.stroke(); ctx.restore(); } ctx.save(); ctx.translate(h.x, h.y-14); if(h.vx!==0||h.vy!==0) ctx.translate(0, -Math.abs(Math.sin(performance.now()*0.015))*4); ctx.rotate(h.angle); if(h.attackAnimTimer>0) { const prog = h.attackAnimTimer/0.15; ctx.translate(Math.sin(prog*Math.PI)*12, 0); } const fc=getFlashColor(h.flashTimer), bc=h.faction==='BLUE'?'#064e3b':'#3b0764', tc=h.faction==='BLUE'?'#10b981':'#a855f7';
+            if(h.heroClass==='SUMMONER') {
+                const t=performance.now()*0.002; ctx.fillStyle=fc||'#0f172a'; ctx.beginPath(); ctx.arc(Math.cos(t)*4, Math.sin(t*1.5)*4, h.radius*0.8, 0, Math.PI*2); ctx.fill(); ctx.fillStyle='#334155'; ctx.beginPath(); ctx.arc(Math.cos(t+2)*5, Math.sin(t*1.1+2)*5, h.radius*0.6, 0, Math.PI*2); ctx.fill(); ctx.fillStyle='#8b5cf6'; ctx.beginPath(); ctx.arc(6, -3, 3, 0, Math.PI*2); ctx.arc(6, 3, 3, 0, Math.PI*2); ctx.fill();
+            } else {
+                ctx.fillStyle=fc||bc; ctx.beginPath(); ctx.moveTo(8,6); ctx.lineTo(-22,16); ctx.lineTo(-28,0); ctx.lineTo(-22,-16); ctx.lineTo(8,-6); ctx.fill(); ctx.strokeStyle=tc; ctx.lineWidth=2; ctx.stroke(); ctx.fillStyle=fc||tc; ctx.beginPath(); ctx.arc(2,-12,7,0,Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(2,12,7,0,Math.PI*2); ctx.fill(); ctx.save(); if(h.attackAnimTimer>0) { const p = h.attackAnimTimer/0.15; if(h.heroClass==='WARRIOR') { ctx.translate(10, 14); ctx.rotate(-p*Math.PI/1.5); ctx.translate(-10, -14); } else if(h.heroClass==='MAGE') { ctx.translate(10, 15); ctx.rotate(p*Math.PI/3); ctx.translate(-10, -15); } else if(h.heroClass==='HUNTER') { ctx.translate(-p*8, 0); } }
+                if(h.heroClass==='WARRIOR') { ctx.fillStyle='#cbd5e1'; ctx.strokeStyle='#64748b'; ctx.lineWidth=1.5; ctx.beginPath(); ctx.moveTo(0,14); ctx.lineTo(35,14); ctx.lineTo(42,17); ctx.lineTo(35,20); ctx.lineTo(0,20); ctx.fill(); ctx.stroke(); ctx.fillStyle='#0f172a'; ctx.fillRect(2,11,4,12); } else if(h.heroClass==='MAGE') { ctx.strokeStyle='#78350f'; ctx.lineWidth=4; ctx.lineCap='round'; ctx.beginPath(); ctx.moveTo(-5,15); ctx.lineTo(35,15); ctx.stroke(); ctx.shadowBlur=12; ctx.shadowColor=tc; ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(36,15,6,0,Math.PI*2); ctx.fill(); ctx.shadowBlur=0; } else if(h.heroClass==='HUNTER') { ctx.strokeStyle='#b45309'; ctx.lineWidth=3.5; ctx.beginPath(); ctx.arc(15,0,22,-Math.PI/2.3,Math.PI/2.3); ctx.stroke(); ctx.strokeStyle='rgba(255,255,255,0.7)'; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(15+Math.cos(-Math.PI/2.3)*22, Math.sin(-Math.PI/2.3)*22); ctx.lineTo(15+Math.cos(Math.PI/2.3)*22, Math.sin(Math.PI/2.3)*22); ctx.stroke(); }
+                ctx.restore(); ctx.fillStyle=fc||'#fcd34d'; ctx.beginPath(); ctx.arc(4,0,9,0,Math.PI*2); ctx.fill(); ctx.fillStyle=fc||'#1e293b'; ctx.beginPath(); ctx.arc(4,0,9.5,-Math.PI/2+0.2,Math.PI/2-0.2,true); ctx.fill();
+            }
+            ctx.restore(); if(h.effects.stunned>0) { const t=performance.now()*0.01; ctx.save(); ctx.translate(h.x,h.y-45); ctx.fillStyle='#fbbf24'; for(let k=0;k<3;k++) { ctx.beginPath(); ctx.arc(Math.cos(t+(k*Math.PI*2)/3)*16, Math.sin(t+(k*Math.PI*2)/3)*6, 3, 0, Math.PI*2); ctx.fill(); } ctx.restore(); } if(h.effects.rooted>0){ ctx.save(); ctx.scale(1,0.5); ctx.strokeStyle='#fb7185'; ctx.lineWidth=4; ctx.beginPath(); ctx.arc(h.x,h.y*2,h.radius*1.2,0,Math.PI*2); ctx.stroke(); ctx.restore(); } drawHealthBar(h.x,h.y-45,h.hp,h.maxHp,h.faction); ctx.font='bold 9px monospace'; ctx.fillStyle='#fff'; ctx.textAlign='center'; ctx.fillText(`Lv.${h.level} ${h.isPlayer?'YOU':h.heroClass}`, h.x, h.y-56); 
+            if(h.recalling || h.state==='RECALLING') { ctx.fillStyle='#60a5fa'; ctx.font='bold 14px monospace'; ctx.fillText(`${(h.recallTimer||0).toFixed(1)}s`, h.x, h.y-75); }
+        }
+        function drawProjectile(p) { ctx.save(); ctx.translate(p.x,p.y); const c=p.faction==='BLUE'?'#10b981':'#d946ef'; ctx.shadowBlur=12; ctx.shadowColor=c; if(p.type==='TOWER'){ const g=ctx.createRadialGradient(0,0,2,0,0,11); g.addColorStop(0,'#fff'); g.addColorStop(1,'#fbbf24'); ctx.fillStyle=g; ctx.beginPath(); ctx.arc(0,0,11,0,Math.PI*2); ctx.fill(); } else if(p.type==='ARROW'||p.type==='ARROW_Q') { ctx.strokeStyle=p.type==='ARROW_Q'?'#34d399':'#e2e8f0'; ctx.lineWidth=p.type==='ARROW_Q'?4:2.5; ctx.beginPath(); ctx.moveTo(-12,0); ctx.lineTo(6,0); ctx.stroke(); ctx.fillStyle='#34d399'; ctx.beginPath(); ctx.moveTo(6,0); ctx.lineTo(1,-4); ctx.lineTo(1,4); ctx.fill(); } else if(p.type==='CHAIN_E') { ctx.strokeStyle='#f43f5e'; ctx.lineWidth=4; ctx.beginPath(); ctx.moveTo(-10,0); ctx.lineTo(10,0); ctx.stroke(); ctx.fillStyle='#fda4af'; ctx.beginPath(); ctx.arc(0,0,6,0,Math.PI*2); ctx.fill(); } else { const g=ctx.createRadialGradient(-2,-2,2,0,0,8); g.addColorStop(0,'#fff'); g.addColorStop(0.4,c); g.addColorStop(1,'#020617'); ctx.fillStyle=g; ctx.beginPath(); ctx.arc(0,0,8,0,Math.PI*2); ctx.fill(); } ctx.restore(); }
+        function drawHealthBar(x,y,hp,maxHp,f) { ctx.fillStyle='rgba(15,23,42,0.85)'; ctx.fillRect(x-30,y,60,5); const g=ctx.createLinearGradient(x-30,y,x+30,y); if(hp/maxHp<=0.5){g.addColorStop(0,'#ef4444');g.addColorStop(1,'#b91c1c');}else if(f==='BLUE'){g.addColorStop(0,'#10b981');g.addColorStop(1,'#34d399');} else if(f==='RED'){g.addColorStop(0,'#7c3aed');g.addColorStop(1,'#d946ef');} else{g.addColorStop(0,'#f59e0b');g.addColorStop(1,'#fbbf24');} ctx.fillStyle=g; ctx.fillRect(x-30,y,60*Math.max(0,hp/maxHp),5); ctx.strokeStyle='#020617'; ctx.lineWidth=1; ctx.strokeRect(x-30,y,60,5); }
+        function drawMiniHealthBar(x, y, hp, maxHp) { const bw = 30; const barX = x - bw/2; ctx.fillStyle = 'rgba(0, 0, 0, 0.7)'; ctx.fillRect(barX, y, bw, 3); ctx.fillStyle = '#10b981'; ctx.fillRect(barX, y, bw * Math.max(0, hp / maxHp), 3); }
+
+        function renderHudAvatar() { const hc=document.getElementById('hudAvatarCanvas'); if(!hc)return; const hx=hc.getContext('2d'); hc.width=48; hc.height=48; hx.fillStyle='#0f172a'; hx.fillRect(0,0,48,48); hx.save(); hx.translate(24,24); hx.fillStyle=FACTION_HERO_TEMPLATES[player.faction][player.heroClass].color; hx.beginPath(); hx.arc(0,0,16,0,Math.PI*2); hx.fill(); hx.fillStyle='#fff'; hx.beginPath(); hx.arc(-5,-2,3,0,Math.PI*2); hx.arc(5,-2,3,0,Math.PI*2); hx.fill(); hx.restore(); }
+
+        function resizeCanvas() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; mCanvas.width = 112; mCanvas.height = 112; }
+        window.addEventListener('keydown', (e) => { if(gameState.screen!=='INGAME'||gameState.gameOver)return; if(e.code in keys)keys[e.code]=true; if(e.code==='KeyP')toggleShop(); if(e.code==='KeyB')startRecall(); if(e.code==='KeyQ')triggerPlayerSkill('q'); if(e.code==='KeyE')triggerPlayerSkill('e'); });
+        window.addEventListener('keyup', (e) => { if(gameState.screen==='INGAME'&&e.code in keys)keys[e.code]=false; });
+        window.addEventListener('blur', () => { for (let k in keys) keys[k] = false; joystick.active = false; joystick.inputX = 0; joystick.inputY = 0; });
+        window.addEventListener('wheel', (e) => { if(gameState.screen==='INGAME'&&!gameState.gameOver) camera.targetZoom=Math.max(camera.minZoom, Math.min(camera.maxZoom, camera.targetZoom+(e.deltaY<0?0.08:-0.08))); }, {passive:true});
+        canvas.addEventListener('mousedown', (e) => { if(gameState.screen!=='INGAME'||gameState.gameOver||(gameState.platform==='MOBILE'&&e.clientX<canvas.width*0.5))return; aimDecals.push({x:(e.clientX-canvas.width/2)/camera.zoom+camera.x, y:(e.clientY-canvas.height/2)/camera.zoom+camera.y, alpha:1, radius:10, maxRadius:55, color:player.faction==='BLUE'?'#10b981':'#d946ef'}); });
+        
+        canvas.addEventListener('touchstart', (e) => {
+            if(gameState.screen!=='INGAME'||gameState.gameOver)return; 
+            for(let i=0;i<e.changedTouches.length;i++){
+                const t=e.changedTouches[i]; 
+                if(t.clientX<canvas.width*0.5) {
+                    if(!joystick.active){joystick.active=true; joystick.touchId=t.identifier; joystick.startX=t.clientX; joystick.startY=t.clientY; joystick.currentX=t.clientX; joystick.currentY=t.clientY; joystick.inputX=0; joystick.inputY=0;}
+                }
+            } 
+            if(e.touches.length===2){touchZoom.active=true; touchZoom.startDistance=Math.sqrt((e.touches[0].clientX-e.touches[1].clientX)**2+(e.touches[0].clientY-e.touches[1].clientY)**2); touchZoom.startZoom=camera.zoom;} 
+        });
+        canvas.addEventListener('touchmove', (e) => { 
+            if(gameState.screen!=='INGAME'||gameState.gameOver)return; 
+            if(touchZoom.active&&e.touches.length===2){const d=Math.sqrt((e.touches[0].clientX-e.touches[1].clientX)**2+(e.touches[0].clientY-e.touches[1].clientY)**2); if(touchZoom.startDistance>0)camera.targetZoom=Math.max(camera.minZoom,Math.min(camera.maxZoom,touchZoom.startZoom*(d/touchZoom.startDistance)));} 
+            if(joystick.active){for(let i=0;i<e.touches.length;i++){const t=e.touches[i]; if(t.identifier===joystick.touchId){joystick.currentX=t.clientX; joystick.currentY=t.clientY; const dx=t.clientX-joystick.startX,dy=t.clientY-joystick.startY,d=Math.sqrt(dx*dx+dy*dy); if(d===0){joystick.inputX=0;joystick.inputY=0;}else{const l=Math.min(d,joystick.maxLimit),a=Math.atan2(dy,dx); joystick.inputX=(Math.cos(a)*l)/joystick.maxLimit; joystick.inputY=(Math.sin(a)*l)/joystick.maxLimit;}}}} 
+        });
+        canvas.addEventListener('touchend', (e) => { if(gameState.screen!=='INGAME')return; for(let i=0;i<e.changedTouches.length;i++){const t=e.changedTouches[i]; if(joystick.active&&t.identifier===joystick.touchId){joystick.active=false; joystick.touchId=null; joystick.inputX=0; joystick.inputY=0;}} if(e.touches.length<2)touchZoom.active=false; });
+
+        function startGame() { document.getElementById('titleScreen').classList.add('hidden'); document.getElementById('gameHUD').classList.remove('hidden'); document.getElementById('gameHUD').classList.add('flex'); gameState.screen='INGAME'; resizeCanvas(); setupBattlefield(); updateHUD(); }
+        function exitGame() { document.getElementById('gameHUD').classList.add('hidden'); document.getElementById('gameHUD').classList.remove('flex'); document.getElementById('gameOverScreen').classList.add('hidden'); document.getElementById('titleScreen').classList.remove('hidden'); if(!document.getElementById('shopUI').classList.contains('hidden'))document.getElementById('shopUI').classList.add('hidden'); gameState.screen='TITLE'; }
+        function restartGame() { setupBattlefield(); }
+
+        function loop(t) { const dt=Math.min(0.1, (t-lastTime)/1000); lastTime=t; update(dt); draw(); requestAnimationFrame(loop); }
+        window.onload = () => { resizeCanvas(); selectPlatform('PC'); selectFaction('BLUE'); selectHero('WARRIOR'); requestAnimationFrame(loop); };
+    </script>
+</body>
+</html>
