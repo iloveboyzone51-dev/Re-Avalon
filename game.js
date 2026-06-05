@@ -1210,6 +1210,20 @@ function draw(){
     ctx.restore(); drawMinimap();
 }
 
+function renderInventory(){
+    const inv=document.getElementById('inventorySlots');
+    inv.innerHTML='';
+    for(let i=0;i<8;i++){
+        let d=document.createElement('div');
+        d.className='w-4 h-4 md:w-8 md:h-8 bg-slate-900 border border-slate-700 rounded flex items-center justify-center text-[8px] md:text-xs relative group';
+        if(player&&i<player.inventory.length){
+            let item=player.inventory[i];
+            d.innerHTML=`<div class="cursor-pointer text-[10px] md:text-base">${item.icon}</div><div class="absolute -top-1 -right-1 bg-amber-500 text-slate-900 text-[6px] md:text-[9px] font-black px-0.5 md:px-1 rounded-full">+${item.upgrade}</div>`;
+        }
+        inv.appendChild(d);
+    }
+}
+
 function drawMinimap(){
     mCanvas.width=mCanvas.clientWidth; mCanvas.height=mCanvas.clientHeight; mCtx.fillStyle='#0f172a'; mCtx.fillRect(0,0,mCanvas.width,mCanvas.height);
     let sx=mCanvas.width/MAP_SIZE, sy=mCanvas.height/MAP_SIZE;

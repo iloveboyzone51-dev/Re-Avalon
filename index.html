@@ -169,8 +169,8 @@
     <!-- 상단 HUD -->
     <div class="flex justify-between items-start pointer-events-auto w-full relative">
 
-        <!-- 좌상단: 플레이어 정보 + 미니맵 -->
-        <div class="flex flex-col gap-1.5 z-20">
+        <!-- 좌상단: 플레이어 정보 -->
+        <div class="flex flex-col gap-1 z-20">
             <!-- 캐릭터 정보 카드 -->
             <div class="flex items-center gap-2 bg-slate-950/90 border border-slate-800 rounded-xl p-2 shadow-2xl backdrop-blur-md">
                 <div class="w-36">
@@ -195,21 +195,12 @@
                 </div>
             </div>
 
-            <!-- 미니맵 -->
-            <div class="bg-slate-950/90 border border-slate-800 rounded-xl p-1.5 shadow-2xl backdrop-blur-md w-20 md:w-36 mt-1 pointer-events-auto">
-                <div class="flex justify-between items-center w-full mb-1 px-0.5">
-                    <span class="text-[7px] text-slate-400 font-bold tracking-widest uppercase">MINIMAP</span>
-                    <span id="gameTimerMini" class="text-[7px] text-amber-400 font-mono font-bold">00:00</span>
-                </div>
-                <div class="relative w-full h-20 md:h-32 bg-slate-900/80 border border-slate-800 rounded overflow-hidden">
-                    <canvas id="minimapCanvas" class="w-full h-full"></canvas>
-                </div>
-            </div>
+            <!-- 미니맵은 아래로 이동 -->
         </div>
 
-        <!-- 중앙 상단: 스코어 + 타이머 -->
-        <div class="absolute left-1/2 -translate-x-1/2 top-0 flex flex-col items-center gap-1 mt-14 md:mt-0">
-            <div class="bg-slate-950/90 border border-slate-800 rounded-2xl px-3 md:px-5 py-1.5 text-center shadow-2xl flex items-center gap-3 md:gap-6 text-white backdrop-blur-md scale-90 md:scale-100 origin-top">
+        <!-- 중앙 상단: 스코어 + 타이머 (절대 위치 제거하여 겹침 방지) -->
+        <div class="flex flex-col items-center gap-1 shrink-0 z-10 pt-1">
+            <div class="bg-slate-950/90 border border-slate-800 rounded-2xl px-2.5 md:px-5 py-1 text-center shadow-2xl flex items-center gap-2 md:gap-6 text-white backdrop-blur-md scale-90 md:scale-100 origin-top">
                 <div class="text-emerald-400 font-black text-lg flex flex-col leading-none">
                     <span class="text-[7px] text-slate-400 tracking-widest font-bold">BLUE</span>
                     <span id="scoreBlue">0</span>
@@ -239,9 +230,22 @@
                     <span id="hudGoldText" class="bg-slate-950 text-amber-400 font-mono px-1.5 py-0.5 rounded text-[9px]">0G</span>
                 </button>
             </div>
-            <!-- 인벤토리 슬롯 -->
-            <div class="flex gap-1 bg-slate-950/80 p-1 rounded-xl border border-slate-800" id="inventorySlots">
+            <!-- 인벤토리 슬롯 (축소 및 래핑) -->
+            <div class="flex flex-wrap justify-end gap-0.5 bg-slate-950/80 p-1 rounded-lg border border-slate-800 max-w-[100px] md:max-w-none" id="inventorySlots">
                 <!-- JS가 채움 -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- 두번째 줄: 미니맵 (좌측) -->
+    <div class="flex justify-start pointer-events-auto w-full mt-1">
+        <div class="bg-slate-950/90 border border-slate-800 rounded-xl p-1.5 shadow-2xl backdrop-blur-md w-20 md:w-36 z-20">
+            <div class="flex justify-between items-center w-full mb-1 px-0.5">
+                <span class="text-[7px] text-slate-400 font-bold tracking-widest uppercase">MINIMAP</span>
+                <span id="gameTimerMini" class="text-[7px] text-amber-400 font-mono font-bold">00:00</span>
+            </div>
+            <div class="relative w-full h-20 md:h-32 bg-slate-900/80 border border-slate-800 rounded overflow-hidden">
+                <canvas id="minimapCanvas" class="w-full h-full"></canvas>
             </div>
         </div>
     </div>
@@ -279,7 +283,13 @@
                 <!-- JS가 채움 -->
             </div>
             
-            <div class="flex flex-col gap-2 items-end">
+            <div class="flex flex-col gap-1.5 items-end">
+                <!-- 오토 스킬 토글 (초소형 버튼으로 맨 위에 배치) -->
+                <button onmousedown="toggleAutoSkill()" ontouchstart="toggleAutoSkill(); event.preventDefault();" id="btnAutoSkill" class="flex items-center justify-center gap-1 bg-amber-500 text-slate-900 font-black text-[8px] px-2 py-1 rounded-full shadow border border-amber-300 active:scale-95 transition-transform mb-1">
+                    <span class="text-[8px]">🤖</span>
+                    <span id="txtAutoSkill">AUTO ON</span>
+                </button>
+                
                 <!-- 고유 패시브/액티브 2 -->
                 <button onmousedown="triggerSkill(2)" ontouchstart="triggerSkill(2); event.preventDefault();" class="skill-btn relative overflow-hidden bg-gradient-to-br from-slate-800 to-slate-900 border-2 border-indigo-500/50 shadow-lg" style="width:56px;height:56px;">
                     <span id="txtSkill2Icon" class="text-lg">💫</span>
@@ -292,12 +302,6 @@
                     <span id="txtSkill1Icon" class="text-lg">✨</span>
                     <span class="text-[7px] text-emerald-400 font-bold" id="txtSkill1Type">자동</span>
                     <div id="maskSkill1" class="hidden absolute inset-0 bg-slate-950/85 flex items-center justify-center font-mono font-black text-amber-400 text-[10px] rounded-full"></div>
-                </button>
-                
-                <!-- 오토 스킬 토글 -->
-                <button onmousedown="toggleAutoSkill()" ontouchstart="toggleAutoSkill(); event.preventDefault();" id="btnAutoSkill" class="flex flex-col items-center justify-center bg-amber-500 text-slate-900 font-black text-[9px] w-12 h-12 rounded-xl shadow border border-amber-300 active:scale-95 transition-transform mt-1">
-                    <span class="text-xs">🤖</span>
-                    <span id="txtAutoSkill">AUTO ON</span>
                 </button>
             </div>
         </div>
