@@ -261,15 +261,13 @@ function drawBlockyHero(ctx, x, y, r, dir, faction, type, attackAnimTimer = 0) {
     let anim = Math.sin(performance.now()/150);
     let lx = anim * r * 0.2;
     
-    // 공격 애니메이션 프로그레스 (0 to 1)
-    let p = attackAnimTimer > 0 ? (1 - (attackAnimTimer / 0.15)) : 0;
+    let isAttacking = attackAnimTimer > 0;
     
     ctx.save();
     
     // 뱀파이어 돌진(Dash) 애니메이션 처리
-    if(type === 'vampire' && attackAnimTimer > 0) {
-        let dashDist = Math.sin(p * Math.PI) * r * 1.5;
-        ctx.translate(dir * dashDist, 0);
+    if(type === 'vampire' && isAttacking) {
+        ctx.translate(dir * r * 1.5, 0); // 뱀파이어 전체 몸 돌진
     }
     
     if(dir < 0) { ctx.translate(x*2, 0); ctx.scale(-1, 1); } // 좌우 반전
@@ -280,10 +278,9 @@ function drawBlockyHero(ctx, x, y, r, dir, faction, type, attackAnimTimer = 0) {
     // 기본 바디 그리기 함수
     const drawBody = (skin, shirt, pants) => {
         ctx.save();
-        // 상체 회전 (공격 시)
-        if(attackAnimTimer > 0 && type !== 'vampire') {
-            let bodyRot = Math.sin(p * Math.PI) * (Math.PI/6); // 최대 30도 회전
-            ctx.translate(x, y); ctx.rotate(bodyRot); ctx.translate(-x, -y);
+        // 상체 회전 (공격 시 아주 크게 기울어짐)
+        if(isAttacking && type !== 'vampire') {
+            ctx.translate(x, y); ctx.rotate(Math.PI/4); ctx.translate(-x, -y); // 45도 기울어짐
         }
         
         // 다리
@@ -302,17 +299,6 @@ function drawBlockyHero(ctx, x, y, r, dir, faction, type, attackAnimTimer = 0) {
         // 팀 뱃지
         ctx.fillStyle = fCol; ctx.beginPath(); ctx.arc(x, y-r*0.1, r*0.15, 0, Math.PI*2); ctx.fill();
         ctx.restore();
-        
-        // 애니메이션 디버그 로그
-        if (attackAnimTimer > 0) {
-            ctx.save();
-            ctx.translate(x, y-r*2.5);
-            ctx.fillStyle = '#ffffff';
-            ctx.font = '10px monospace';
-            ctx.textAlign = 'center';
-            ctx.fillText(`BodyRot: ${(bodyRot||0).toFixed(2)}`, 0, 0);
-            ctx.restore();
-        }
     };
 
     if(type === 'berserker') {
@@ -322,46 +308,39 @@ function drawBlockyHero(ctx, x, y, r, dir, faction, type, attackAnimTimer = 0) {
         ctx.fillRect(x-r*0.1, y-r*0.7, r*0.2, r*0.4); // 코보호대
         
         ctx.save();
-        ctx.translate(x+r*0.5, y-r*0.3);
-        let swingRot = attackAnimTimer > 0 ? Math.sin(p * Math.PI) * Math.PI : 0;
-        ctx.rotate(swingRot);
-        // 대검
-        ctx.fillStyle = '#94a3b8'; ctx.fillRect(-r*0.1, -r*0.8, r*0.2, r*1.2);
-        ctx.fillStyle = '#f59e0b'; ctx.fillRect(-r*0.2, -r*0.2, r*0.4, r*0.1); // 크로스가드
-        
-        // 잔상 효과 (Trail)
-        if(attackAnimTimer > 0 && attackAnimTimer < 0.1) {
-            ctx.fillStyle = 'rgba(255,255,255,0.4)';
-            ctx.beginPath(); ctx.moveTo(0,0); ctx.arc(0, 0, r*1.2, -Math.PI*0.5, -Math.PI*0.5 + swingRot); ctx.closePath(); ctx.fill();
+        if(isAttacking) {
+            ctx.translate(x+r*0.8, y+r*0.4);
+            ctx.rotate(Math.PI * 0.7); // 180도 가깝게 크게 내리친 포즈
+        } else {
+            ctx.translate(x+r*0.5, y-r*0.3);
+            ctx.rotate(-Math.PI * 0.1); // 평소 포즈
         }
-        
-        if (attackAnimTimer > 0) {
-            ctx.save();
-            ctx.translate(0, -r*1.5);
-            ctx.rotate(-swingRot);
-            ctx.fillStyle = '#ff00ff';
-            ctx.font = '10px monospace';
-            ctx.fillText(`Arm/Wpn: ${(swingRot).toFixed(2)}`, -20, 0);
-            ctx.restore();
-        }
-        
+        // 대검 (아주 큼직하게)
+        ctx.fillStyle = '#94a3b8'; ctx.fillRect(-r*0.1, -r*1.5, r*0.2, r*2.0);
+        ctx.fillStyle = '#f59e0b'; ctx.fillRect(-r*0.3, -r*0.2, r*0.6, r*0.15); // 크로스가드
         ctx.restore();
         
     } else if(type === 'archer') {
         drawBody('#fde047', '#22c55e', '#14532d');
         // 초록 후드
         ctx.fillStyle = '#16a34a'; ctx.beginPath(); ctx.moveTo(x-r*0.5, y-r*0.6); ctx.lineTo(x+r*0.5, y-r*0.6); ctx.lineTo(x, y-r*1.2); ctx.closePath(); ctx.fill();
-        // 활
+        
         ctx.save();
-        ctx.translate(x+r*0.6, y);
-        ctx.strokeStyle = '#92400e'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(0, 0, r*0.5, -Math.PI*0.3, Math.PI*0.3); ctx.stroke();
-        // 활시위
-        let pull = attackAnimTimer > 0 ? (p < 0.8 ? p*r*0.5 : 0) : 0; // 당기다가 발사
-        ctx.strokeStyle = 'rgba(255,255,255,0.5)'; ctx.lineWidth = 1;
-        ctx.beginPath(); ctx.moveTo(Math.cos(-Math.PI*0.3)*r*0.5, Math.sin(-Math.PI*0.3)*r*0.5); ctx.lineTo(-pull, 0); ctx.lineTo(Math.cos(Math.PI*0.3)*r*0.5, Math.sin(Math.PI*0.3)*r*0.5); ctx.stroke();
-        // 화살
-        if(attackAnimTimer > 0 && p < 0.8) {
-            ctx.fillStyle = '#94a3b8'; ctx.fillRect(-pull, -1, r*0.8, 2);
+        if (isAttacking) {
+            ctx.translate(x+r*0.6, y);
+            ctx.rotate(Math.PI * 0.1);
+        } else {
+            ctx.translate(x+r*0.6, y);
+        }
+        
+        ctx.strokeStyle = '#92400e'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(0, 0, r*0.6, -Math.PI*0.4, Math.PI*0.4); ctx.stroke(); // 활대
+        
+        let pull = isAttacking ? r*0.8 : 0; // 뒤로 크게 당긴 포즈
+        ctx.strokeStyle = 'rgba(255,255,255,0.7)'; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(Math.cos(-Math.PI*0.4)*r*0.6, Math.sin(-Math.PI*0.4)*r*0.6); ctx.lineTo(-pull, 0); ctx.lineTo(Math.cos(Math.PI*0.4)*r*0.6, Math.sin(Math.PI*0.4)*r*0.6); ctx.stroke(); // 활시위
+        
+        if(isAttacking) { // 장전된 화살
+            ctx.fillStyle = '#94a3b8'; ctx.fillRect(-pull, -1, r*1.2, 2);
         }
         ctx.restore();
         
@@ -370,15 +349,19 @@ function drawBlockyHero(ctx, x, y, r, dir, faction, type, attackAnimTimer = 0) {
         // 보라 마법사 모자
         ctx.fillStyle = '#6d28d9'; ctx.fillRect(x-r*0.6, y-r*0.9, r*1.2, r*0.15);
         ctx.beginPath(); ctx.moveTo(x-r*0.4, y-r*0.9); ctx.lineTo(x+r*0.4, y-r*0.9); ctx.lineTo(x, y-r*1.5); ctx.closePath(); ctx.fill();
-        // 지팡이
+        
         ctx.save();
-        ctx.translate(x+r*0.55, y-r*0.3);
-        let staffRot = attackAnimTimer > 0 ? Math.sin(p * Math.PI) * (Math.PI/4) : 0;
-        ctx.rotate(staffRot);
+        if(isAttacking) {
+            ctx.translate(x+r*0.7, y-r*0.6);
+            ctx.rotate(Math.PI/2); // 지팡이를 앞으로 겨누는 포즈
+        } else {
+            ctx.translate(x+r*0.55, y-r*0.3);
+            ctx.rotate(0);
+        }
         ctx.fillStyle = '#475569'; ctx.fillRect(-r*0.05, -r*0.7, r*0.1, r*1.3);
-        ctx.fillStyle = '#c084fc'; ctx.beginPath(); ctx.arc(0, -r*0.8, r*0.2, 0, Math.PI*2); ctx.fill();
-        if(attackAnimTimer > 0) {
-            ctx.fillStyle = 'rgba(192, 132, 252, 0.5)'; ctx.beginPath(); ctx.arc(0, -r*0.8, r*0.4*(1-p), 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = '#c084fc'; ctx.beginPath(); ctx.arc(0, -r*0.8, r*0.3, 0, Math.PI*2); ctx.fill();
+        if(isAttacking) {
+            ctx.fillStyle = 'rgba(192, 132, 252, 0.8)'; ctx.beginPath(); ctx.arc(0, -r*0.8, r*0.6, 0, Math.PI*2); ctx.fill();
         }
         ctx.restore();
         
@@ -387,30 +370,34 @@ function drawBlockyHero(ctx, x, y, r, dir, faction, type, attackAnimTimer = 0) {
         // 고글
         ctx.fillStyle = '#1e293b'; ctx.fillRect(x-r*0.4, y-r*0.75, r*0.8, r*0.2);
         ctx.fillStyle = '#38bdf8'; ctx.fillRect(x-r*0.25, y-r*0.72, r*0.15, r*0.14); ctx.fillRect(x+r*0.1, y-r*0.72, r*0.15, r*0.14);
-        // 총
+        
         ctx.save();
-        ctx.translate(x+r*0.4, y-r*0.1);
-        let recoil = attackAnimTimer > 0 && p < 0.5 ? -r*0.2 : 0;
-        ctx.translate(recoil, 0);
-        ctx.fillStyle = '#475569'; ctx.fillRect(0, 0, r*0.6, r*0.2);
-        ctx.fillStyle = '#0f172a'; ctx.fillRect(r*0.4, -r*0.05, r*0.3, r*0.3);
-        if(attackAnimTimer > 0 && p < 0.3) {
-            ctx.fillStyle = '#fbbf24'; ctx.beginPath(); ctx.arc(r*0.7, r*0.1, r*0.3, 0, Math.PI*2); ctx.fill();
+        if(isAttacking) {
+            ctx.translate(x+r*0.3, y-r*0.2);
+            ctx.rotate(-Math.PI * 0.1); // 총구 들림 (반동)
+        } else {
+            ctx.translate(x+r*0.4, y-r*0.1);
+        }
+        ctx.fillStyle = '#475569'; ctx.fillRect(0, 0, r*0.8, r*0.3); // 큼직한 총
+        ctx.fillStyle = '#0f172a'; ctx.fillRect(r*0.5, -r*0.1, r*0.4, r*0.4);
+        if(isAttacking) { // 총구 화염 포즈
+            ctx.fillStyle = '#fbbf24'; ctx.beginPath(); ctx.arc(r*0.9, r*0.15, r*0.5, 0, Math.PI*2); ctx.fill();
         }
         ctx.restore();
         
     } else if(type === 'vampire') {
         drawBody('#fecdd3', '#1c1917', '#0c0a09');
         // 망토
-        let capeSway = attackAnimTimer > 0 ? Math.sin(p * Math.PI) * r * 0.5 : 0;
+        let capeSway = isAttacking ? r * 0.8 : 0; // 망토 펄럭임
         ctx.fillStyle = '#9f1239'; 
         ctx.beginPath(); ctx.moveTo(x-r*0.4, y-r*0.3); ctx.lineTo(x-r*0.8-capeSway, y+r*0.8); ctx.lineTo(x-r*0.2, y+r*0.5); ctx.closePath(); ctx.fill();
         ctx.beginPath(); ctx.moveTo(x+r*0.4, y-r*0.3); ctx.lineTo(x+r*0.8-capeSway, y+r*0.8); ctx.lineTo(x+r*0.2, y+r*0.5); ctx.closePath(); ctx.fill();
         // 눈 빨갛게
         ctx.fillStyle = '#ef4444'; ctx.fillRect(x-r*0.2, y-r*0.7, r*0.1, r*0.1); ctx.fillRect(x+r*0.1, y-r*0.7, r*0.1, r*0.1);
-        // 잔상 (뱀파이어 돌진 잔상)
-        if(attackAnimTimer > 0) {
-            ctx.fillStyle = 'rgba(244,63,94,0.3)'; ctx.beginPath(); ctx.arc(x-dir*r, y, r, 0, Math.PI*2); ctx.fill();
+        // 잔상
+        if(isAttacking) {
+            ctx.fillStyle = 'rgba(244,63,94,0.3)'; ctx.beginPath(); ctx.arc(x-dir*r*1.5, y, r, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(x-dir*r*0.8, y, r, 0, Math.PI*2); ctx.fill();
         }
         
     } else if(type === 'thor') {
@@ -421,14 +408,17 @@ function drawBlockyHero(ctx, x, y, r, dir, faction, type, attackAnimTimer = 0) {
         ctx.beginPath(); ctx.moveTo(x+r*0.4, y-r*0.9); ctx.lineTo(x+r*0.7, y-r*1.1); ctx.lineTo(x+r*0.4, y-r*0.7); ctx.closePath(); ctx.fill();
         // 묠니르
         ctx.save();
-        ctx.translate(x+r*0.5, y-r*0.2);
-        let swingRot = attackAnimTimer > 0 ? Math.sin(p * Math.PI) * Math.PI : 0;
-        ctx.rotate(swingRot);
-        ctx.fillStyle = '#475569'; ctx.fillRect(-r*0.05, -r*0.5, r*0.1, r*0.8);
-        ctx.fillStyle = '#94a3b8'; ctx.fillRect(-r*0.25, -r*0.8, r*0.5, r*0.3);
-        if(attackAnimTimer > 0) {
-            ctx.fillStyle = 'rgba(96,165,250,0.5)';
-            ctx.beginPath(); ctx.arc(0, -r*0.65, r*0.8, 0, Math.PI*2); ctx.fill();
+        if(isAttacking) {
+            ctx.translate(x+r*0.9, y+r*0.5);
+            ctx.rotate(Math.PI * 0.8); // 망치를 크게 내리찍은 포즈
+        } else {
+            ctx.translate(x+r*0.5, y-r*0.2);
+        }
+        ctx.fillStyle = '#475569'; ctx.fillRect(-r*0.05, -r*0.5, r*0.15, r*1.0); // 자루
+        ctx.fillStyle = '#94a3b8'; ctx.fillRect(-r*0.35, -r*0.9, r*0.7, r*0.4); // 쇠부분 크게
+        if(isAttacking) {
+            ctx.fillStyle = 'rgba(96,165,250,0.8)';
+            ctx.beginPath(); ctx.arc(0, -r*0.7, r*1.2, 0, Math.PI*2); ctx.fill(); // 번개 이펙트
         }
         ctx.restore();
     }
@@ -561,12 +551,15 @@ class Entity {
         
         let isCrit = amount > (attacker?attacker.atk*1.5:0);
         
-        // 피격 넉백 (넉백: 체력이 줄어들고 튕김)
+        // 피격 넉백 및 경직(Hit-stun)
         if(!this.isBuilding && attacker && !attacker.isBuilding) {
             let angle = Math.atan2(this.y - attacker.y, this.x - attacker.x);
-            let kbForce = isCrit ? 100 : 40;
+            let kbForce = isCrit ? 250 : 100; // 넉백 수치 대폭 증가
             this.x += Math.cos(angle) * kbForce * 0.1;
             this.y += Math.sin(angle) * kbForce * 0.1;
+            
+            // 피격 경직 (0.15초~0.3초간 움직임 정지)
+            this.stunTimer = Math.max(this.stunTimer || 0, isCrit ? 0.3 : 0.15);
         }
 
         // 히트스톱 (크리티컬이거나, 플레이어가 때렸을 때)
@@ -664,61 +657,36 @@ class Hero extends Entity {
             this.aiShopTimer-=dt; if(this.aiShopTimer<=0){ this.aiShopAI(); this.aiShopTimer=5; }
         }
 
-        this.aiStateTimer = (this.aiStateTimer || 0) - dt;
         let hpRatio = this.hp/this.maxHp;
         
-        let nearAllies = entities.filter(e=>e.faction===this.faction && e.type==='hero' && !e.isDead && dist(this,e)<600);
-        let nearEnemies = entities.filter(e=>e.faction!==this.faction && e.type==='hero' && !e.isDead && dist(this,e)<600);
+        let nearEnemies = entities.filter(e=>e.faction!==this.faction && !e.isDead && dist(this,e)<600);
         
         let oldState = this.aiState;
-        
-        let bossAlive = entities.some(e=>e.type.startsWith('boss') && !e.isDead);
 
-        // 1. 상태 결정 로직 (직업별 고유 특성 반영)
-        if (this.isRetreating && hpRatio >= 0.85) {
-            this.isRetreating = false;
-        }
-
-        if (this.isRetreating) {
-            this.aiState = 'RETREAT';
-        } else if (hpRatio < 0.3) {
-            // VAMPIRE: 체력이 30% 이하라도 적이 근처에 있으면 FRENZY 돌입 (10% 이하에서만 후퇴)
-            if (this.heroKey === 'VAMPIRE' && nearEnemies.length > 0 && hpRatio > 0.1) {
-                this.aiState = 'FRENZY';
+        // 1차 AI: 체력 기반 로직만 적용
+        if (hpRatio <= 0.3) {
+            let weakestEnemy = nearEnemies.sort((a,b)=>(a.hp/a.maxHp)-(b.hp/b.maxHp))[0];
+            if (weakestEnemy && (weakestEnemy.hp/weakestEnemy.maxHp) <= 0.1) {
+                this.aiState = 'ATTACK'; // 적 체력이 10% 이하면 추격 유지
             } else {
-                this.aiState = 'RETREAT';
-                this.isRetreating = true;
+                this.aiState = 'RETREAT'; // 내 체력이 30% 이하 시 후퇴
             }
         } else if (nearEnemies.length > 0) {
-            if (bossAlive && hpRatio > 0.5) {
-                this.aiState = 'BOSS_FIGHT';
-            } else if (this.heroKey === 'ARCHER' || HERO_TMPL[this.heroKey].type === 'ranged') {
-                this.aiState = 'POKE';
-            } else if (this.heroKey === 'THOR' || this.heroKey === 'BERSERKER') {
-                this.aiState = 'TEAMFIGHT';
-            } else {
-                this.aiState = 'TEAMFIGHT'; // 기본 교전
-            }
-        } else if (this.laneRole === 'jungle' && hpRatio > 0.4) {
-            this.aiState = 'JUNGLE';
+            this.aiState = 'ATTACK';
         } else {
-            if (bossAlive && hpRatio > 0.5) {
-                this.aiState = 'BOSS_FIGHT';
-            } else {
-                this.aiState = 'LANE';
-            }
+            this.aiState = 'LANE';
         }
 
         if (oldState !== this.aiState) {
-            this.lastStateChangeTime = performance.now();
-            this.aiChasing = false; // 상태 변경 시 추적 상태 리셋
+            this.aiStateChangedAt = GS.time;
+            this.aiChasing = false;
         }
 
         // --- 2. 상태별 행동 실행 ---
         let tx = 1500, ty = 1500; // default
         let target = null;
 
-        // 이동 헬퍼 함수 (히스테리시스 적용하여 버벅임 방지)
+        // 이동 헬퍼 함수 (히스테리시스 적용)
         const moveToTarget = (t, startDist, stopDist) => {
             let d = dist(this, t);
             if (this.aiChasing && d <= stopDist) this.aiChasing = false;
@@ -736,7 +704,6 @@ class Hero extends Entity {
 
         switch(this.aiState) {
             case 'RETREAT':
-                this.isRetreating = true;
                 tx = myBase.x; ty = myBase.y;
                 let underEnemyTower1 = entities.some(t=>(t.type==='tower'||t.type==='nexus_turret') && t.faction!==this.faction && !t.isDead && dist(this,t)<t.range+50);
                 if (underEnemyTower1 && hpRatio < 0.7) {
@@ -752,63 +719,12 @@ class Hero extends Entity {
                 }
                 break;
 
-            case 'BOSS_FIGHT':
-                let boss = entities.find(e=>e.type.startsWith('boss') && !e.isDead);
-                if(boss) {
-                    moveToTarget(boss, this.range * 0.8, this.range * 0.6);
-                    if(this.heroSkill1Timer <= 0) this.useSkill(1);
-                    else if(this.heroSkill2Timer <= 0) this.useSkill(2);
-                } else {
-                    this.aiState = 'LANE';
-                }
-                break;
-
-            case 'FRENZY':
-            case 'TEAMFIGHT':
-                if (this.heroKey === 'THOR') {
-                    // 다수 적이 있는 중심부로 돌진
-                    let avgX = nearEnemies.reduce((sum, e)=>sum+e.x, 0) / nearEnemies.length;
-                    let avgY = nearEnemies.reduce((sum, e)=>sum+e.y, 0) / nearEnemies.length;
-                    let center = {x:avgX, y:avgY};
-                    target = nearEnemies.sort((a,b) => dist(this,a) - dist(this,b))[0];
-                    moveToTarget(center, 80, 30);
-                } else if (this.heroKey === 'BERSERKER' || this.aiState === 'FRENZY') {
-                    // 무지성 돌진 및 난전 (FRENZY 흡혈 포함)
-                    target = nearEnemies.sort((a,b) => dist(this,a) - dist(this,b))[0];
-                    moveToTarget(target, this.range * 0.8, this.range * 0.4);
-                } else {
-                    // 일반 교전 (가장 약한 적 점사)
-                    target = nearEnemies.sort((a,b) => (a.hp/a.maxHp) - (b.hp/b.maxHp))[0];
-                    moveToTarget(target, this.range * 0.85, this.range * 0.7);
-                }
+            case 'ATTACK':
+                target = nearEnemies.sort((a,b) => dist(this,a) - dist(this,b))[0];
+                if(target) moveToTarget(target, this.range * 0.8, this.range * 0.4);
                 
                 if(this.heroSkill1Timer <= 0) this.useSkill(1);
                 else if(this.heroSkill2Timer <= 0) this.useSkill(2);
-                break;
-
-            case 'POKE':
-                target = nearEnemies.sort((a,b) => dist(this,a) - dist(this,b))[0];
-                let d = dist(this, target);
-                if(d < this.range * 0.45) { 
-                    // 카이팅 (Backstep)
-                    let a = Math.atan2(this.y-target.y, this.x-target.x);
-                    this.vx = Math.cos(a)*this.moveSpd; this.vy = Math.sin(a)*this.moveSpd;
-                    this.facingDir = target.x < this.x ? -1 : 1;
-                } else {
-                    moveToTarget(target, this.range * 0.9, this.range * 0.8);
-                }
-                if(this.heroSkill1Timer <= 0) this.useSkill(1);
-                else if(this.heroSkill2Timer <= 0) this.useSkill(2);
-                break;
-
-            case 'JUNGLE':
-                let camps = entities.filter(e=>e.type==='jungle' && !e.isDead);
-                if(camps.length > 0) {
-                    target = camps.sort((a,b)=>dist(this,a)-dist(this,b))[0];
-                    moveToTarget(target, this.range * 0.9, this.range * 0.7);
-                } else {
-                    this.aiState = 'LANE';
-                }
                 break;
 
             case 'LANE':
@@ -1259,10 +1175,12 @@ class Hero extends Entity {
             ctx.fillStyle = '#ffffff';
             ctx.font = 'bold 10px monospace';
             ctx.textAlign = 'center';
-            ctx.fillText(this.aiState || 'IDLE', this.x, this.y - this.radius - 40);
+            ctx.fillText(`[상태] ${this.aiState || 'IDLE'}`, this.x, this.y - this.radius - 40);
             let tgtName = this.aiTarget ? (this.aiTarget.heroKey ? HERO_TMPL[this.aiTarget.heroKey].name : this.aiTarget.type) : 'None';
             ctx.fillText(`Target: ${tgtName}`, this.x, this.y - this.radius - 30);
-            ctx.fillText(`(${(this.aiTx||0).toFixed(0)}, ${(this.aiTy||0).toFixed(0)})`, this.x, this.y - this.radius - 20);
+            ctx.fillText(`Dest: ${Math.round(this.aiTx||0)}, ${Math.round(this.aiTy||0)}`, this.x, this.y - this.radius - 20);
+            let timeSinceStateChange = (GS.time - (this.aiStateChangedAt || 0)).toFixed(1);
+            ctx.fillText(`Time: ${timeSinceStateChange}s`, this.x, this.y - this.radius - 10);
         }
 
         let bw=50, bh=6, bx=this.x-bw/2, by=this.y-this.radius-10;
@@ -1603,16 +1521,11 @@ window.startGame=()=>{
     console.log("Device Pixel Ratio:", window.devicePixelRatio);
     console.log("Camera Zoom:", camera.zoom);
     if(GS.platform === 'PC') {
-        // 기준 해상도를 낮춰서(예: 900px) PC에서도 좀 더 큼직하게 보이도록 합니다. 최대 1.4배까지만 커지도록 제한합니다.
-        let pcScale = Math.min(1.4, Math.max(1, window.innerWidth / 900));
-        console.log("Applied PC Scale:", pcScale);
-        
         let hud = document.getElementById('gameHUD');
-        hud.style.transform = `scale(${pcScale})`;
-        hud.style.transformOrigin = 'top left';
-        // 스케일링 후 잘림 방지를 위해 width/height 조정
-        hud.style.width = `${100/pcScale}%`;
-        hud.style.height = `${100/pcScale}%`;
+        hud.style.transform = '';
+        hud.style.transformOrigin = '';
+        hud.style.width = '100%';
+        hud.style.height = '100%';
     }
 
     document.getElementById('hudHeroName').textContent=HERO_TMPL[GS.hero].name;
@@ -1812,12 +1725,12 @@ function draw(){
 function renderInventory(){
     const inv=document.getElementById('inventorySlots');
     inv.innerHTML='';
-    for(let i=0;i<8;i++){
+    for(let i=0;i<16;i++){
         let d=document.createElement('div');
-        d.className='w-4 h-4 md:w-8 md:h-8 bg-slate-900 border border-slate-700 rounded flex items-center justify-center text-[8px] md:text-xs relative group';
+        d.className='w-5 h-5 md:w-10 md:h-10 bg-slate-900 border border-slate-700 rounded flex items-center justify-center text-[10px] md:text-sm relative group';
         if(player&&i<player.inventory.length){
             let item=player.inventory[i];
-            d.innerHTML=`<div class="cursor-pointer text-[10px] md:text-base">${item.icon}</div><div class="absolute -top-1 -right-1 bg-amber-500 text-slate-900 text-[6px] md:text-[9px] font-black px-0.5 md:px-1 rounded-full">+${item.upgrade}</div>`;
+            d.innerHTML=`<div class="cursor-pointer text-[12px] md:text-xl">${item.icon}</div><div class="absolute -top-1 -right-1 bg-amber-500 text-slate-900 text-[8px] md:text-[10px] font-black px-0.5 md:px-1 rounded-full">+${item.upgrade}</div>`;
         }
         inv.appendChild(d);
     }
