@@ -487,9 +487,11 @@ class Entity {
         this.kills=0; this.totalDmg=0;
         this.animPhase=Math.random()*Math.PI*2;
         this.slowTimer=0; this.slowRate=0;
+        this.hitFlashTimer=0;
     }
     update(dt){
         if(this.isDead) return;
+        if(this.hitFlashTimer>0) this.hitFlashTimer-=dt;
         if(this.stunTimer>0){ this.stunTimer-=dt; return; }
         let spdMult = (this.slowTimer > 0) ? (1 - this.slowRate) : 1;
         this.x=clamp(this.x+this.vx*dt*spdMult, 10, MAP_SIZE-10);
@@ -573,6 +575,9 @@ class Entity {
         }
         
         addText(this.x+rand(-15,15), this.y-this.radius-10, isCrit?'\u{1F4A5}'+dmg:dmg, attacker===player?'#fbbf24':'#f8fafc', isCrit?18:14);
+
+        // 히트 플래시 (번쩍임 효과)
+        this.hitFlashTimer = 0.1;
 
         if(this.hp<=0){ this.hp=0; this.isDead=true; if(attacker&&attacker.onKill) attacker.onKill(this); this.onDeath(attacker); }
         if (attacker === player || this === player) {
@@ -667,27 +672,67 @@ class Hero extends Entity {
         
         let oldState = this.aiState;
         
+        let bossAlive = entities.some(e=>e.type.startsWith('boss') && !e.isDead);
+
+        // 1. 상태 결정 로직 (직업별 고유 특성 반영)
         if (this.isRetreating && hpRatio >= 0.85) {
             this.isRetreating = false;
         }
 
-        // 1. 상태 결정 로직 (1차: 기존 AI 유지, 체력 판단만 추가)
-        if(hpRatio < 0.3 || this.isRetreating) {
+        if (this.isRetreating) {
             this.aiState = 'RETREAT';
-            this.isRetreating = true;
-        } else if(this.laneRole === 'jungle' && hpRatio > 0.4) {
+        } else if (hpRatio < 0.3) {
+            // VAMPIRE: 체력이 30% 이하라도 적이 근처에 있으면 FRENZY 돌입 (10% 이하에서만 후퇴)
+            if (this.heroKey === 'VAMPIRE' && nearEnemies.length > 0 && hpRatio > 0.1) {
+                this.aiState = 'FRENZY';
+            } else {
+                this.aiState = 'RETREAT';
+                this.isRetreating = true;
+            }
+        } else if (nearEnemies.length > 0) {
+            if (bossAlive && hpRatio > 0.5) {
+                this.aiState = 'BOSS_FIGHT';
+            } else if (this.heroKey === 'ARCHER' || HERO_TMPL[this.heroKey].type === 'ranged') {
+                this.aiState = 'POKE';
+            } else if (this.heroKey === 'THOR' || this.heroKey === 'BERSERKER') {
+                this.aiState = 'TEAMFIGHT';
+            } else {
+                this.aiState = 'TEAMFIGHT'; // 기본 교전
+            }
+        } else if (this.laneRole === 'jungle' && hpRatio > 0.4) {
             this.aiState = 'JUNGLE';
         } else {
-            this.aiState = 'LANE';
+            if (bossAlive && hpRatio > 0.5) {
+                this.aiState = 'BOSS_FIGHT';
+            } else {
+                this.aiState = 'LANE';
+            }
         }
 
         if (oldState !== this.aiState) {
             this.lastStateChangeTime = performance.now();
+            this.aiChasing = false; // 상태 변경 시 추적 상태 리셋
         }
 
         // --- 2. 상태별 행동 실행 ---
         let tx = 1500, ty = 1500; // default
         let target = null;
+
+        // 이동 헬퍼 함수 (히스테리시스 적용하여 버벅임 방지)
+        const moveToTarget = (t, startDist, stopDist) => {
+            let d = dist(this, t);
+            if (this.aiChasing && d <= stopDist) this.aiChasing = false;
+            else if (!this.aiChasing && d >= startDist) this.aiChasing = true;
+
+            if (this.aiChasing) {
+                let a = Math.atan2(t.y-this.y, t.x-this.x);
+                this.vx = Math.cos(a)*this.moveSpd; this.vy = Math.sin(a)*this.moveSpd;
+                this.facingDir = t.x < this.x ? -1 : 1;
+            } else {
+                this.vx = 0; this.vy = 0;
+                this.facingDir = t.x < this.x ? -1 : 1;
+            }
+        };
 
         switch(this.aiState) {
             case 'RETREAT':
@@ -695,7 +740,6 @@ class Hero extends Entity {
                 tx = myBase.x; ty = myBase.y;
                 let underEnemyTower1 = entities.some(t=>(t.type==='tower'||t.type==='nexus_turret') && t.faction!==this.faction && !t.isDead && dist(this,t)<t.range+50);
                 if (underEnemyTower1 && hpRatio < 0.7) {
-                    // 타워 아래에서 도망
                     let a = Math.atan2(myBase.y-this.y, myBase.x-this.x);
                     this.vx = Math.cos(a)*this.moveSpd; this.vy = Math.sin(a)*this.moveSpd;
                     break;
@@ -711,11 +755,7 @@ class Hero extends Entity {
             case 'BOSS_FIGHT':
                 let boss = entities.find(e=>e.type.startsWith('boss') && !e.isDead);
                 if(boss) {
-                    if(dist(this, boss) > this.range * 0.8) {
-                        let a = Math.atan2(boss.y-this.y, boss.x-this.x);
-                        this.vx = Math.cos(a)*this.moveSpd; this.vy = Math.sin(a)*this.moveSpd;
-                    } else { this.vx=0; this.vy=0; }
-                    this.facingDir = boss.x < this.x ? -1 : 1;
+                    moveToTarget(boss, this.range * 0.8, this.range * 0.6);
                     if(this.heroSkill1Timer <= 0) this.useSkill(1);
                     else if(this.heroSkill2Timer <= 0) this.useSkill(2);
                 } else {
@@ -723,63 +763,51 @@ class Hero extends Entity {
                 }
                 break;
 
+            case 'FRENZY':
             case 'TEAMFIGHT':
                 if (this.heroKey === 'THOR') {
                     // 다수 적이 있는 중심부로 돌진
                     let avgX = nearEnemies.reduce((sum, e)=>sum+e.x, 0) / nearEnemies.length;
                     let avgY = nearEnemies.reduce((sum, e)=>sum+e.y, 0) / nearEnemies.length;
-                    if(dist(this, {x:avgX, y:avgY}) > 50) {
-                        let a = Math.atan2(avgY-this.y, avgX-this.x);
-                        this.vx = Math.cos(a)*this.moveSpd; this.vy = Math.sin(a)*this.moveSpd;
-                    } else { this.vx=0; this.vy=0; }
-                    this.facingDir = avgX < this.x ? -1 : 1;
-                } else if (this.heroKey === 'BERSERKER') {
-                    // 가장 가까운 적에게 무지성 돌진
+                    let center = {x:avgX, y:avgY};
                     target = nearEnemies.sort((a,b) => dist(this,a) - dist(this,b))[0];
-                    if(dist(this, target) > 30) {
-                        let a = Math.atan2(target.y-this.y, target.x-this.x);
-                        this.vx = Math.cos(a)*this.moveSpd; this.vy = Math.sin(a)*this.moveSpd;
-                    } else { this.vx=0; this.vy=0; }
-                    this.facingDir = target.x < this.x ? -1 : 1;
+                    moveToTarget(center, 80, 30);
+                } else if (this.heroKey === 'BERSERKER' || this.aiState === 'FRENZY') {
+                    // 무지성 돌진 및 난전 (FRENZY 흡혈 포함)
+                    target = nearEnemies.sort((a,b) => dist(this,a) - dist(this,b))[0];
+                    moveToTarget(target, this.range * 0.8, this.range * 0.4);
                 } else {
-                    // 가장 약한 적 점사 (기본)
+                    // 일반 교전 (가장 약한 적 점사)
                     target = nearEnemies.sort((a,b) => (a.hp/a.maxHp) - (b.hp/b.maxHp))[0];
-                    if(dist(this, target) > this.range*0.8) {
-                        let a = Math.atan2(target.y-this.y, target.x-this.x);
-                        this.vx = Math.cos(a)*this.moveSpd; this.vy = Math.sin(a)*this.moveSpd;
-                    } else { this.vx=0; this.vy=0; }
-                    this.facingDir = target.x < this.x ? -1 : 1;
+                    moveToTarget(target, this.range * 0.85, this.range * 0.7);
                 }
                 
-                // 스킬 적극 사용
                 if(this.heroSkill1Timer <= 0) this.useSkill(1);
                 else if(this.heroSkill2Timer <= 0) this.useSkill(2);
                 break;
 
             case 'POKE':
-                target = nearEnemies[0];
+                target = nearEnemies.sort((a,b) => dist(this,a) - dist(this,b))[0];
                 let d = dist(this, target);
-                if(d < this.range * 0.6) { // 너무 가까우면 카이팅 (Backstep)
+                if(d < this.range * 0.45) { 
+                    // 카이팅 (Backstep)
                     let a = Math.atan2(this.y-target.y, this.x-target.x);
                     this.vx = Math.cos(a)*this.moveSpd; this.vy = Math.sin(a)*this.moveSpd;
-                } else if(d > this.range) {
-                    let a = Math.atan2(target.y-this.y, target.x-this.x);
-                    this.vx = Math.cos(a)*this.moveSpd; this.vy = Math.sin(a)*this.moveSpd;
-                } else { this.vx=0; this.vy=0; }
-                // 포킹 스킬
+                    this.facingDir = target.x < this.x ? -1 : 1;
+                } else {
+                    moveToTarget(target, this.range * 0.9, this.range * 0.8);
+                }
                 if(this.heroSkill1Timer <= 0) this.useSkill(1);
+                else if(this.heroSkill2Timer <= 0) this.useSkill(2);
                 break;
 
             case 'JUNGLE':
                 let camps = entities.filter(e=>e.type==='jungle' && !e.isDead);
                 if(camps.length > 0) {
                     target = camps.sort((a,b)=>dist(this,a)-dist(this,b))[0];
-                    if(dist(this, target) > this.range*0.8) {
-                        let a = Math.atan2(target.y-this.y, target.x-this.x);
-                        this.vx = Math.cos(a)*this.moveSpd; this.vy = Math.sin(a)*this.moveSpd;
-                    } else { this.vx=0; this.vy=0; }
+                    moveToTarget(target, this.range * 0.9, this.range * 0.7);
                 } else {
-                    this.aiState = 'LANE'; // 정글 몹 없으면 라인으로
+                    this.aiState = 'LANE';
                 }
                 break;
 
@@ -793,7 +821,6 @@ class Hero extends Entity {
                     tx = enemyBase.x; ty = enemyBase.y;
                 }
                 
-                // 적 발견 시 타게팅
                 let targetEnemy = entities.filter(e=>e.faction!==this.faction && !e.isDead && dist(this,e)<this.range).sort((a,b)=>dist(this,a)-dist(this,b))[0];
                 if(targetEnemy) {
                     this.vx=0; this.vy=0;
@@ -802,19 +829,14 @@ class Hero extends Entity {
                 } else {
                     let underEnemyTower = entities.some(t=>(t.type==='tower'||t.type==='nexus_turret') && t.faction!==this.faction && !t.isDead && dist(this,t)<t.range+50);
                     if (underEnemyTower && hpRatio < 0.7) {
-                        // 타워 아래에서 도망
                         let a = Math.atan2(myBase.y-this.y, myBase.x-this.x);
                         this.vx = Math.cos(a)*this.moveSpd; this.vy = Math.sin(a)*this.moveSpd;
                         break;
                     }
 
-                    // 목표 방향 이동
-                    let dToTarget = dist(this, {x:tx, y:ty});
-                    if (dToTarget > 30) {
-                        let a = Math.atan2(ty-this.y, tx-this.x);
-                        this.vx = Math.cos(a)*this.moveSpd; this.vy = Math.sin(a)*this.moveSpd;
-                        this.facingDir = tx < this.x ? -1 : 1;
-                    }
+                    // 목표 방향 이동 (히스테리시스 적용)
+                    let waypoint = {x:tx, y:ty};
+                    moveToTarget(waypoint, 50, 20);
                 }
                 break;
         }
@@ -840,10 +862,15 @@ class Hero extends Entity {
         if(this.borkActive&&!target.isBuilding) dmg+=target.hp*0.08;
 
         if(HERO_TMPL[this.heroKey].type==='ranged'){
+            this.attackAnimTimer = 0.2;
             projectiles.push(new Projectile(this.x, this.y-this.radius, target, dmg, this, isCrit));
             if(this.isPlayer) playSFX('shoot');
         } else {
+            this.attackAnimTimer = 0.2;
             let dealt=target.applyRawDamage(dmg, this); this.totalDmg+=dealt;
+            // 궤적 이펙트 (반달 모양)
+            let a = Math.atan2(target.y-this.y, target.x-this.x);
+            spawnSlash(this.x, this.y-this.radius, a, this.faction==='BLUE'?'#93c5fd':'#fca5a5', 30);
             this.triggerOnHitPassives(target);
             if(this.lifeSteal>0) { this.hp=Math.min(this.maxHp, this.hp+dealt*this.lifeSteal); playSFX('heal'); }
             if(this.burnDmg>0&&!target.isBuilding) target.burnTicks.push({dmg:this.burnDmg,ticks:3,timer:1.0,src:this});
@@ -1217,6 +1244,13 @@ class Hero extends Entity {
         
         t.draw(ctx, this.x, this.y, this.radius, this.facingDir, this.faction, this.attackAnimTimer);
         
+        if (this.hitFlashTimer > 0) {
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+            ctx.beginPath();
+            ctx.ellipse(this.x, this.y-this.radius*0.8, this.radius*1.2, this.radius*1.5, 0, 0, Math.PI*2);
+            ctx.fill();
+        }
+
         ctx.beginPath(); ctx.arc(this.x, this.y, this.radius+4, 0, Math.PI*2);
         ctx.strokeStyle=this.isPlayer?'#fcd34d':(this.faction==='BLUE'?'#3b82f6':'#ef4444'); ctx.lineWidth=this.isPlayer?3:2; ctx.stroke();
         
@@ -1401,6 +1435,13 @@ class Monster extends Entity {
 
         ctx.beginPath(); ctx.ellipse(this.x, this.y, this.radius, this.radius*0.8, 0, 0, Math.PI*2); ctx.fill();
         
+        if (this.hitFlashTimer > 0) {
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+            ctx.beginPath();
+            ctx.ellipse(this.x, this.y-this.radius*0.5, this.radius*1.2, this.radius*1.2, 0, 0, Math.PI*2);
+            ctx.fill();
+        }
+
         // 눈 포인트
         ctx.fillStyle='#ef4444'; ctx.beginPath(); ctx.arc(this.x-this.radius*0.3, this.y-this.radius*0.2, 3, 0, Math.PI*2); ctx.fill();
         ctx.beginPath(); ctx.arc(this.x+this.radius*0.3, this.y-this.radius*0.2, 3, 0, Math.PI*2); ctx.fill();
