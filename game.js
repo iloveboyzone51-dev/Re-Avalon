@@ -6,34 +6,6 @@
 'use strict';
 
 // ============ 오디오 시스템 ============
-const BGM_URLS = [
-    "https://t1.daumcdn.net/cfile/tistory/99BA0B385DABEEE101",
-    "https://t1.daumcdn.net/cfile/tistory/99261E4C5DAFED0725",
-    "https://t1.daumcdn.net/cfile/tistory/99400B3C5DB076032C",
-    "https://t1.daumcdn.net/cfile/tistory/99340A365DB5D4AA02"
-];
-let currentBgmIndex = 0;
-let bgmAudio = new Audio();
-bgmAudio.volume = 0.3;
-function playNextBGM() {
-    bgmAudio.src = BGM_URLS[currentBgmIndex];
-    let playPromise = bgmAudio.play();
-    if (playPromise !== undefined) {
-        playPromise.then(() => {
-            console.log('BGM playing:', BGM_URLS[currentBgmIndex]);
-        }).catch(e => {
-            console.warn('BGM Play failed:', e);
-            // 만약 오디오 객체가 실패하면 iframe 방식으로 강제 재생 시도
-            let fallback = document.getElementById('bgmFallback');
-            if(fallback) fallback.src = BGM_URLS[currentBgmIndex];
-        });
-    }
-    bgmAudio.onended = () => {
-        currentBgmIndex = (currentBgmIndex + 1) % BGM_URLS.length;
-        playNextBGM();
-    };
-}
-
 let audioCtx = null;
 function initAudio() {
     try {
@@ -41,7 +13,6 @@ function initAudio() {
             let AudioContext = window.AudioContext || window.webkitAudioContext;
             if(AudioContext) {
                 audioCtx = new AudioContext();
-                playNextBGM();
             }
         } else if(audioCtx.state === 'suspended') {
             audioCtx.resume();
@@ -51,11 +22,14 @@ function initAudio() {
     }
 }
 
+let _cachedNoiseBuffer = null;
 function createNoiseBuffer(ctx, duration) {
+    if (duration <= 0.3 && _cachedNoiseBuffer) return _cachedNoiseBuffer;
     const sampleRate = ctx.sampleRate;
-    const buf = ctx.createBuffer(1, sampleRate * duration, sampleRate);
+    const buf = ctx.createBuffer(1, Math.ceil(sampleRate * duration), sampleRate);
     const data = buf.getChannelData(0);
     for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+    if (duration <= 0.3) _cachedNoiseBuffer = buf;
     return buf;
 }
 
@@ -95,10 +69,15 @@ function playSFX(type) {
     };
 
     if (type === 'hit') {
-        master.gain.setValueAtTime(0.5, now);
-        play('osc', 120, 40,  'sine',    0.8, 0.005, 0.08);
-        play('osc', 200, 60,  'square',  0.3, 0.003, 0.06);
-        playNoise(0.6, 800,   0.003, 0.07, 'bandpass');
+        // 플레이어가 때릴 때: 묵직하고 짧은 타격음
+        master.gain.setValueAtTime(0.45, now);
+        play('osc', 180, 60, 'sine', 0.9, 0.004, 0.07);
+        playNoise(0.5, 600, 0.003, 0.055, 'bandpass');
+    } else if (type === 'hit_receive') {
+        // 플레이어가 맞을 때: 약간 다른 느낌 (높은 톤)
+        master.gain.setValueAtTime(0.35, now);
+        play('osc', 250, 80, 'triangle', 0.7, 0.003, 0.08);
+        playNoise(0.4, 1200, 0.002, 0.06, 'bandpass');
     } else if (type === 'hit_critical') {
         master.gain.setValueAtTime(0.7, now);
         play('osc', 300, 80,  'sawtooth', 0.6, 0.002, 0.12);
@@ -442,6 +421,20 @@ class Entity {
     }
     applyRawDamage(amount, attacker, triggerEffects=true){
         if(this.isDead) return 0;
+        
+        // ★ 넥서스 보호막: 수호탑(nexus_turret)이 하나라도 살아있으면 넥서스 무적
+        if (this.type === 'nexus') {
+            const guardTurretsAlive = entities.filter(
+                e => e.type === 'nexus_turret' && e.faction === this.faction && !e.isDead
+            ).length;
+            if (guardTurretsAlive > 0) {
+                // 피해 흡수 시각 효과
+                spawnParticles(this.x + rand(-30,30), this.y - 20, '#60a5fa', 3, 60, 0.3);
+                addText(this.x, this.y - 60, '🛡️ 보호됨', '#60a5fa', 12);
+                return 0;
+            }
+        }
+
         this.lastAttackedTimer=REGEN_DELAY+0.5; this.nonCombatTimer=0;
         let dmg=Math.max(1, Math.floor(amount));
         
@@ -469,7 +462,9 @@ class Entity {
         addText(this.x+rand(-15,15), this.y-this.radius-10, isCrit?'\u{1F4A5}'+dmg:dmg, attacker===player?'#fbbf24':'#f8fafc', isCrit?18:14);
 
         if(this.hp<=0){ this.hp=0; this.isDead=true; if(attacker&&attacker.onKill) attacker.onKill(this); this.onDeath(attacker); }
-        playSFX('hit');
+        if (attacker === player || this === player) {
+            playSFX(attacker === player ? 'hit' : 'hit_receive');
+        }
         return dmg;
     }
     onDeath(attacker){}
@@ -486,6 +481,8 @@ class Hero extends Entity {
         this.baseAspd=t.aspd; this.aspd=t.aspd; this.baseMoveSpd=t.move; this.moveSpd=t.move;
         this.range=t.range; this.radius=22;
         this.level=1; this.exp=0; this.maxExp=100; this.gold=300;
+        this.deaths = 0;
+        this.assists = 0;
         this.inventory=[];
         this.heroSkill1Timer=0; this.heroSkill2Timer=0;
         // 뱀서라이크 패시브 스킬 시스템
@@ -503,8 +500,11 @@ class Hero extends Entity {
         this.facingDir=1;
     }
     update(dt){
-        // 자연 골드 획득 (패시브)
-        if(!this.isDead) this.gold += dt * 4;
+        // 자연 골드 및 EXP 획득 (패시브)
+        if(!this.isDead) {
+            this.gold += dt * 4;
+            this.gainExp(dt * 0.5);
+        }
         
         if(this.isDead){
             this.respawnTimer-=dt;
@@ -680,7 +680,7 @@ class Hero extends Entity {
 
         if(HERO_TMPL[this.heroKey].type==='ranged'){
             projectiles.push(new Projectile(this.x, this.y-this.radius, target, dmg, this, isCrit));
-            playSFX('shoot');
+            if(this.isPlayer) playSFX('shoot');
         } else {
             let dealt=target.applyRawDamage(dmg, this); this.totalDmg+=dealt;
             this.triggerOnHitPassives(target);
@@ -695,26 +695,26 @@ class Hero extends Entity {
         this.kills++;
         this.triggerOnKillPassives(target);
         if(target.type==='hero'){
-            this.gold+=250; this.gainExp(50);
+            this.gold+=250; this.gainExp(80);
             if(target.faction!=='BLUE') GS.scoreBlue++; else GS.scoreRed++;
             document.getElementById('scoreBlue').textContent=GS.scoreBlue; document.getElementById('scoreRed').textContent=GS.scoreRed;
             showBanner(HERO_TMPL[target.heroKey].name + ' 처치!', '⚔️', this.faction==='BLUE');
-            if(this.isPlayer) addText(this.x, this.y-40, '+250G / 50XP', '#fbbf24', 16);
+            if(this.isPlayer) addText(this.x, this.y-40, '+250G / 80XP', '#fbbf24', 16);
         } else if(target.type==='minion'){ 
-            this.gold+=60; this.gainExp(15);
+            this.gold+=60; this.gainExp(25);
             if(this.isPlayer) addText(this.x, this.y-40, '+60G', '#fbbf24', 16);
         } else if(target.type==='jungle'){ 
-            this.gold+=100; this.gainExp(40);
-            if(this.isPlayer) addText(this.x, this.y-40, '+100G / 40XP', '#fbbf24', 18);
+            this.gold+=100; this.gainExp(60);
+            if(this.isPlayer) addText(this.x, this.y-40, '+100G / 60XP', '#fbbf24', 18);
         } else if(target.type.startsWith('boss')){ 
-            this.gold+=400; this.gainExp(100); showBanner('보스 처치!', '👑', this.faction==='BLUE'); 
-            if(this.isPlayer) addText(this.x, this.y-40, '+400G / 100XP', '#fbbf24', 18);
+            this.gold+=400; this.gainExp(150); showBanner('보스 처치!', '👑', this.faction==='BLUE'); 
+            if(this.isPlayer) addText(this.x, this.y-40, '+400G / 150XP', '#fbbf24', 18);
         }
     }
     gainExp(amt){
         this.exp+=amt;
         while(this.exp>=this.maxExp){
-            this.exp-=this.maxExp; this.level++; this.maxExp=Math.floor(this.maxExp*1.25);
+            this.exp-=this.maxExp; this.level++; this.maxExp=Math.floor(this.maxExp*1.15); // 레벨업 요구치 완화
             let stats=['atk','hp','move','aspd']; let c=stats[Math.floor(Math.random()*stats.length)];
             let statMsg = '';
             if(c==='atk') { this.baseAtk+=6; statMsg = '공격력 +6'; }
@@ -733,6 +733,7 @@ class Hero extends Entity {
         }
     }
     onDeath(attacker){
+        this.deaths++;
         this.respawnTimer = Math.min(5 + this.level * 0.8, 25); // 부활 시간 조정
         if(this.isPlayer) document.getElementById('respawnOverlay').classList.replace('hidden', 'flex');
         spawnParticles(this.x,this.y,HERO_TMPL[this.heroKey].color,20,200,1.0);
@@ -1088,9 +1089,9 @@ class Building extends Entity {
     constructor(x,y,faction,btype){
         super(x,y,faction,btype);
         this.isBuilding=true;
-        if(btype==='nexus'){ this.maxHp=6000; this.atk=0; this.range=0; this.radius=50; }
-        else if(btype==='nexus_turret') { this.maxHp=3500; this.atk=280; this.aspd=1.3; this.range=320; this.radius=20; }
-        else { this.maxHp=4000; this.atk=220; this.aspd=1.1; this.range=330; this.radius=28; } // 타워 버프
+        if(btype==='nexus'){ this.maxHp=10000; this.atk=0; this.range=0; this.radius=50; }
+        else if(btype==='nexus_turret') { this.maxHp=8000; this.atk=400; this.aspd=1.5; this.range=350; this.radius=22; }
+        else { this.maxHp=6000; this.atk=280; this.aspd=1.2; this.range=360; this.radius=28; } // 타워 버프
         this.hp=this.maxHp;
     }
     update(dt){
@@ -1105,19 +1106,22 @@ class Building extends Entity {
             if(target){
                 this.attackTimer=1/this.aspd;
                 let dmg = this.atk;
-                if(target.type==='hero' && GS.time < 300) dmg = Math.floor(dmg * 0.5); // 초반 타워 보호
+                if(target.type==='hero' && GS.time < 180) dmg = Math.floor(dmg * 0.3); // 초반 3분간 영웅에게 70% 감소
                 if(target.type === 'jungle') dmg = Math.floor(dmg * 0.4); 
                 // 쌍발 투사체 (9번 요구사항)
                 projectiles.push(new Projectile(this.x,this.y-this.radius,target,dmg,this,false,'tower'));
                 setTimeout(() => { if(!this.isDead && !target.isDead) projectiles.push(new Projectile(this.x,this.y-this.radius,target,dmg,this,false,'tower')); }, 150);
-                playSFX('tower');
+                if(this.faction === player?.faction) playSFX('tower');
             }
         }
     }
     onDeath(attacker){
         if(this.type==='nexus'){
             GS.status='GAMEOVER'; document.getElementById('gameOverScreen').classList.remove('hidden');
-            let win=this.faction!=='BLUE'; document.getElementById('txtGameResult').textContent=win?'VICTORY':'DEFEAT';
+            let win=this.faction!=='BLUE'; 
+            document.getElementById('txtGameResult').textContent=win?'🏆 VICTORY':'💀 DEFEAT';
+            document.getElementById('txtGameResult').style.color=win?'#34d399':'#f87171';
+            buildScoreboard();
         }
         spawnParticles(this.x,this.y,'#f59e0b',30,300,1.5);
     }
@@ -1155,11 +1159,19 @@ class Minion extends Entity {
     }
     update(dt){
         if(this.isDead) return; super.update(dt);
-        let target=null, minD=150;
-        entities.forEach(e=>{if(e.faction!==this.faction&&!e.isDead){let d=dist(this,e);if(d<minD){minD=d;target=e;}}});
+        let closestBuilding = null, closestMinion = null, closestHero = null;
+        let dB = 150, dM = 150, dH = 150;
+        entities.forEach(e => {
+            if (e.faction === this.faction || e.isDead) return;
+            const d = dist(this, e);
+            if ((e.type==='tower'||e.type==='nexus_turret'||e.type==='nexus') && d<dB) { dB=d; closestBuilding=e; }
+            else if (e.type==='minion' && d<dM) { dM=d; closestMinion=e; }
+            else if (e.type==='hero' && d<dH) { dH=d; closestHero=e; }
+        });
+        let target = closestBuilding || closestMinion || closestHero;
         if(target){
-            if(minD>this.range){ let a=Math.atan2(target.y-this.y,target.x-this.x); this.vx=Math.cos(a)*this.moveSpd; this.vy=Math.sin(a)*this.moveSpd; }
-            else { this.vx=0; this.vy=0; if(this.attackTimer<=0){ this.attackTimer=1/this.aspd; target.applyRawDamage(this.atk,this); playSFX('hit'); spawnSlash(this.x,this.y-this.radius,Math.atan2(target.y-this.y,target.x-this.x),'#64748b',20); } }
+            if(dist(this, target)>this.range){ let a=Math.atan2(target.y-this.y,target.x-this.x); this.vx=Math.cos(a)*this.moveSpd; this.vy=Math.sin(a)*this.moveSpd; }
+            else { this.vx=0; this.vy=0; if(this.attackTimer<=0){ this.attackTimer=1/this.aspd; target.applyRawDamage(this.atk,this); spawnSlash(this.x,this.y-this.radius,Math.atan2(target.y-this.y,target.x-this.x),'#64748b',20); } }
         } else {
             if(this.wpIdx<this.waypoints.length){
                 let wp=this.waypoints[this.wpIdx]; let d=dist(this,wp);
@@ -1375,7 +1387,16 @@ window.startGame=()=>{
 window.toggleShop=()=>{ document.getElementById('shopUI').classList.toggle('hidden'); renderShop(); };
 window.buyItemUI=id=>{ if(player) player.buyItem(id); };
 window.triggerSkill=idx=>{ if(player&&!player.isDead) player.useSkill(idx); };
-window.toggleAutoSkill=()=>{ GS.autoSkill = !GS.autoSkill; document.getElementById('txtAutoSkill').textContent = GS.autoSkill?'AUTO ON':'MANUAL'; document.getElementById('txtSkill1Type').textContent = GS.autoSkill?'자동':'터치'; document.getElementById('txtSkill2Type').textContent = GS.autoSkill?'자동':'터치'; document.getElementById('btnAutoSkill').className = GS.autoSkill ? 'flex flex-col items-center justify-center bg-amber-500 text-slate-900 font-black text-[9px] w-12 h-12 rounded-xl shadow border border-amber-300 active:scale-95 transition-transform' : 'flex flex-col items-center justify-center bg-slate-700 text-slate-300 font-black text-[9px] w-12 h-12 rounded-xl shadow border border-slate-500 active:scale-95 transition-transform'; };
+window.toggleAutoSkill=()=>{
+    GS.autoSkill = !GS.autoSkill;
+    const btn = document.getElementById('btnAutoSkill');
+    const txt = document.getElementById('txtAutoSkill');
+    if (txt) txt.textContent = GS.autoSkill ? 'AUTO' : 'MANUAL';
+    if (btn) {
+        btn.style.background = GS.autoSkill ? 'rgba(245,158,11,0.85)' : 'rgba(100,116,139,0.7)';
+        btn.style.color = GS.autoSkill ? '#0f172a' : '#cbd5e1';
+    }
+};
 
 function renderShop(){
     const cont=document.getElementById('shopItemContainer'); cont.innerHTML='';
@@ -1560,26 +1581,44 @@ function renderInventory(){
 }
 
 function drawMinimap(){
-    mCanvas.width=mCanvas.clientWidth; mCanvas.height=mCanvas.clientHeight; mCtx.fillStyle='#0f172a'; mCtx.fillRect(0,0,mCanvas.width,mCanvas.height);
+    if (mCanvas.width !== mCanvas.clientWidth || mCanvas.height !== mCanvas.clientHeight) {
+        mCanvas.width = mCanvas.clientWidth || 80;
+        mCanvas.height = mCanvas.clientHeight || 80;
+    }
+    mCtx.fillStyle='#0f172a'; mCtx.fillRect(0,0,mCanvas.width,mCanvas.height);
     let sx=mCanvas.width/MAP_SIZE, sy=mCanvas.height/MAP_SIZE;
     mCtx.fillStyle='rgba(139,90,43,0.4)'; mCtx.fillRect(200*sx,200*sy,200*sx,(2700-400)*sy); mCtx.fillRect(200*sx,200*sy,(2700-400)*sx,200*sy); mCtx.fillRect(200*sx,(2700-400)*sy,(2700-400)*sx,200*sy); mCtx.fillRect((2700-400)*sx,200*sy,200*sx,(2700-400)*sy);
     mCtx.save(); mCtx.translate(1500*sx,1500*sy); mCtx.rotate(-Math.PI/4); mCtx.fillRect(-1700*sx, -100*sy, 3400*sx, 200*sy); mCtx.restore();
 
     entities.forEach(e=>{
-        if(e.isDead&&e.type!=='jungle') return;
+        if(e.isDead) return;
         let col=e.faction==='BLUE'?'#3b82f6':e.faction==='RED'?'#ef4444':'#f59e0b';
-        if(e.type==='nexus'||e.type.includes('tower')) col=e.faction==='BLUE'?'#60a5fa':'#f87171';
-        let isMob = GS.platform === 'MOBILE';
-        mCtx.fillStyle=col; let r=e.type==='hero'?(isMob?2.5:4):e.type==='nexus'?(isMob?4:6):e.type.includes('tower')?(isMob?2.5:4):(isMob?1:2);
-        if(e===player){ mCtx.fillStyle='#fcd34d'; r=isMob?3.5:5; }
+        if(e.type==='nexus') col=e.faction==='BLUE'?'#34d399':'#f87171';
+        else if(e.type==='nexus_turret') col=e.faction==='BLUE'?'#93c5fd':'#fca5a5';
+        else if(e.type==='tower') col=e.faction==='BLUE'?'#60a5fa':'#f87171';
+        
+        let r;
+        if(e===player) { col='#fcd34d'; r=4; }
+        else if(e.type==='nexus') r=6;
+        else if(e.type==='nexus_turret') r=3.5;
+        else if(e.type==='tower') r=3;
+        else if(e.type==='hero') r=3;
+        else if(e.type==='jungle') r=1.5;
+        else r=1.5; // minion
+
+        mCtx.fillStyle=col;
         mCtx.beginPath(); mCtx.arc(e.x*sx,e.y*sy,r,0,Math.PI*2); mCtx.fill();
     });
     mCtx.strokeStyle='rgba(255,255,255,0.7)'; mCtx.strokeRect(camera.x*sx-(window.innerWidth/camera.zoom*sx)/2, camera.y*sy-(window.innerHeight/camera.zoom*sy)/2, window.innerWidth/camera.zoom*sx, window.innerHeight/camera.zoom*sy);
 }
 
 function updateUI(){
-    if(!player) return; let m=Math.floor(GS.time/60), s=Math.floor(GS.time%60); document.getElementById('gameTimer').textContent=m.toString().padStart(2,'0')+':'+s.toString().padStart(2,'0');
-    document.getElementById('hudLevelBadge').textContent='Lv.'+player.level; document.getElementById('hudKDA').textContent='K:'+player.kills;
+    if(!player) return; let m=Math.floor(GS.time/60), s=Math.floor(GS.time%60); 
+    document.getElementById('gameTimer').textContent=m.toString().padStart(2,'0')+':'+s.toString().padStart(2,'0');
+    const timerMini = document.getElementById('gameTimerMini');
+    if (timerMini) timerMini.textContent = m.toString().padStart(2,'0')+':'+s.toString().padStart(2,'0');
+    
+    document.getElementById('hudLevelBadge').textContent='Lv.'+player.level; document.getElementById('hudKDA').textContent='K:'+player.kills+' / D:'+player.deaths;
     document.getElementById('hudHpBar').style.width=(player.hp/player.maxHp)*100+'%'; document.getElementById('hudHpText').textContent=Math.floor(player.hp)+' / '+Math.floor(player.maxHp); document.getElementById('hudXpBar').style.width=(player.exp/player.maxExp)*100+'%';
     const inv=document.getElementById('inventorySlots'); inv.innerHTML='';
     for(let i=0;i<8;i++){ let item=player.inventory[i]; let bi=item?BASE_ITEMS.find(b=>b.id===item.id):null; let content=item?'<span class="text-sm">'+(bi?bi.icon:'?')+'</span>'+(item.upgrade>0?'<span class="absolute -top-1 -right-1 text-[7px] bg-rose-600 text-white rounded px-0.5 font-bold">+'+item.upgrade+'</span>':''):''; inv.innerHTML+='<div class="relative w-6 h-6 md:w-8 md:h-8 rounded bg-slate-900 border border-slate-800 flex items-center justify-center">'+content+'</div>'; }
@@ -1599,4 +1638,64 @@ function updateUI(){
         });
     }
 }
+
+function buildScoreboard() {
+    const area = document.getElementById('scoreboardArea');
+    if (!area) return;
+
+    // 모든 영웅 수집
+    const allHeroes = entities.filter(e => e.type === 'hero');
+    const blueTeam = allHeroes.filter(e => e.faction === 'BLUE').sort((a,b) => b.kills - a.kills);
+    const redTeam  = allHeroes.filter(e => e.faction === 'RED').sort((a,b) => b.kills - a.kills);
+
+    const renderRow = (h, isPlayer) => {
+        const name = HERO_TMPL[h.heroKey]?.name || h.heroKey;
+        const kda = `${h.kills} / ${h.deaths} / 0`;
+        const dmg = h.totalDmg >= 1000 ? (h.totalDmg/1000).toFixed(1)+'k' : h.totalDmg;
+        const lvl = h.level;
+        const playerMark = isPlayer ? ' 👑' : '';
+        const rowBg = isPlayer ? 'rgba(252,211,77,0.1)' : 'transparent';
+        return `
+            <tr style="background:${rowBg}; ${isPlayer?'border:1px solid rgba(252,211,77,0.3);':''}">
+                <td class="py-1 px-2 text-left">
+                    <span class="text-xs font-bold text-white">${name}${playerMark}</span>
+                    <span class="text-[9px] text-slate-400 ml-1">Lv.${lvl}</span>
+                </td>
+                <td class="py-1 px-2 text-center font-mono text-xs font-bold text-white">${kda}</td>
+                <td class="py-1 px-2 text-center font-mono text-xs text-amber-400">${dmg}</td>
+            </tr>`;
+    };
+
+    const renderTeam = (team, color, label) => `
+        <div class="mb-3">
+            <div class="text-xs font-black mb-1 px-1" style="color:${color}">▣ ${label}</div>
+            <table class="w-full border-collapse">
+                <thead>
+                    <tr class="border-b border-slate-700">
+                        <th class="text-[9px] text-slate-400 text-left py-0.5 px-2">영웅</th>
+                        <th class="text-[9px] text-slate-400 text-center py-0.5 px-2">K/D/A</th>
+                        <th class="text-[9px] text-slate-400 text-center py-0.5 px-2">딜량</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${team.map(h => renderRow(h, h === player)).join('')}
+                </tbody>
+            </table>
+        </div>`;
+
+    const gameMin = Math.floor(GS.time/60), gameSec = Math.floor(GS.time%60);
+    area.innerHTML = `
+        <div class="text-[10px] text-slate-400 mb-3 text-center">
+            경기 시간: ${String(gameMin).padStart(2,'0')}:${String(gameSec).padStart(2,'0')}
+            &nbsp;|&nbsp; 블루 ${GS.scoreBlue} : ${GS.scoreRed} 레드
+        </div>
+        ${renderTeam(blueTeam, '#34d399', '🔵 BLUE TEAM')}
+        ${renderTeam(redTeam, '#f87171', '🔴 RED TEAM')}
+    `;
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    autoDetectPlatform();
+});
+
 selectHero('BERSERKER');
