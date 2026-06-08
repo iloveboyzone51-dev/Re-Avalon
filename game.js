@@ -1558,8 +1558,8 @@ window.startGame=()=>{
     console.log("Device Pixel Ratio:", window.devicePixelRatio);
     console.log("Camera Zoom:", camera.zoom);
     if(GS.platform === 'PC') {
-        // 기준 해상도를 낮춰서(예: 800px) PC에서도 좀 더 큼직하게 보이도록 합니다.
-        let pcScale = Math.max(1, window.innerWidth / 900);
+        // 기준 해상도를 낮춰서(예: 900px) PC에서도 좀 더 큼직하게 보이도록 합니다. 최대 1.4배까지만 커지도록 제한합니다.
+        let pcScale = Math.min(1.4, Math.max(1, window.innerWidth / 900));
         console.log("Applied PC Scale:", pcScale);
         
         let hud = document.getElementById('gameHUD');
