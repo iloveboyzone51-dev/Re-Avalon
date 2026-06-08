@@ -588,7 +588,7 @@ class Hero extends Entity {
         super(x,y,faction,'hero');
         this.heroKey=heroKey; this.isPlayer=isPlayer; this.laneRole = laneRole;
         let t=HERO_TMPL[heroKey];
-        this.maxHp=t.hp; this.hp=t.hp; this.baseAtk=t.atk; this.atk=t.atk;
+        this.baseMaxHp=t.hp; this.maxHp=t.hp; this.hp=t.hp; this.baseAtk=t.atk; this.atk=t.atk;
         this.baseAspd=t.aspd; this.aspd=t.aspd; this.baseMoveSpd=t.move; this.moveSpd=t.move;
         this.range=t.range; this.radius=22;
         this.level=1; this.exp=0; this.maxExp=100; this.gold=300;
@@ -821,7 +821,7 @@ class Hero extends Entity {
             let stats=['atk','hp','move','aspd']; let c=stats[Math.floor(Math.random()*stats.length)];
             let statMsg = '';
             if(c==='atk') { this.baseAtk+=6; statMsg = '공격력 +6'; }
-            if(c==='hp') { this.maxHp+=60; this.hp+=60; statMsg = '체력 +60'; }
+            if(c==='hp') { this.baseMaxHp+=60; this.hp+=60; statMsg = '체력 +60'; }
             if(c==='move') { this.baseMoveSpd+=2.5; statMsg = '이동속도 증가'; }
             if(c==='aspd') { this.baseAspd+=0.12; statMsg = '공격속도 증가'; }
             this.applyStats();
@@ -858,8 +858,8 @@ class Hero extends Entity {
         this.applyStats(); renderShop();
     }
     applyStats(){
+        this.maxHp=this.baseMaxHp; this.atk=this.baseAtk; this.aspd=this.baseAspd; this.moveSpd=this.baseMoveSpd;
         let t=HERO_TMPL[this.heroKey];
-        this.atk=this.baseAtk; this.aspd=this.baseAspd; this.moveSpd=this.baseMoveSpd;
         this.critChance=t.critChance||0; this.lifeSteal=t.lifeSteal||0;
         this.reflectRate=0; this.burnDmg=0; this.stunChance=0; this.shield=0;
         this.inventory.forEach(i=>{
