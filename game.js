@@ -1782,6 +1782,28 @@ function draw(){
 
     floatingTexts.forEach(ft=>{ ctx.globalAlpha=Math.max(0,ft.life); ctx.fillStyle=ft.color; ctx.font='bold '+ft.size+'px monospace'; ctx.textAlign='center'; ctx.fillText(ft.text, ft.x, ft.y); }); ctx.globalAlpha=1;
 
+    // Draw Speech Bubbles
+    if(window.chatBubbles) {
+        window.chatBubbles.forEach(b => {
+            if(b.hero && !b.hero.isDead && b.life > 0) {
+                ctx.save();
+                ctx.translate(b.hero.x, b.hero.y - 75);
+                ctx.font = 'bold 13px "Noto Sans KR", sans-serif';
+                let w = ctx.measureText(b.text).width + 20;
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+                ctx.beginPath();
+                ctx.roundRect(-w/2, -22, w, 28, 10);
+                ctx.fill();
+                ctx.fillStyle = '#0f172a';
+                ctx.textAlign = 'center';
+                ctx.fillText(b.text, 0, -3);
+                // arrow
+                ctx.beginPath(); ctx.moveTo(-6, 6); ctx.lineTo(6, 6); ctx.lineTo(0, 14); ctx.fillStyle='rgba(255, 255, 255, 0.95)'; ctx.fill();
+                ctx.restore();
+            }
+        });
+    }
+
     if(GS.platform==='MOBILE'&&joy.active){ ctx.restore(); ctx.save(); ctx.globalAlpha=0.4; ctx.strokeStyle='#fff'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(joy.ox,joy.oy,50,0,Math.PI*2); ctx.stroke(); ctx.globalAlpha=0.7; ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(joy.ox+joy.dx,joy.oy+joy.dy,20,0,Math.PI*2); ctx.fill(); ctx.globalAlpha=1; ctx.restore(); return; }
     ctx.restore(); drawMinimap();
 }
@@ -2209,28 +2231,4 @@ window.AIChat = {
     }
 };
 
-// Hook bubble rendering into floatingTexts loop inside resizeCanvas
-const old_resizeCanvas_hook = "floatingTexts.forEach(ft=>{ ctx.globalAlpha=Math.max(0,ft.life); ctx.fillStyle=ft.color; ctx.font='bold '+ft.size+'px monospace'; ctx.textAlign='center'; ctx.fillText(ft.text, ft.x, ft.y); }); ctx.globalAlpha=1;";
-const new_resizeCanvas_hook = `floatingTexts.forEach(ft=>{ ctx.globalAlpha=Math.max(0,ft.life); ctx.fillStyle=ft.color; ctx.font='bold '+ft.size+'px monospace'; ctx.textAlign='center'; ctx.fillText(ft.text, ft.x, ft.y); }); ctx.globalAlpha=1;
-    // Draw Speech Bubbles
-    if(window.chatBubbles) {
-        window.chatBubbles.forEach(b => {
-            if(b.hero && !b.hero.isDead && b.life > 0) {
-                ctx.save();
-                ctx.translate(b.hero.x, b.hero.y - 75);
-                ctx.font = 'bold 13px "Noto Sans KR"';
-                let w = ctx.measureText(b.text).width + 20;
-                ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
-                ctx.beginPath();
-                ctx.roundRect(-w/2, -22, w, 28, 10);
-                ctx.fill();
-                ctx.fillStyle = '#0f172a';
-                ctx.textAlign = 'center';
-                ctx.fillText(b.text, 0, -3);
-                // arrow
-                ctx.beginPath(); ctx.moveTo(-6, 6); ctx.lineTo(6, 6); ctx.lineTo(0, 14); ctx.fillStyle='rgba(255, 255, 255, 0.95)'; ctx.fill();
-                ctx.restore();
-            }
-        });
-    }
-`;
+
