@@ -1169,18 +1169,7 @@ class Hero extends Entity {
         ctx.beginPath(); ctx.arc(this.x, this.y, this.radius+4, 0, Math.PI*2);
         ctx.strokeStyle=this.isPlayer?'#fcd34d':(this.faction==='BLUE'?'#3b82f6':'#ef4444'); ctx.lineWidth=this.isPlayer?3:2; ctx.stroke();
         
-        // AI Debug Text
-        if (!this.isPlayer) {
-            ctx.fillStyle = '#ffffff';
-            ctx.font = 'bold 10px monospace';
-            ctx.textAlign = 'center';
-            ctx.fillText(`[상태] ${this.aiState || 'IDLE'}`, this.x, this.y - this.radius - 40);
-            let tgtName = this.aiTarget ? (this.aiTarget.heroKey ? HERO_TMPL[this.aiTarget.heroKey].name : this.aiTarget.type) : 'None';
-            ctx.fillText(`Target: ${tgtName}`, this.x, this.y - this.radius - 30);
-            ctx.fillText(`Dest: ${Math.round(this.aiTx||0)}, ${Math.round(this.aiTy||0)}`, this.x, this.y - this.radius - 20);
-            let timeSinceStateChange = (GS.time - (this.aiStateChangedAt || 0)).toFixed(1);
-            ctx.fillText(`Time: ${timeSinceStateChange}s`, this.x, this.y - this.radius - 10);
-        }
+        // AI Debug Text removed
 
         let bw=50, bh=6, bx=this.x-bw/2, by=this.y-this.radius-10;
         ctx.fillStyle='#1e293b'; ctx.fillRect(bx-1,by-1,bw+2,bh+2); ctx.fillStyle='#374151'; ctx.fillRect(bx,by,bw,bh);

@@ -164,27 +164,28 @@
 </div>
 
 <!-- ══════════ 인게임 HUD ══════════ -->
-<div id="gameHUD" class="flex justify-between items-start pointer-events-none p-1.5 md:p-4 absolute inset-0 z-30 hidden select-none flex-col h-full">
+<div id="gameHUD" class="absolute inset-0 z-10 pointer-events-none hidden select-none flex-col justify-between p-2">
 
     <!-- 상단 HUD -->
     <div class="flex justify-between items-start pointer-events-auto w-full relative">
 
         <!-- 좌상단: 플레이어 정보 -->
-        <div class="flex flex-col gap-1 z-20">
+        <div class="flex flex-col gap-1 z-20 md:scale-150 md:origin-top-left">
             <!-- 캐릭터 정보 카드 -->
-            <div class="bg-slate-950/90 border border-slate-800 rounded-xl p-2 w-32 md:w-48 shadow-xl backdrop-blur-md pointer-events-auto">
-                <div class="flex justify-between items-end mb-1">
-                    <div class="flex flex-col">
-                        <span id="hudHeroName" class="text-[10px] md:text-[14px] font-black text-white leading-tight">HERO</span>
-                        <span id="hudLevelBadge" class="text-[8px] md:text-[11px] px-1.5 py-0.5 rounded-md bg-amber-500 text-slate-950 font-black">Lv.1</span>
+            <div class="flex items-center gap-2 bg-slate-950/90 border border-slate-800 rounded-xl p-2 shadow-2xl backdrop-blur-md">
+                <div class="w-36">
+                    <div class="flex items-center justify-between mb-1">
+                        <div class="flex items-center gap-1.5">
+                            <span id="hudHeroName" class="font-black text-white text-xs">영웅</span>
+                            <span id="hudLevelBadge" class="text-[8px] px-1.5 py-0.5 rounded-md bg-amber-500 text-slate-950 font-black">Lv.1</span>
+                        </div>
+                        <span id="hudKDA" class="text-[8px] text-slate-400 font-mono bg-slate-900 px-1 rounded border border-slate-700">K:0 D:0</span>
                     </div>
-                    <span id="hudKDA" class="text-[8px] md:text-[11px] text-slate-400 font-mono bg-slate-900 px-1 rounded border border-slate-700">K:0 D:0</span>
-                </div>
-                <!-- HP바 -->
-                <div class="h-3 md:h-5 bg-slate-900 rounded-full overflow-hidden relative border border-slate-800 mb-1">
-                    <div id="hudHpBar" class="h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full w-full"></div>
-                    <span id="hudHpText" class="absolute inset-0 text-[8px] md:text-[12px] font-mono font-black text-white flex items-center justify-center drop-shadow">100/100</span>
-                </div>
+                    <!-- HP바 -->
+                    <div class="h-3 bg-slate-900 rounded-full overflow-hidden relative border border-slate-800 mb-1">
+                        <div id="hudHpBar" class="h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full w-full"></div>
+                        <span id="hudHpText" class="absolute inset-0 text-[8px] font-mono font-black text-white flex items-center justify-center drop-shadow">100/100</span>
+                    </div>
                     <!-- XP바 -->
                     <div class="h-1.5 bg-slate-900 rounded-full overflow-hidden">
                         <div id="hudXpBar" class="h-full bg-gradient-to-r from-amber-400 to-yellow-300 rounded-full" style="width:0%"></div>
@@ -195,61 +196,61 @@
             </div>
 
             <!-- 미니맵 이동됨 -->
-            <div class="bg-slate-950/90 border border-slate-800 rounded-xl p-1 shadow-xl backdrop-blur-md w-[80px] md:w-[140px]">
+            <div class="bg-slate-950/90 border border-slate-800 rounded-xl p-1 shadow-xl backdrop-blur-md" style="width:80px;">
                 <div class="flex justify-between items-center mb-0.5 px-0.5">
-                    <span class="text-[6px] md:text-[10px] text-slate-500 font-bold uppercase">MAP</span>
-                    <span id="gameTimerMini" class="text-[6px] md:text-[10px] text-amber-400 font-mono font-bold">00:00</span>
+                    <span class="text-[6px] text-slate-500 font-bold uppercase">MAP</span>
+                    <span id="gameTimerMini" class="text-[6px] text-amber-400 font-mono font-bold">00:00</span>
                 </div>
-                <div class="relative w-full overflow-hidden rounded h-[80px] md:h-[140px]" style="background:#0f172a;">
+                <div class="relative w-full overflow-hidden rounded" style="height:80px; background:#0f172a;">
                     <canvas id="minimapCanvas" style="width:100%; height:100%;"></canvas>
                 </div>
             </div>
         </div>
 
-        <!-- 중앙 상단: 스코어 + 타이머 -->
-        <div class="flex flex-col items-center gap-1 shrink-0 z-10 pt-1 md:pt-4">
-            <div class="bg-slate-950/90 border border-slate-800 rounded-2xl px-2.5 md:px-5 py-1 text-center shadow-2xl flex items-center gap-2 md:gap-6 text-white backdrop-blur-md scale-90 md:scale-125 origin-top">
-                <div class="text-emerald-400 font-black text-lg md:text-2xl flex flex-col leading-none">
-                    <span class="text-[7px] md:text-[10px] text-slate-400 tracking-widest font-bold">BLUE</span>
+        <!-- 중앙 상단: 스코어 + 타이머 (절대 위치 제거하여 겹침 방지) -->
+        <div class="flex flex-col items-center gap-1 shrink-0 z-10 pt-1 md:scale-150 md:origin-top md:pt-4">
+            <div class="bg-slate-950/90 border border-slate-800 rounded-2xl px-2.5 md:px-5 py-1 text-center shadow-2xl flex items-center gap-2 md:gap-6 text-white backdrop-blur-md origin-top">
+                <div class="text-emerald-400 font-black text-lg flex flex-col leading-none">
+                    <span class="text-[7px] text-slate-400 tracking-widest font-bold">BLUE</span>
                     <span id="scoreBlue">0</span>
                 </div>
                 <div class="flex flex-col items-center">
-                    <span id="gameTimer" class="font-mono text-xl md:text-3xl font-black text-slate-200 orbitron">00:00</span>
-                    <div id="suddenDeathWarn" class="hidden text-[8px] md:text-[12px] text-red-500 font-black animate-pulse">⚠ 서든데스</div>
+                    <span id="gameTimer" class="font-mono text-xl font-black text-slate-200 orbitron">00:00</span>
+                    <div id="suddenDeathWarn" class="hidden text-[8px] text-red-500 font-black animate-pulse">⚠ 서든데스</div>
                 </div>
-                <div class="text-rose-400 font-black text-lg md:text-2xl flex flex-col leading-none">
-                    <span class="text-[7px] md:text-[10px] text-slate-400 tracking-widest font-bold">RED</span>
+                <div class="text-rose-400 font-black text-lg flex flex-col leading-none">
+                    <span class="text-[7px] text-slate-400 tracking-widest font-bold">RED</span>
                     <span id="scoreRed">0</span>
                 </div>
             </div>
         </div>
 
         <!-- 우상단: 상점 + 인벤토리 -->
-        <div class="flex flex-col items-end gap-1.5 md:gap-3 z-20">
+        <div class="flex flex-col items-end gap-1.5 z-20 md:scale-150 md:origin-top-right">
             <div class="flex flex-col items-end gap-1 pointer-events-auto">
                 <!-- 골드 표시 -->
-                <div class="bg-slate-950/95 border border-amber-500/50 rounded-lg px-2 py-1 md:px-4 md:py-2 flex items-center gap-1.5 md:gap-3">
-                    <span class="text-amber-400 text-xs md:text-lg">💰</span>
-                    <span id="hudGoldText" class="text-amber-300 font-black font-mono text-sm md:text-xl">0G</span>
+                <div class="bg-slate-950/95 border border-amber-500/50 rounded-lg px-2 py-1 flex items-center gap-1.5">
+                    <span class="text-amber-400 text-xs">💰</span>
+                    <span id="hudGoldText" class="text-amber-300 font-black font-mono text-sm">0G</span>
                 </div>
                 <!-- 상점 버튼 -->
                 <button onclick="toggleShop()"
-                        class="bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 font-black text-[11px] md:text-[16px] px-3 py-2 md:px-6 md:py-3 rounded-xl shadow-lg flex items-center gap-1 border border-amber-300 active:scale-95 transition-transform">
+                        class="bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 font-black text-[11px] px-3 py-2 rounded-xl shadow-lg flex items-center gap-1 border border-amber-300 active:scale-95 transition-transform">
                     🛒 상점
                 </button>
             </div>
-            <!-- 인벤토리 슬롯 (2x4 가 아니라 4x4 로) -->
-            <div class="grid grid-cols-4 gap-1 md:gap-2 bg-slate-950/40 p-1.5 md:p-3 rounded-xl border border-slate-800/50 pointer-events-auto scale-100 md:scale-125 origin-top-right" id="inventorySlots">
+            <!-- 인벤토리 슬롯 (2x4 그리드 구조로 변경 및 투명도 증가) -->
+            <div class="grid grid-cols-4 gap-1 bg-slate-950/40 p-1.5 rounded-xl border border-slate-800/50 pointer-events-auto" id="inventorySlots">
                 <!-- JS가 채움 -->
             </div>
         </div>
     </div>
 
     <!-- 상점 패널 (슬라이드 업 형태로 모바일 최적화) -->
-    <div id="shopUI" class="absolute right-0 bottom-0 md:right-2 md:top-20 md:bottom-auto z-40 bg-slate-950/98 border border-slate-700 rounded-t-2xl md:rounded-2xl p-3 w-full md:w-80 text-white hidden pointer-events-auto shadow-2xl backdrop-blur-xl md:scale-125 md:origin-top-right" style="max-height: 60vh; transition: transform 0.3s ease-out;">
+    <div id="shopUI" class="absolute right-0 bottom-0 md:right-2 md:top-20 md:bottom-auto z-40 bg-slate-950/98 border border-slate-700 rounded-t-2xl md:rounded-2xl p-3 w-full md:w-72 text-white hidden pointer-events-auto shadow-2xl backdrop-blur-xl md:scale-150 md:origin-top-right" style="max-height: 60vh; transition: transform 0.3s ease-out;">
         <div class="flex justify-between items-center border-b border-slate-800 pb-2 mb-2">
-            <h2 class="text-sm md:text-base font-black text-amber-400">🛒 보급소</h2>
-            <div class="text-[8px] md:text-[10px] text-slate-400 hidden md:block">중복구매 = 강화 (+1~+9)</div>
+            <h2 class="text-sm font-black text-amber-400">🛒 보급소</h2>
+            <div class="text-[8px] text-slate-400 hidden md:block">중복구매 = 강화 (+1~+9)</div>
             <button onclick="toggleShop()" class="text-slate-400 hover:text-white text-xl font-bold ml-2">&times;</button>
         </div>
         <div class="flex flex-col gap-1.5 overflow-y-auto pr-0.5" style="max-height:calc(60vh - 60px);" id="shopItemContainer"></div>
