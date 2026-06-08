@@ -483,6 +483,7 @@ class Hero extends Entity {
         this.level=1; this.exp=0; this.maxExp=100; this.gold=300;
         this.deaths = 0;
         this.assists = 0;
+        this.attackAnimTimer = 0;
         this.inventory=[];
         this.heroSkill1Timer=0; this.heroSkill2Timer=0;
         // 뱀서라이크 패시브 스킬 시스템
@@ -500,6 +501,7 @@ class Hero extends Entity {
         this.facingDir=1;
     }
     update(dt){
+        if(this.attackAnimTimer > 0) this.attackAnimTimer -= dt;
         // 자연 골드 및 EXP 획득 (패시브)
         if(!this.isDead) {
             this.gold += dt * 4;
@@ -638,10 +640,10 @@ class Hero extends Entity {
                 }
                 
                 // 적 발견 시 타게팅
-                let closeEnemy = entities.filter(e=>e.faction!==this.faction && !e.isDead && dist(this,e)<this.range).sort((a,b)=>dist(this,a)-dist(this,b))[0];
-                if(closeEnemy) {
+                let targetEnemy = entities.filter(e=>e.faction!==this.faction && !e.isDead && dist(this,e)<this.range).sort((a,b)=>dist(this,a)-dist(this,b))[0];
+                if(targetEnemy) {
                     this.vx=0; this.vy=0;
-                    this.facingDir = closeEnemy.x < this.x ? -1 : 1;
+                    this.facingDir = targetEnemy.x < this.x ? -1 : 1;
                     if(this.heroSkill1Timer <= 0) this.useSkill(1);
                 } else {
                     let underEnemyTower = entities.some(t=>(t.type==='tower'||t.type==='nexus_turret') && t.faction!==this.faction && !t.isDead && dist(this,t)<t.range+50);
@@ -1053,7 +1055,14 @@ class Hero extends Entity {
         if(this.isDead) return;
         let t=HERO_TMPL[this.heroKey];
         if(this.stunTimer>0){ ctx.strokeStyle='#fbbf24'; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(this.x, this.y-this.radius, this.radius*1.4, 0, Math.PI*2); ctx.stroke(); }
+        
+        ctx.save();
+        if(this.attackAnimTimer > 0) {
+            let push = Math.sin(this.attackAnimTimer * Math.PI / 0.15) * 12;
+            ctx.translate(this.facingDir * push, 0);
+        }
         t.draw(ctx, this.x, this.y, this.radius, this.facingDir, this.faction);
+        ctx.restore();
         
         ctx.beginPath(); ctx.arc(this.x, this.y, this.radius+4, 0, Math.PI*2);
         ctx.strokeStyle=this.isPlayer?'#fcd34d':(this.faction==='BLUE'?'#3b82f6':'#ef4444'); ctx.lineWidth=this.isPlayer?3:2; ctx.stroke();
@@ -1159,16 +1168,13 @@ class Minion extends Entity {
     }
     update(dt){
         if(this.isDead) return; super.update(dt);
-        let closestBuilding = null, closestMinion = null, closestHero = null;
-        let dB = 150, dM = 150, dH = 150;
-        entities.forEach(e => {
-            if (e.faction === this.faction || e.isDead) return;
-            const d = dist(this, e);
-            if ((e.type==='tower'||e.type==='nexus_turret'||e.type==='nexus') && d<dB) { dB=d; closestBuilding=e; }
-            else if (e.type==='minion' && d<dM) { dM=d; closestMinion=e; }
-            else if (e.type==='hero' && d<dH) { dH=d; closestHero=e; }
+        let target=null, minD=150;
+        entities.forEach(e=>{
+            if(e.faction!==this.faction && !e.isDead){
+                let d=dist(this,e);
+                if(d<minD){ minD=d; target=e; }
+            }
         });
-        let target = closestBuilding || closestMinion || closestHero;
         if(target){
             if(dist(this, target)>this.range){ let a=Math.atan2(target.y-this.y,target.x-this.x); this.vx=Math.cos(a)*this.moveSpd; this.vy=Math.sin(a)*this.moveSpd; }
             else { this.vx=0; this.vy=0; if(this.attackTimer<=0){ this.attackTimer=1/this.aspd; target.applyRawDamage(this.atk,this); spawnSlash(this.x,this.y-this.radius,Math.atan2(target.y-this.y,target.x-this.x),'#64748b',20); } }
