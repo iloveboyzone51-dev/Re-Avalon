@@ -277,13 +277,20 @@
 
         <!-- 스킬 버튼 (우하단 플로팅) -->
         <div id="uiSkillBar" class="pointer-events-auto absolute bottom-4 right-4 flex flex-col items-center gap-2 z-20">
-            <!-- AUTO 토글 -->
-            <button onmousedown="toggleAutoSkill()" ontouchstart="toggleAutoSkill(); event.preventDefault();"
-                    id="btnAutoSkill"
-                    class="text-[9px] font-black px-2 py-0.5 rounded-full border transition-all active:scale-90 shadow-md"
-                    style="background:rgba(100,116,139,0.85); color:#fff; border-color:rgba(148,163,184,0.6);">
-                <span id="txtAutoSkill">MANUAL</span>
-            </button>
+            <div class="flex gap-2">
+                <!-- SFX 토글 -->
+                <button onclick="toggleSFX()" id="btnToggleSFX"
+                        class="text-[12px] font-black px-2 py-0.5 rounded-full border transition-all active:scale-90 shadow-md text-emerald-400 border-slate-400 bg-slate-800/85">
+                    🔊
+                </button>
+                <!-- AUTO 스킬 -->
+                <button onmousedown="toggleAutoSkill()" ontouchstart="toggleAutoSkill(); event.preventDefault();"
+                        id="btnAutoSkill"
+                        class="text-[9px] font-black px-2 py-0.5 rounded-full border transition-all active:scale-90 shadow-md"
+                        style="background:rgba(100,116,139,0.85); color:#fff; border-color:rgba(148,163,184,0.6);">
+                    <span id="txtAutoSkill">MANUAL</span>
+                </button>
+            </div>
 
             <!-- 스킬 2 -->
             <button onmousedown="triggerSkill(2)" ontouchstart="triggerSkill(2); event.preventDefault();"

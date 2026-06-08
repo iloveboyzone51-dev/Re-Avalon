@@ -33,8 +33,17 @@ function createNoiseBuffer(ctx, duration) {
     return buf;
 }
 
+window.toggleSFX = () => {
+    GS.sfxEnabled = !GS.sfxEnabled;
+    const btn = document.getElementById('btnToggleSFX');
+    if(btn) {
+        btn.innerHTML = GS.sfxEnabled ? '🔊' : '🔇';
+        btn.style.color = GS.sfxEnabled ? '#34d399' : '#94a3b8';
+    }
+};
+
 function playSFX(type) {
-    if (!audioCtx) return;
+    if (!GS.sfxEnabled || !audioCtx) return;
     if (audioCtx.state === 'suspended') { audioCtx.resume(); return; }
 
     const now = audioCtx.currentTime;
@@ -188,7 +197,7 @@ const PASSIVE_SKILLS = [
 ];
 
 // ============ 전역 상태 ============
-let GS = { status:'TITLE', platform:'PC', faction:'BLUE', hero:'BERSERKER', time:0, lastFrame:0, paused:false, autoSkill:false, hitStopTimer:0 };
+let GS = { status:'TITLE', platform:'PC', faction:'BLUE', hero:'BERSERKER', time:0, lastFrame:0, paused:false, autoSkill:false, hitStopTimer:0, sfxEnabled:true };
 let camera = { x:1500, y:2500, zoom:0.65 };
 let player = null;
 let entities = [];
@@ -249,6 +258,7 @@ function showBanner(text,icon='⚔️',isBlue=true){
 
 // ============ 2.5D SVG 캐릭터 렌더링 ============
 function drawBlockyHero(ctx, x, y, r, dir, faction, type, attackAnimTimer = 0) {
+    let rotDir = dir < 0 ? -1 : 1;
     // 그림자
     ctx.fillStyle = 'rgba(0,0,0,0.3)';
     ctx.beginPath(); ctx.ellipse(x, y+r*0.8, r*0.7, r*0.25, 0, 0, Math.PI*2); ctx.fill();
