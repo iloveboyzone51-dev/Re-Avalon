@@ -188,7 +188,7 @@ const PASSIVE_SKILLS = [
 ];
 
 // ============ 전역 상태 ============
-let GS = { status:'TITLE', platform:'PC', faction:'BLUE', hero:'BERSERKER', time:0, lastFrame:0, paused:false, autoSkill:true, hitStopTimer:0 };
+let GS = { status:'TITLE', platform:'PC', faction:'BLUE', hero:'BERSERKER', time:0, lastFrame:0, paused:false, autoSkill:false, hitStopTimer:0 };
 let camera = { x:1500, y:2500, zoom:0.65 };
 let player = null;
 let entities = [];
@@ -667,14 +667,18 @@ class Hero extends Entity {
         
         let oldState = this.aiState;
         
+        if (this.isRetreating && hpRatio >= 0.85) {
+            this.isRetreating = false;
+        }
+
         // 1. 상태 결정 로직 (1차: 기존 AI 유지, 체력 판단만 추가)
         if(hpRatio < 0.3 || this.isRetreating) {
             this.aiState = 'RETREAT';
+            this.isRetreating = true;
         } else if(this.laneRole === 'jungle' && hpRatio > 0.4) {
             this.aiState = 'JUNGLE';
         } else {
             this.aiState = 'LANE';
-            if(hpRatio >= 0.85) this.isRetreating = false;
         }
 
         if (oldState !== this.aiState) {
