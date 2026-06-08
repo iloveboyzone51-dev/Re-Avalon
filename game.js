@@ -1450,7 +1450,11 @@ function spawnChainEffect(x1,y1,x2,y2) {
 // ============ 입력 이벤트 & 줌 ============
 window.addEventListener('keydown',e=>{ let k=e.key.toLowerCase(); if(keys.hasOwnProperty(k)) keys[k]=true; if(k==='o'&&player&&!GS.autoSkill) player.useSkill(1); if(k==='p'&&player&&!GS.autoSkill) player.useSkill(2); });
 window.addEventListener('keyup',e=>{ let k=e.key.toLowerCase(); if(keys.hasOwnProperty(k)) keys[k]=false; });
-window.addEventListener('wheel', e => { camera.zoom -= e.deltaY * 0.001; camera.zoom = clamp(camera.zoom, 0.3, 2.0); });
+window.addEventListener('wheel', e => { 
+    e.preventDefault();
+    camera.zoom -= e.deltaY * 0.001; 
+    camera.zoom = clamp(camera.zoom, 0.3, 2.0); 
+}, { passive: false });
 
 let initPinchD = null, initZoom = 1.0;
 window.addEventListener('touchstart',e=>{
