@@ -1558,13 +1558,16 @@ window.startGame=()=>{
     console.log("Device Pixel Ratio:", window.devicePixelRatio);
     console.log("Camera Zoom:", camera.zoom);
     if(GS.platform === 'PC') {
-        let pcScale = Math.max(1, window.innerWidth / 1280);
-        console.log("Suggested PC Scale:", pcScale);
-        // Experimental Scale Fix (Can be enabled later)
-        // document.getElementById('gameHUD').style.transform = `scale(${pcScale})`;
-        // document.getElementById('gameHUD').style.transformOrigin = 'top left';
-        // document.getElementById('gameHUD').style.width = `${100/pcScale}%`;
-        // document.getElementById('gameHUD').style.height = `${100/pcScale}%`;
+        // 기준 해상도를 낮춰서(예: 800px) PC에서도 좀 더 큼직하게 보이도록 합니다.
+        let pcScale = Math.max(1, window.innerWidth / 900);
+        console.log("Applied PC Scale:", pcScale);
+        
+        let hud = document.getElementById('gameHUD');
+        hud.style.transform = `scale(${pcScale})`;
+        hud.style.transformOrigin = 'top left';
+        // 스케일링 후 잘림 방지를 위해 width/height 조정
+        hud.style.width = `${100/pcScale}%`;
+        hud.style.height = `${100/pcScale}%`;
     }
 
     document.getElementById('hudHeroName').textContent=HERO_TMPL[GS.hero].name;
