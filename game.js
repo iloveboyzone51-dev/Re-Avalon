@@ -302,6 +302,17 @@ function drawBlockyHero(ctx, x, y, r, dir, faction, type, attackAnimTimer = 0) {
         // 팀 뱃지
         ctx.fillStyle = fCol; ctx.beginPath(); ctx.arc(x, y-r*0.1, r*0.15, 0, Math.PI*2); ctx.fill();
         ctx.restore();
+        
+        // 애니메이션 디버그 로그
+        if (attackAnimTimer > 0) {
+            ctx.save();
+            ctx.translate(x, y-r*2.5);
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '10px monospace';
+            ctx.textAlign = 'center';
+            ctx.fillText(`BodyRot: ${(bodyRot||0).toFixed(2)}`, 0, 0);
+            ctx.restore();
+        }
     };
 
     if(type === 'berserker') {
@@ -323,6 +334,17 @@ function drawBlockyHero(ctx, x, y, r, dir, faction, type, attackAnimTimer = 0) {
             ctx.fillStyle = 'rgba(255,255,255,0.4)';
             ctx.beginPath(); ctx.moveTo(0,0); ctx.arc(0, 0, r*1.2, -Math.PI*0.5, -Math.PI*0.5 + swingRot); ctx.closePath(); ctx.fill();
         }
+        
+        if (attackAnimTimer > 0) {
+            ctx.save();
+            ctx.translate(0, -r*1.5);
+            ctx.rotate(-swingRot);
+            ctx.fillStyle = '#ff00ff';
+            ctx.font = '10px monospace';
+            ctx.fillText(`Arm/Wpn: ${(swingRot).toFixed(2)}`, -20, 0);
+            ctx.restore();
+        }
+        
         ctx.restore();
         
     } else if(type === 'archer') {
@@ -642,41 +664,21 @@ class Hero extends Entity {
         
         let nearAllies = entities.filter(e=>e.faction===this.faction && e.type==='hero' && !e.isDead && dist(this,e)<600);
         let nearEnemies = entities.filter(e=>e.faction!==this.faction && e.type==='hero' && !e.isDead && dist(this,e)<600);
-        // 1. 상태 결정 로직
+        
+        let oldState = this.aiState;
+        
+        // 1. 상태 결정 로직 (1차: 기존 AI 유지, 체력 판단만 추가)
         if(hpRatio < 0.3 || this.isRetreating) {
             this.aiState = 'RETREAT';
-            // 뱀파이어는 저체력 시 흡혈(전투)을 우선할 수 있음
-            if(this.heroKey === 'VAMPIRE' && nearEnemies.length > 0 && hpRatio > 0.15) {
-                this.aiState = 'TEAMFIGHT'; 
-                this.isRetreating = false;
-            }
-        } else if(nearEnemies.length > 0) {
-            // 보스 합류 판단
-            let bossAlive = entities.some(e=>e.type.startsWith('boss') && !e.isDead);
-            if(bossAlive && hpRatio > 0.5) {
-                this.aiState = 'BOSS_FIGHT';
-            } else if(this.heroKey === 'ARCHER') {
-                this.aiState = 'POKE';
-            } else if(this.heroKey === 'THOR' && nearEnemies.length >= 2) {
-                this.aiState = 'TEAMFIGHT'; // 다수 적 진입
-            } else if(this.heroKey === 'BERSERKER') {
-                this.aiState = 'TEAMFIGHT'; // 돌진
-            } else if(HERO_TMPL[this.heroKey].type === 'ranged') {
-                this.aiState = 'POKE';
-            } else {
-                this.aiState = 'TEAMFIGHT';
-            }
         } else if(this.laneRole === 'jungle' && hpRatio > 0.4) {
             this.aiState = 'JUNGLE';
         } else {
-            // 보스 스폰 시 합류
-            let bossAlive = entities.some(e=>e.type.startsWith('boss') && !e.isDead);
-            if(bossAlive && hpRatio > 0.5) {
-                this.aiState = 'BOSS_FIGHT';
-            } else {
-                this.aiState = 'LANE';
-            }
+            this.aiState = 'LANE';
             if(hpRatio >= 0.85) this.isRetreating = false;
+        }
+
+        if (oldState !== this.aiState) {
+            this.lastStateChangeTime = performance.now();
         }
 
         // --- 2. 상태별 행동 실행 ---
@@ -812,6 +814,11 @@ class Hero extends Entity {
                 }
                 break;
         }
+
+        // 디버그용 데이터 저장
+        this.aiTarget = target;
+        this.aiTx = tx;
+        this.aiTy = ty;
     }
     autoAttack(){
         if(this.attackTimer>0) return;
@@ -1209,7 +1216,18 @@ class Hero extends Entity {
         ctx.beginPath(); ctx.arc(this.x, this.y, this.radius+4, 0, Math.PI*2);
         ctx.strokeStyle=this.isPlayer?'#fcd34d':(this.faction==='BLUE'?'#3b82f6':'#ef4444'); ctx.lineWidth=this.isPlayer?3:2; ctx.stroke();
         
-        let bw=50, bh=6, bx=this.x-bw/2, by=this.y-this.radius-20;
+        // AI Debug Text
+        if (!this.isPlayer) {
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 10px monospace';
+            ctx.textAlign = 'center';
+            ctx.fillText(this.aiState || 'IDLE', this.x, this.y - this.radius - 40);
+            let tgtName = this.aiTarget ? (this.aiTarget.heroKey ? HERO_TMPL[this.aiTarget.heroKey].name : this.aiTarget.type) : 'None';
+            ctx.fillText(`Target: ${tgtName}`, this.x, this.y - this.radius - 30);
+            ctx.fillText(`(${(this.aiTx||0).toFixed(0)}, ${(this.aiTy||0).toFixed(0)})`, this.x, this.y - this.radius - 20);
+        }
+
+        let bw=50, bh=6, bx=this.x-bw/2, by=this.y-this.radius-10;
         ctx.fillStyle='#1e293b'; ctx.fillRect(bx-1,by-1,bw+2,bh+2); ctx.fillStyle='#374151'; ctx.fillRect(bx,by,bw,bh);
         ctx.fillStyle=this.hp/this.maxHp>0.5?'#22c55e':'#ef4444'; ctx.fillRect(bx,by,bw*(this.hp/this.maxHp),bh);
         ctx.fillStyle='#fbbf24'; ctx.font='bold 9px monospace'; ctx.textAlign='center'; ctx.fillText('Lv'+this.level, this.x, by-2);
@@ -1528,6 +1546,23 @@ window.startGame=()=>{
     camera.x=player.x; camera.y=player.y; camera.zoom = getDefaultZoom();
     GS.status='PLAYING'; GS.lastFrame=performance.now();
     resizeCanvas();
+    
+    // UI SCALE DEBUG LOGS
+    console.log("=== UI DEBUG ===");
+    console.log("GS.platform:", GS.platform);
+    console.log("Window Inner:", window.innerWidth, window.innerHeight);
+    console.log("Device Pixel Ratio:", window.devicePixelRatio);
+    console.log("Camera Zoom:", camera.zoom);
+    if(GS.platform === 'PC') {
+        let pcScale = Math.max(1, window.innerWidth / 1280);
+        console.log("Suggested PC Scale:", pcScale);
+        // Experimental Scale Fix (Can be enabled later)
+        // document.getElementById('gameHUD').style.transform = `scale(${pcScale})`;
+        // document.getElementById('gameHUD').style.transformOrigin = 'top left';
+        // document.getElementById('gameHUD').style.width = `${100/pcScale}%`;
+        // document.getElementById('gameHUD').style.height = `${100/pcScale}%`;
+    }
+
     document.getElementById('hudHeroName').textContent=HERO_TMPL[GS.hero].name;
     
     renderShop(); requestAnimationFrame(gameLoop);
