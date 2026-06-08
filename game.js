@@ -149,7 +149,7 @@ const WARMOG_REGEN      = 0.10;    // 워모그 초당 10%
 // ============ 영웅 템플릿 (근접/원거리 밸런스 전면 수정) ============
 const HERO_TMPL = {
     BERSERKER: { name:"광전사", color:"#ef4444", hp:2000, atk:55, aspd:1.3, move:185, range:90,  type:"melee",  skill1:{name:"회전 참격",cd:5}, skill2:{name:"도약 강타",cd:8},  draw:(ctx,x,y,r,dir,f,anim)=>drawBlockyHero(ctx,x,y,r,dir,f,'berserker',anim) },
-    ARCHER:    { name:"궁수",    color:"#10b981", hp:1300, atk:40, aspd:1.3, move:165, range:420, type:"ranged", skill1:{name:"화살 폭우",cd:6}, skill2:{name:"백스텝",  cd:10}, critChance:0.15, draw:(ctx,x,y,r,dir,f,anim)=>drawBlockyHero(ctx,x,y,r,dir,f,'archer',anim) },
+    ARCHER:    { name:"궁수",    color:"#10b981", hp:1300, atk:40, aspd:1.3, move:165, range:420, type:"ranged", skill1:{name:"화살 폭우",cd:6}, skill2:{name:"블링크",  cd:10}, critChance:0.15, draw:(ctx,x,y,r,dir,f,anim)=>drawBlockyHero(ctx,x,y,r,dir,f,'archer',anim) },
     NECROMANCER:{ name:"네크로맨서",color:"#a855f7",hp:1200, atk:30, aspd:1.0, move:150, range:360, type:"ranged", skill1:{name:"해골 소환",cd:7}, skill2:{name:"저주 역병",cd:11}, draw:(ctx,x,y,r,dir,f,anim)=>drawBlockyHero(ctx,x,y,r,dir,f,'necromancer',anim) },
     MECHANIC:  { name:"메카닉",  color:"#f59e0b", hp:1500, atk:38, aspd:0.9, move:145, range:300, type:"ranged", skill1:{name:"터렛 설치",cd:12},skill2:{name:"긴급 수리",cd:15}, draw:(ctx,x,y,r,dir,f,anim)=>drawBlockyHero(ctx,x,y,r,dir,f,'mechanic',anim) },
     VAMPIRE:   { name:"뱀파이어",color:"#f43f5e", hp:1800, atk:50, aspd:1.2, move:175, range:110, type:"melee",  skill1:{name:"흡혈 파동",cd:7}, skill2:{name:"박쥐 강습",cd:9},  lifeSteal:0.20, draw:(ctx,x,y,r,dir,f,anim)=>drawBlockyHero(ctx,x,y,r,dir,f,'vampire',anim) },
@@ -217,15 +217,10 @@ function spawnParticles(x,y,color,n=8,spd=120,life=0.4, shape='circle'){
 function spawnSlash(x,y,angle,color,r=60){ slashEffects.push({x,y,angle,color,r,life:0.25,maxLife:0.25}); }
 function spawnAOE(x,y,r,color,life=0.6){ aoeEffects.push({x,y,r,color,life,maxLife:life}); }
 
-let screenShake = { x:0, y:0, intensity:0, duration:0 };
 let beamEffects = [];    // 빔/번개 효과
 let ringEffects = [];    // 충격파 링
 let textureEffects = []; // 특수 형상 이펙트
 
-function shakeScreen(intensity, duration) {
-    screenShake.intensity = intensity;
-    screenShake.duration = duration;
-}
 function spawnRing(x, y, color, maxR=200, life=0.5) {
     ringEffects.push({ x, y, color, r:10, maxR, life, maxLife:life });
 }
@@ -280,7 +275,7 @@ function drawBlockyHero(ctx, x, y, r, dir, faction, type, attackAnimTimer = 0) {
         ctx.save();
         // 상체 회전 (공격 시 아주 크게 기울어짐)
         if(isAttacking && type !== 'vampire') {
-            ctx.translate(x, y); ctx.rotate(Math.PI/4); ctx.translate(-x, -y); // 45도 기울어짐
+            ctx.translate(x, y); ctx.rotate((Math.PI/4) * rotDir); ctx.translate(-x, -y); // 45도 기울어짐
         }
         
         // 다리
@@ -310,10 +305,10 @@ function drawBlockyHero(ctx, x, y, r, dir, faction, type, attackAnimTimer = 0) {
         ctx.save();
         if(isAttacking) {
             ctx.translate(x+r*0.8, y+r*0.4);
-            ctx.rotate(Math.PI * 0.7); // 180도 가깝게 크게 내리친 포즈
+            ctx.rotate(Math.PI * 0.7 * rotDir); // 180도 가깝게 크게 내리친 포즈
         } else {
             ctx.translate(x+r*0.5, y-r*0.3);
-            ctx.rotate(-Math.PI * 0.1); // 평소 포즈
+            ctx.rotate(-Math.PI * 0.1 * rotDir); // 평소 포즈
         }
         // 대검 (아주 큼직하게)
         ctx.fillStyle = '#94a3b8'; ctx.fillRect(-r*0.1, -r*1.5, r*0.2, r*2.0);
@@ -353,7 +348,7 @@ function drawBlockyHero(ctx, x, y, r, dir, faction, type, attackAnimTimer = 0) {
         ctx.save();
         if(isAttacking) {
             ctx.translate(x+r*0.7, y-r*0.6);
-            ctx.rotate(Math.PI/2); // 지팡이를 앞으로 겨누는 포즈
+            ctx.rotate((Math.PI/2) * rotDir); // 지팡이를 앞으로 겨누는 포즈
         } else {
             ctx.translate(x+r*0.55, y-r*0.3);
             ctx.rotate(0);
@@ -374,7 +369,7 @@ function drawBlockyHero(ctx, x, y, r, dir, faction, type, attackAnimTimer = 0) {
         ctx.save();
         if(isAttacking) {
             ctx.translate(x+r*0.3, y-r*0.2);
-            ctx.rotate(-Math.PI * 0.1); // 총구 들림 (반동)
+            ctx.rotate(-Math.PI * 0.1 * rotDir); // 총구 들림 (반동)
         } else {
             ctx.translate(x+r*0.4, y-r*0.1);
         }
@@ -410,7 +405,7 @@ function drawBlockyHero(ctx, x, y, r, dir, faction, type, attackAnimTimer = 0) {
         ctx.save();
         if(isAttacking) {
             ctx.translate(x+r*0.9, y+r*0.5);
-            ctx.rotate(Math.PI * 0.8); // 망치를 크게 내리찍은 포즈
+            ctx.rotate(Math.PI * 0.8 * rotDir); // 망치를 크게 내리찍은 포즈
         } else {
             ctx.translate(x+r*0.5, y-r*0.2);
         }
@@ -511,7 +506,7 @@ class Entity {
         }
     }
     applyRawDamage(amount, attacker, triggerEffects=true){
-        if(this.isDead) return 0;
+        if(this.isDead || this.invincibleTimer > 0) return 0;
         
         // ★ 넥서스 보호막: 수호탑(nexus_turret)이 하나라도 살아있으면 넥서스 무적
         if (this.type === 'nexus') {
@@ -597,6 +592,7 @@ class Hero extends Entity {
         this.attackAnimTimer = 0;
         this.inventory=[];
         this.heroSkill1Timer=0; this.heroSkill2Timer=0;
+        this.pendingSkillLevels = 0;
         // 뱀서라이크 패시브 스킬 시스템
         this.passiveSkills = {};
         this.passiveTimers = { fireRing:0, meteor:0, shadowClone:0, poisonCloud:0 };
@@ -605,6 +601,7 @@ class Hero extends Entity {
         this.soulBuffTimer = 0;
         this.soulAtkBonus = 0;
         this.pendingLevelUp = false;
+        this.pendingSkillLevels = 0;
         this.critChance=t.critChance||0; this.lifeSteal=t.lifeSteal||0;
         this.reflectRate=0; this.burnDmg=0; this.stunChance=0;
         this.borkActive=false; this.hasWarmog=false;
@@ -613,6 +610,7 @@ class Hero extends Entity {
     }
     update(dt){
         if(this.attackAnimTimer > 0) this.attackAnimTimer -= dt;
+        if(this.invincibleTimer > 0) this.invincibleTimer -= dt;
         // 자연 골드 및 EXP 획득 (패시브)
         if(!this.isDead) {
             this.gold += dt * 4;
@@ -910,13 +908,11 @@ class Hero extends Entity {
 
         if(k==='BERSERKER') {
             if(idx===1) {
-                shakeScreen(3, 0.15);
                 spawnRing(this.x, this.y, '#ef4444', 250, 0.4);
                 nearEnemies(this.x,this.y,250).forEach(e=>{e.applyRawDamage(skillDmg,this); e.stunTimer=0.5;});
                 for(let i=0;i<4;i++) spawnSlash(this.x, this.y, Math.PI/2*i, '#f87171', 200);
             } else {
                 if(t) { this.x=t.x; this.y=t.y; }
-                shakeScreen(5, 0.2);
                 spawnAOE(this.x, this.y, 300, '#b91c1c99', 0.5);
                 spawnSpecial(this.x, this.y, '#fca5a5', 'plus', 16, 200, 0.5);
                 nearEnemies(this.x,this.y,300).forEach(e=>{e.applyRawDamage(skillDmg*1.5,this); e.stunTimer=1.5;});
@@ -934,8 +930,10 @@ class Hero extends Entity {
                     }, i*80);
                 }
             } else {
-                let a = t ? Math.atan2(this.y-t.y, this.x-t.x) : Math.random()*Math.PI*2;
+                let dx = this.vx || 0; let dy = this.vy || 0;
+                let a = (dx !== 0 || dy !== 0) ? Math.atan2(dy, dx) : (this.facingDir > 0 ? 0 : Math.PI);
                 this.x += Math.cos(a)*200; this.y += Math.sin(a)*200;
+                this.invincibleTimer = 0.3; // 무적
                 spawnParticles(this.x, this.y, '#6ee7b7', 20, 150, 0.4);
                 this.atkSpdBuffTimer = 3; this.atkSpdBuffRate = 1.5;
             }
@@ -949,7 +947,6 @@ class Hero extends Entity {
                 }
                 playSFX('skill_magic');
             } else {
-                shakeScreen(2, 0.15);
                 nearEnemies(this.x, this.y, 450).forEach(e => {
                     e.applyRawDamage(skillDmg,this); e.slowTimer=3; e.slowRate=0.3;
                     spawnAOE(e.x, e.y, 60, '#7e22ce88', 0.8);
@@ -975,7 +972,6 @@ class Hero extends Entity {
             }
         } else if(k==='VAMPIRE') {
             if(idx===1) {
-                shakeScreen(2, 0.15);
                 spawnRing(this.x, this.y, '#f43f5e', 300, 0.5);
                 let dmgTotal = 0;
                 nearEnemies(this.x, this.y, 300).forEach(e => {
@@ -984,7 +980,6 @@ class Hero extends Entity {
                 });
                 this.hp = Math.min(this.maxHp, this.hp + dmgTotal*0.3);
             } else {
-                shakeScreen(4, 0.2);
                 if(t) { this.x=t.x; this.y=t.y; }
                 spawnAOE(this.x, this.y, 200, '#88133799', 0.6);
                 nearEnemies(this.x, this.y, 200).forEach(e => e.applyRawDamage(skillDmg*2,this));
@@ -992,13 +987,11 @@ class Hero extends Entity {
             }
         } else if(k==='THOR') {
             if(idx===1) {
-                shakeScreen(6, 0.25);
                 let tg = t || this;
                 spawnBeam(tg.x, tg.y-600, tg.x, tg.y, '#60a5fa', 0.3);
                 spawnAOE(tg.x, tg.y, 250, '#3b82f6AA', 0.4);
                 nearEnemies(tg.x, tg.y, 250).forEach(e=>{e.applyRawDamage(skillDmg*1.8,this); e.stunTimer=1.2;});
             } else {
-                shakeScreen(7, 0.3);
                 spawnRing(this.x, this.y, '#93c5fd', 400, 0.6);
                 nearEnemies(this.x, this.y, 400).forEach(e=>{e.applyRawDamage(skillDmg,this); e.slowTimer=2; e.slowRate=0.2;});
             }
@@ -1080,7 +1073,7 @@ class Hero extends Entity {
         let ltLv=this.passiveSkills['lightning']||0;
         if(ltLv>0 && Math.random()<0.08+(ltLv-1)*0.02) {
             let targets=entities.filter(e=>e.faction!==this.faction&&!e.isDead&&dist(this,e)<=400).sort(()=>Math.random()-0.5).slice(0,ltLv);
-            targets.forEach((t,idx)=>setTimeout(()=>{if(!t.isDead){t.applyRawDamage(this.atk*0.8,this);spawnLightningEffect(t.x,t.y);addText(t.x,t.y-30,'⚡','#fbbf24',22);}},idx*100));
+            targets.forEach((t,idx)=>setTimeout(()=>{if(!t.isDead){t.applyRawDamage(this.atk*0.8,this);spawnLightningEffect(t.x,t.y,this===player);addText(t.x,t.y-30,'⚡','#fbbf24',22);}},idx*100));
         }
         // 체인 라이트닝
         let clLv=this.passiveSkills['chainLightning']||0;
@@ -1140,7 +1133,8 @@ class Hero extends Entity {
         this.passiveSkills[skillId] = (this.passiveSkills[skillId]||0) + 1;
         this.applyStats();
         document.getElementById('skillSelectionOverlay').classList.add('hidden');
-        this.pendingLevelUp = false; GS.paused = false;
+        this.pendingLevelUp = false;
+        this.pendingSkillLevels = 0; GS.paused = false;
         let sk = PASSIVE_SKILLS.find(s=>s.id===skillId);
         addText(this.x,this.y-60, sk.icon+' '+sk.name+' Lv.'+this.passiveSkills[skillId]+'!', '#fcd34d', 18);
         playSFX('heal');
@@ -1272,13 +1266,20 @@ class Minion extends Entity {
     }
     update(dt){
         if(this.isDead) return; super.update(dt);
-        let target=null, minD=150;
-        entities.forEach(e=>{
-            if(e.faction!==this.faction && !e.isDead){
-                let d=dist(this,e);
-                if(d<minD){ minD=d; target=e; }
+        let closestBuilding = null, closestMinion = null, closestHero = null;
+        let dB = 120, dM = 100, dH = 120;
+        entities.forEach(e => {
+            if(e.faction === this.faction || e.isDead) return;
+            const d = dist(this, e);
+            if((e.type==='tower' || e.type==='nexus_turret' || e.type==='nexus') && d < dB) {
+                dB = d; closestBuilding = e;
+            } else if(e.type === 'minion' && d < dM) {
+                dM = d; closestMinion = e;
+            } else if(e.type === 'hero' && d < dH) {
+                dH = d; closestHero = e;
             }
         });
+        let target = closestBuilding || closestMinion || closestHero;
         if(target){
             if(dist(this, target)>this.range){ let a=Math.atan2(target.y-this.y,target.x-this.x); this.vx=Math.cos(a)*this.moveSpd; this.vy=Math.sin(a)*this.moveSpd; }
             else { this.vx=0; this.vy=0; if(this.attackTimer<=0){ this.attackTimer=1/this.aspd; target.applyRawDamage(this.atk,this); spawnSlash(this.x,this.y-this.radius,Math.atan2(target.y-this.y,target.x-this.x),'#64748b',20); } }
@@ -1366,6 +1367,7 @@ class Projectile {
         if(this.target.isDead){this.isDead=true;return;}
         if(dist(this,this.target)<15){
             this.target.applyRawDamage(this.dmg,this.attacker);
+            if(this.attacker && this.attacker.type === 'hero') this.attacker.totalDmg += this.dmg;
             if(this.attacker && this.attacker.triggerOnHitPassives) this.attacker.triggerOnHitPassives(this.target);
             if(this.attacker.lifeSteal>0&&this.attacker.type==='hero') { this.attacker.hp=Math.min(this.attacker.maxHp,this.attacker.hp+this.dmg*this.attacker.lifeSteal); playSFX('heal'); }
             if(this.attacker.burnDmg>0&&!this.target.isBuilding) this.target.burnTicks.push({dmg:this.attacker.burnDmg,ticks:3,timer:1.0,src:this.attacker});
@@ -1603,8 +1605,7 @@ function gameLoop(now){
         for(let i=aoeEffects.length-1;i>=0;i--){aoeEffects[i].life-=dt;if(aoeEffects[i].life<=0)aoeEffects.splice(i,1);}
         for(let i=ringEffects.length-1;i>=0;i--) { ringEffects[i].life-=dt; ringEffects[i].r = ringEffects[i].maxR*(1-ringEffects[i].life/ringEffects[i].maxLife); if(ringEffects[i].life<=0) ringEffects.splice(i,1); }
         for(let i=beamEffects.length-1;i>=0;i--) { beamEffects[i].life-=dt; if(beamEffects[i].life<=0) beamEffects.splice(i,1); }
-        if(screenShake.duration>0) { screenShake.duration-=dt; screenShake.x=rand(-screenShake.intensity,screenShake.intensity); screenShake.y=rand(-screenShake.intensity,screenShake.intensity); } else { screenShake.x=0; screenShake.y=0; }
-
+        
         entities=entities.filter(e=>!e.isDead||e.type==='hero'||e.type==='jungle'); projectiles=projectiles.filter(p=>!p.isDead);
         let camSmooth = GS.platform === 'MOBILE' ? 0.08 : 0.12;
         if(player&&!player.isDead){ camera.x+=(player.x-camera.x)*camSmooth; camera.y+=(player.y-camera.y)*camSmooth; }
@@ -1620,7 +1621,7 @@ function draw(){
 
     ctx.save(); 
     ctx.scale(canvasDPR, canvasDPR);
-    ctx.translate(window.innerWidth/2 + screenShake.x * canvasDPR, window.innerHeight/2 + screenShake.y * canvasDPR); 
+    ctx.translate(window.innerWidth/2, window.innerHeight/2); 
     ctx.scale(camera.zoom, camera.zoom); 
     ctx.translate(-camera.x, -camera.y);
 
