@@ -568,8 +568,8 @@ class Entity {
         }
 
         // 히트스톱 (크리티컬이거나, 플레이어가 때렸을 때)
-        if(isCrit || attacker === player) {
-            GS.hitStopTimer = isCrit ? 0.04 : 0.02;
+        if(isCrit) {
+            GS.hitStopTimer = 0.04;
         }
         
         addText(this.x+rand(-15,15), this.y-this.radius-10, isCrit?'\u{1F4A5}'+dmg:dmg, attacker===player?'#fbbf24':'#f8fafc', isCrit?18:14);
@@ -773,7 +773,19 @@ class Hero extends Entity {
     autoAttack(){
         if(this.attackTimer>0) return;
         let target=null, minD=this.range;
-        entities.forEach(e=>{
+        if(window.mapPings) {
+        let sx = mCanvas.width / MAP_SIZE, sy = mCanvas.height / MAP_SIZE;
+        window.mapPings.forEach(p => {
+            let col = p.faction === 'BLUE' ? '#3b82f6' : '#ef4444';
+            let r = 8 + Math.abs(Math.sin(p.life * 10)) * 6; // Blinking
+            mCtx.strokeStyle = col;
+            mCtx.lineWidth = 2;
+            mCtx.beginPath();
+            mCtx.arc(p.x * sx, p.y * sy, r, 0, Math.PI * 2);
+            mCtx.stroke();
+        });
+    }
+    entities.forEach(e=>{
             if(e.faction!==this.faction&&!e.isDead){
                 let d=dist(this,e); if(d<=this.range&&d<minD){minD=d;target=e;}
             }
@@ -846,6 +858,10 @@ class Hero extends Entity {
     onDeath(attacker){
         this.deaths++;
         this.respawnTimer = Math.min(5 + this.level * 0.8, 25); // 부활 시간 조정
+        if (attacker && attacker.type === 'hero' && this.type === 'hero') {
+            if(window.addKillFeed) addKillFeed(attacker, this);
+            if(window.AIChat) window.AIChat.onKill(attacker, this);
+        }
         if(this.isPlayer) document.getElementById('respawnOverlay').classList.replace('hidden', 'flex');
         spawnParticles(this.x,this.y,HERO_TMPL[this.heroKey].color,20,200,1.0);
     }
@@ -965,7 +981,7 @@ class Hero extends Entity {
         } else if(k==='MECHANIC') {
             if(idx===1) {
                 let tw = new Building(this.x, this.y, this.faction, 'tower');
-                tw.maxHp=1000+sl*500; tw.hp=tw.maxHp; tw.atk=this.atk*1.2; tw.range=350; tw.radius=15; tw.life=15;
+                tw.maxHp=1500+sl*600; tw.hp=tw.maxHp; tw.atk=this.atk*1.5; tw.range=350; tw.radius=15; tw.life=18;
                 tw.update = function(dt) {
                     Building.prototype.update.call(this, dt);
                     this.life-=dt; if(this.life<=0) this.isDead=true;
@@ -1052,7 +1068,19 @@ class Hero extends Entity {
                 let c=this.shadowClones[i]; c.life-=dt; c.animPhase+=dt*4;
                 if(c.life<=0){this.shadowClones.splice(i,1);continue;}
                 let tgt=null,minD=200;
-                entities.forEach(e=>{if(e.faction!==this.faction&&!e.isDead){let d=dist(c,e);if(d<minD){minD=d;tgt=e;}}});
+                if(window.mapPings) {
+        let sx = mCanvas.width / MAP_SIZE, sy = mCanvas.height / MAP_SIZE;
+        window.mapPings.forEach(p => {
+            let col = p.faction === 'BLUE' ? '#3b82f6' : '#ef4444';
+            let r = 8 + Math.abs(Math.sin(p.life * 10)) * 6; // Blinking
+            mCtx.strokeStyle = col;
+            mCtx.lineWidth = 2;
+            mCtx.beginPath();
+            mCtx.arc(p.x * sx, p.y * sy, r, 0, Math.PI * 2);
+            mCtx.stroke();
+        });
+    }
+    entities.forEach(e=>{if(e.faction!==this.faction&&!e.isDead){let d=dist(c,e);if(d<minD){minD=d;tgt=e;}}});
                 if(tgt){
                     if(minD>50){let a=Math.atan2(tgt.y-c.y,tgt.x-c.x);c.x+=Math.cos(a)*150*dt;c.y+=Math.sin(a)*150*dt;}
                     else if(Math.sin(c.animPhase*3)>0.8) tgt.applyRawDamage(c.atk,this);
@@ -1071,7 +1099,19 @@ class Hero extends Entity {
                 let pz=this.poisonZones[i]; pz.life-=dt;
                 if(pz.life<=0){this.poisonZones.splice(i,1);continue;}
                 pz.tick+=dt;
-                if(pz.tick>=0.5) { pz.tick=0; entities.forEach(e=>{if(e.faction!==this.faction&&!e.isDead&&dist(pz,e)<=pz.radius) e.applyRawDamage(pz.dmg*0.5,this);}); }
+                if(pz.tick>=0.5) { pz.tick=0; if(window.mapPings) {
+        let sx = mCanvas.width / MAP_SIZE, sy = mCanvas.height / MAP_SIZE;
+        window.mapPings.forEach(p => {
+            let col = p.faction === 'BLUE' ? '#3b82f6' : '#ef4444';
+            let r = 8 + Math.abs(Math.sin(p.life * 10)) * 6; // Blinking
+            mCtx.strokeStyle = col;
+            mCtx.lineWidth = 2;
+            mCtx.beginPath();
+            mCtx.arc(p.x * sx, p.y * sy, r, 0, Math.PI * 2);
+            mCtx.stroke();
+        });
+    }
+    entities.forEach(e=>{if(e.faction!==this.faction&&!e.isDead&&dist(pz,e)<=pz.radius) e.applyRawDamage(pz.dmg*0.5,this);}); }
             }
         }
         // 영혼 수확 버프
@@ -1091,7 +1131,19 @@ class Hero extends Entity {
             let dmg=this.atk*0.6, hit=[target], cur=target;
             for(let i=0;i<clLv;i++) {
                 let next=null,minD=300;
-                entities.forEach(e=>{if(e.faction!==this.faction&&!e.isDead&&!hit.includes(e)){let d=dist(cur,e);if(d<minD){minD=d;next=e;}}});
+                if(window.mapPings) {
+        let sx = mCanvas.width / MAP_SIZE, sy = mCanvas.height / MAP_SIZE;
+        window.mapPings.forEach(p => {
+            let col = p.faction === 'BLUE' ? '#3b82f6' : '#ef4444';
+            let r = 8 + Math.abs(Math.sin(p.life * 10)) * 6; // Blinking
+            mCtx.strokeStyle = col;
+            mCtx.lineWidth = 2;
+            mCtx.beginPath();
+            mCtx.arc(p.x * sx, p.y * sy, r, 0, Math.PI * 2);
+            mCtx.stroke();
+        });
+    }
+    entities.forEach(e=>{if(e.faction!==this.faction&&!e.isDead&&!hit.includes(e)){let d=dist(cur,e);if(d<minD){minD=d;next=e;}}});
                 if(!next) break; hit.push(next);
                 let s=cur,tg=next,ii=i;
                 setTimeout(()=>{if(!tg.isDead){tg.applyRawDamage(dmg*Math.pow(0.8,ii),this);spawnChainEffect(s.x,s.y,tg.x,tg.y);}}, (i+1)*150);
@@ -1217,7 +1269,19 @@ class Building extends Entity {
         if(this.atk > 0 && this.attackTimer<=0){
             let target=null, minD=this.range;
             for(let ptype of ['minion','hero','jungle']){
-                entities.forEach(e=>{if(e.faction!==this.faction&&!e.isDead){let d=dist(this,e);if(d<=this.range&&d<minD&&e.type===ptype){minD=d;target=e;}}});
+                if(window.mapPings) {
+        let sx = mCanvas.width / MAP_SIZE, sy = mCanvas.height / MAP_SIZE;
+        window.mapPings.forEach(p => {
+            let col = p.faction === 'BLUE' ? '#3b82f6' : '#ef4444';
+            let r = 8 + Math.abs(Math.sin(p.life * 10)) * 6; // Blinking
+            mCtx.strokeStyle = col;
+            mCtx.lineWidth = 2;
+            mCtx.beginPath();
+            mCtx.arc(p.x * sx, p.y * sy, r, 0, Math.PI * 2);
+            mCtx.stroke();
+        });
+    }
+    entities.forEach(e=>{if(e.faction!==this.faction&&!e.isDead){let d=dist(this,e);if(d<=this.range&&d<minD&&e.type===ptype){minD=d;target=e;}}});
                 if(target) break;
             }
             if(target){
@@ -1616,6 +1680,7 @@ function gameLoop(now){
         for(let i=ringEffects.length-1;i>=0;i--) { ringEffects[i].life-=dt; ringEffects[i].r = ringEffects[i].maxR*(1-ringEffects[i].life/ringEffects[i].maxLife); if(ringEffects[i].life<=0) ringEffects.splice(i,1); }
         for(let i=beamEffects.length-1;i>=0;i--) { beamEffects[i].life-=dt; if(beamEffects[i].life<=0) beamEffects.splice(i,1); }
         
+        if(window.AIChat) window.AIChat.update(dt);
         entities=entities.filter(e=>!e.isDead||e.type==='hero'||e.type==='jungle'); projectiles=projectiles.filter(p=>!p.isDead);
         let camSmooth = GS.platform === 'MOBILE' ? 0.08 : 0.12;
         if(player&&!player.isDead){ camera.x+=(player.x-camera.x)*camSmooth; camera.y+=(player.y-camera.y)*camSmooth; }
@@ -1745,6 +1810,18 @@ function drawMinimap(){
     mCtx.fillStyle='rgba(139,90,43,0.4)'; mCtx.fillRect(200*sx,200*sy,200*sx,(2700-400)*sy); mCtx.fillRect(200*sx,200*sy,(2700-400)*sx,200*sy); mCtx.fillRect(200*sx,(2700-400)*sy,(2700-400)*sx,200*sy); mCtx.fillRect((2700-400)*sx,200*sy,200*sx,(2700-400)*sy);
     mCtx.save(); mCtx.translate(1500*sx,1500*sy); mCtx.rotate(-Math.PI/4); mCtx.fillRect(-1700*sx, -100*sy, 3400*sx, 200*sy); mCtx.restore();
 
+    if(window.mapPings) {
+        let sx = mCanvas.width / MAP_SIZE, sy = mCanvas.height / MAP_SIZE;
+        window.mapPings.forEach(p => {
+            let col = p.faction === 'BLUE' ? '#3b82f6' : '#ef4444';
+            let r = 8 + Math.abs(Math.sin(p.life * 10)) * 6; // Blinking
+            mCtx.strokeStyle = col;
+            mCtx.lineWidth = 2;
+            mCtx.beginPath();
+            mCtx.arc(p.x * sx, p.y * sy, r, 0, Math.PI * 2);
+            mCtx.stroke();
+        });
+    }
     entities.forEach(e=>{
         if(e.isDead) return;
         let col=e.faction==='BLUE'?'#3b82f6':e.faction==='RED'?'#ef4444':'#f59e0b';
@@ -1854,3 +1931,131 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 selectHero('BERSERKER');
+
+
+// ====== AI Chat & Kill Feed Systems ======
+window.killStreaks = {};
+window.mapPings = [];
+
+window.addKillFeed = function(attacker, victim) {
+    if (!attacker || !victim) return;
+    const feed = document.getElementById('killFeed');
+    if (!feed) return;
+    
+    window.killStreaks[attacker.heroKey] = (window.killStreaks[attacker.heroKey] || 0) + 1;
+    window.killStreaks[victim.heroKey] = 0;
+    
+    let streakCount = window.killStreaks[attacker.heroKey];
+    let streakText = '';
+    if (streakCount >= 3) {
+        streakText = `<span class="text-amber-400 animate-pulse font-black"> [학살 중입니다!!]</span>`;
+        if (window.AIChat) window.AIChat.triggerEvent('streak', attacker, streakCount);
+    }
+    
+    let el = document.createElement('div');
+    el.className = 'text-[11px] md:text-sm font-bold bg-slate-900/80 px-2 py-1 rounded border border-slate-700 flex gap-2 items-center text-white';
+    let aCol = attacker.faction==='BLUE'?'#60a5fa':'#f87171';
+    let vCol = victim.faction==='BLUE'?'#60a5fa':'#f87171';
+    
+    el.innerHTML = `<span style="color:${aCol}">[${attacker.faction==='BLUE'?'아군':'적군'} ${attacker.name}]</span> ⚔️ <span style="color:${vCol}">[${victim.faction==='BLUE'?'아군':'적군'} ${victim.name}]</span> ${streakText}`;
+    
+    feed.prepend(el);
+    if(feed.children.length > 5) feed.lastChild.remove();
+    
+    setTimeout(() => {
+        el.style.opacity = '0';
+        el.style.transition = 'opacity 0.5s';
+        setTimeout(() => el.remove(), 500);
+    }, 4000);
+};
+
+window.addPing = function(x, y, faction, type='danger') {
+    window.mapPings.push({x, y, faction, type, life: 3.0, maxLife: 3.0});
+    playSFX('button');
+};
+
+window.AIChat = {
+    timer: 0,
+    chatLog: null,
+    
+    patterns: {
+        kill: [
+            "컷~ ㅅㄱ", "벌레컷ㅋㅋ", "이걸 죽어주네", "아 달다~", "?? 쟤 뭐함?", "개못하네 진짜ㅋㅋ", "꺼어어억"
+        ],
+        death: [
+            "아 ㄲㅂ", "억까 ㅈ대네", "아니 백업 좀;;", "렉걸림 ㅈㅅ", "운빨 망겜 수준", "ㅅㅂ 이게 죽어?"
+        ],
+        team_fight_win: [
+            "다 닦았죠? ㅅㄱ", "나이스 ㅋㅋ", "캐리 개꿀", "우물 대기하셈", "서렌 치셈 걍ㅋㅋ"
+        ],
+        idle: [
+            "아니 ㅅㅂ 맵 좀 보라고", "합류 ㅈㄴ 안하네", "쟤 뭐함? 겜안폰가", "빨리 좀 와라", "혼자 RPG하네"
+        ],
+        streak: [
+            "내가 캐리중이다", "누가 날 막냐 ㅋㅋㅋ", "핵 아님 ㅅㄱ"
+        ]
+    },
+    
+    addChat: function(hero, msg, faction) {
+        if(!this.chatLog) this.chatLog = document.getElementById('chatLog');
+        if(!this.chatLog) return;
+        
+        let el = document.createElement('div');
+        el.className = 'text-[11px] md:text-sm font-bold bg-black/50 px-2 py-1 rounded text-white w-fit shadow-md';
+        let hCol = faction === 'BLUE' ? '#60a5fa' : '#f87171';
+        el.innerHTML = `<span style="color:${hCol}">[${faction==='BLUE'?'아군':'적군'} ${hero.name}]</span>: ${msg}`;
+        
+        this.chatLog.append(el);
+        if(this.chatLog.children.length > 8) this.chatLog.firstChild.remove();
+        
+        setTimeout(() => {
+            el.style.opacity = '0';
+            el.style.transition = 'opacity 0.5s';
+            setTimeout(() => el.remove(), 500);
+        }, 6000);
+    },
+    
+    onKill: function(killer, victim) {
+        if (Math.random() < 0.4) {
+            this.addChat(killer, this.patterns.kill[Math.floor(Math.random() * this.patterns.kill.length)], killer.faction);
+        }
+        if (Math.random() < 0.3) {
+            this.addChat(victim, this.patterns.death[Math.floor(Math.random() * this.patterns.death.length)], victim.faction);
+        }
+    },
+    
+    triggerEvent: function(type, hero, val) {
+        if(type === 'streak' && Math.random() < 0.8) {
+            this.addChat(hero, this.patterns.streak[Math.floor(Math.random()*this.patterns.streak.length)], hero.faction);
+        }
+    },
+    
+    update: function(dt) {
+        this.timer += dt;
+        
+        for(let i=window.mapPings.length-1; i>=0; i--) {
+            window.mapPings[i].life -= dt;
+            if(window.mapPings[i].life <= 0) window.mapPings.splice(i, 1);
+        }
+        
+        if (this.timer < 4) return;
+        this.timer = 0;
+        
+        if(entities && Math.random() < 0.25) {
+            let heroes = entities.filter(e => e.type === 'hero' && !e.isDead);
+            if (heroes.length > 0) {
+                let rHero = heroes[Math.floor(Math.random() * heroes.length)];
+                
+                if(Math.random() < 0.5) {
+                    let msg = this.patterns.idle[Math.floor(Math.random() * this.patterns.idle.length)];
+                    this.addChat(rHero, msg, rHero.faction);
+                    window.addPing(rHero.x, rHero.y, rHero.faction);
+                    this.addChat(rHero, "11시 핑찍은 곳 빨리 합류좀", rHero.faction);
+                } else {
+                    let msg = this.patterns.team_fight_win[Math.floor(Math.random() * this.patterns.team_fight_win.length)];
+                    this.addChat(rHero, msg, rHero.faction);
+                }
+            }
+        }
+    }
+};
