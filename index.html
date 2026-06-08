@@ -313,8 +313,7 @@
     
     <!-- Kill Feed -->
     <div id="killFeed" class="absolute top-16 right-4 w-64 pointer-events-none z-20 flex flex-col items-end gap-1 overflow-hidden" style="max-height: 200px;"></div>
-    <!-- AI Chat Log -->
-    <div id="chatLog" class="absolute left-4 top-1/4 w-72 pointer-events-none z-20 flex flex-col justify-end gap-1 overflow-hidden" style="max-height: 300px;"></div>
+    
     <!-- 부활 오버레이 -->
     <div id="respawnOverlay" class="hidden absolute inset-0 z-30 bg-transparent flex-col items-center justify-center pointer-events-none">
         <h2 class="text-6xl md:text-8xl font-black text-rose-500 tracking-widest mb-6 orbitron"
@@ -338,7 +337,7 @@
     <div class="text-center flex flex-col items-center w-full max-w-xl bg-slate-900/90 border border-slate-800 rounded-3xl p-6 shadow-2xl overflow-y-auto" style="max-height:85vh;">
         <h2 id="txtGameResult" class="text-6xl font-black tracking-widest mb-6 orbitron">VICTORY</h2>
         <div id="scoreboardArea" class="w-full mb-6"></div>
-        <button onclick="location.reload()"
+        <button onclick="saveAndReload()"
                 class="px-12 py-3.5 rounded-full font-black text-lg tracking-widest active:scale-95 transition-all orbitron"
                 style="background:linear-gradient(135deg,#10b981,#6366f1);box-shadow:0 0 20px rgba(16,185,129,0.4);">
             🔄 다시 시작
@@ -369,5 +368,43 @@ window.onerror = function(msg, url, line, col, error) {
 };
 </script>
 <script src="game.js?v=1001"></script>
+
+    <!-- 명예의 전당 모달 -->
+    <div id="hofScreen" class="hidden absolute inset-0 z-50 bg-black/80 flex items-center justify-center">
+        <div class="bg-slate-900 border-2 border-amber-500 p-8 rounded-2xl max-w-2xl w-full max-h-[80vh] flex flex-col shadow-[0_0_50px_rgba(245,158,11,0.3)]">
+            <h2 class="text-4xl font-black text-amber-500 text-center mb-6 orbitron">🏆 HALL OF FAME 🏆</h2>
+            <div class="flex-1 overflow-y-auto mb-6 pr-2 custom-scrollbar">
+                <table class="w-full text-left text-sm md:text-base">
+                    <thead class="bg-slate-800 text-slate-300">
+                        <tr>
+                            <th class="p-2 rounded-tl">닉네임</th>
+                            <th class="p-2">영웅</th>
+                            <th class="p-2 text-center">K / D / A</th>
+                            <th class="p-2 text-right rounded-tr">지배력</th>
+                        </tr>
+                    </thead>
+                    <tbody id="hofTableBody" class="text-white">
+                        <!-- JS injected -->
+                    </tbody>
+                </table>
+            </div>
+            <button onclick="document.getElementById('hofScreen').classList.add('hidden')" class="w-full py-3 bg-slate-700 hover:bg-slate-600 text-white font-bold rounded-xl active:scale-95 transition">닫기</button>
+        </div>
+    </div>
+    
+    <!-- 다중 킬 전광판 -->
+    <div id="multiKillAnnouncer" class="hidden absolute inset-0 z-40 pointer-events-none flex items-center justify-center">
+        <div id="multiKillText" class="text-7xl md:text-[100px] font-black italic orbitron text-transparent bg-clip-text bg-gradient-to-b from-amber-300 to-rose-600 drop-shadow-[0_10px_20px_rgba(225,29,72,0.8)] scale-150 opacity-0 transition-all duration-300">
+            DOUBLE KILL!
+        </div>
+    </div>
+    
+    <!-- 진영 버프 알림판 -->
+    <div id="buffAnnouncer" class="hidden absolute inset-x-0 top-1/4 z-40 pointer-events-none flex flex-col items-center justify-center">
+        <div class="bg-gradient-to-r from-transparent via-amber-600/80 to-transparent w-full py-4 text-center">
+            <h3 id="buffAnnouncerText" class="text-3xl md:text-5xl font-black text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.8)] animate-pulse">UNDERDOG BUFF!</h3>
+        </div>
+    </div>
+    
 </body>
 </html>

@@ -167,16 +167,16 @@ const HERO_TMPL = {
 
 // ============ 아이템 ============
 const BASE_ITEMS = [
-    { id:'atk',      name:'공격력 강화', cost:300, stat:'atk',      val:18,   icon:'⚔️' },
-    { id:'aspd',     name:'공속 강화',   cost:350, stat:'aspd',     val:0.18, icon:'🗡️' },
-    { id:'hp',       name:'체력 강화',   cost:250, stat:'hp',       val:200,  icon:'❤️' },
-    { id:'move',     name:'이속 강화',   cost:250, stat:'move',     val:18,   icon:'🥾' },
-    { id:'crit',     name:'크리티컬',    cost:450, stat:'crit',     val:0.08, icon:'💥' },
-    { id:'lifesteal',name:'흡혈',        cost:550, stat:'lifesteal',val:0.12, icon:'🩸' },
-    { id:'reflect',  name:'피해반사',    cost:400, stat:'reflect',  val:0.12, icon:'🛡️' },
-    { id:'burn',     name:'화염검',      cost:400, stat:'burn',     val:18,   icon:'🔥' },
-    { id:'stun',     name:'기절무기',    cost:650, stat:'stun',     val:0.08, icon:'⚡' },
-    { id:'shield',   name:'방어막',      cost:500, stat:'shield',   val:80,   icon:'🔰' },
+    { id:'atk',      name:'전사의 장검', cost:300, stat:'atk',      val:18,   icon:'⚔️' },
+    { id:'aspd',     name:'광전사의 단검',   cost:350, stat:'aspd',     val:0.18, icon:'🗡️' },
+    { id:'hp',       name:'거인의 심장',   cost:250, stat:'hp',       val:200,  icon:'❤️' },
+    { id:'move',     name:'바람의 장화',   cost:250, stat:'move',     val:18,   icon:'🥾' },
+    { id:'crit',     name:'암살자의 비수',    cost:450, stat:'crit',     val:0.08, icon:'💥' },
+    { id:'lifesteal',name:'흡혈귀의 이빨',        cost:550, stat:'lifesteal',val:0.12, icon:'🩸' },
+    { id:'reflect',  name:'가시 갑옷',    cost:400, stat:'reflect',  val:0.12, icon:'🛡️' },
+    { id:'burn',     name:'작열하는 지팡이',      cost:400, stat:'burn',     val:18,   icon:'🔥' },
+    { id:'stun',     name:'천둥의 망치',    cost:650, stat:'stun',     val:0.08, icon:'⚡' },
+    { id:'shield',   name:'수호자의 방패',      cost:500, stat:'shield',   val:80,   icon:'🔰' },
 ];
 const ENHANCE_RATES = [1,1,1,0.6,0.5,0.4,0.3,0.2,0.1];
 
@@ -669,7 +669,39 @@ class Hero extends Entity {
         
         let nearEnemies = entities.filter(e=>e.faction!==this.faction && !e.isDead && dist(this,e)<600);
         
+        
+        // Recalculate stats
+        let t = HERO_TMPL[this.heroKey];
+        if(t) {
+            let effAtk = t.atk; let effAspd = t.aspd; let effMove = t.move;
+            // inventory buffs
+            for(let i=0; i<8; i++) {
+                if(this.inventory[i]) {
+                    let b = BASE_ITEMS.find(x=>x.id===this.inventory[i].id);
+                    if(b) {
+                        let lv = 1 + this.inventory[i].upgrade;
+                        if(b.stat==='atk') effAtk += b.val*lv;
+                        else if(b.stat==='aspd') effAspd += b.val*lv;
+                        else if(b.stat==='move') effMove += b.val*lv;
+                    }
+                }
+            }
+            if(this.soulAtkBonus) effAtk += this.soulAtkBonus;
+            
+            // Grrr Giant buff
+            if(this.grrrGiantTimer > 0) {
+                effAtk *= 1.5; effMove *= 1.2; effAspd *= 1.2;
+            }
+            
+            // Underdog buff
+            if(this.underdogBuffTimer > 0) {
+                effAtk *= 1.15; effMove *= 1.15; effAspd *= 1.15;
+            }
+            
+            this.atk = effAtk; this.aspd = effAspd; this.moveSpd = effMove;
+        }
         let oldState = this.aiState;
+
 
         // 1차 AI: 체력 기반 로직만 적용
         if (hpRatio <= 0.3) {
@@ -874,7 +906,13 @@ class Hero extends Entity {
         let slot=this.inventory.find(i=>i.id===id);
         if(slot){
             if(slot.upgrade>=9) return;
-            this.gold-=item.cost; if(Math.random()<ENHANCE_RATES[slot.upgrade]){ slot.upgrade++; if(this.isPlayer) addText(this.x,this.y-50,'+'+slot.upgrade+' 성공!','#f59e0b'); }
+            this.gold-=item.cost; if(Math.random()<ENHANCE_RATES[slot.upgrade]){ slot.upgrade++; if(this.isPlayer) addText(this.x,this.y-50,'+'+slot.upgrade+' 강화 성공!','#f59e0b'); 
+                if(slot.upgrade >= 5 && window.AIChat) {
+                    // Trigger emojis for nearby heroes
+                    let nearby = entities.filter(e=>e.type==='hero' && dist(this, e)<500);
+                    nearby.forEach(n => { addText(n.x, n.y-60, ['😲','✨','🔥','😱'][Math.floor(Math.random()*4)], '#fff', 24); });
+                }
+            } else { addText(this.x,this.y-50,'강화 실패...','#64748b'); }
         } else {
             if(this.inventory.length>=8) return;
             this.gold-=item.cost; this.inventory.push({id:item.id,upgrade:0,stat:item.stat,val:item.val});
@@ -930,6 +968,20 @@ class Hero extends Entity {
         let t = targets.length > 0 ? targets.sort((a,b)=>dist(this,a)-dist(this,b))[0] : null;
 
         playSFX('skill_burst');
+        if(idx === 1 && k === 'grrr') {
+            this.grrrGiantTimer = 12;
+            this.baseRadius = this.radius;
+            this.radius *= 1.8;
+            this.atk *= 1.5; this.maxHp *= 2; this.hp += this.maxHp/2;
+            this.moveSpd *= 1.2; this.aspd *= 1.2;
+            addText(this.x, this.y-50, '거대화!', '#fcd34d', 20);
+        } else if(idx === 2 && k === 'grrr') {
+            spawnAOE(this.x, this.y, 180, '#f59e0b88', 0.5);
+            let targets = entities.filter(e => e.faction !== this.faction && !e.isDead && dist(this, e) <= 180);
+            targets.forEach(t => { t.applyRawDamage(this.atk*1.8, this); t.stunTimer = 2.0; });
+            addText(this.x, this.y-50, '포효!', '#ef4444', 24);
+        }
+        
         addText(this.x, this.y-50, idx===1 ? HERO_TMPL[k].skill1.name : HERO_TMPL[k].skill2.name, HERO_TMPL[k].color, 24);
 
         if(k==='BERSERKER') {
@@ -1051,7 +1103,7 @@ class Hero extends Entity {
                 let targets = entities.filter(e=>e.faction!==this.faction&&!e.isDead&&dist(this,e)<=500);
                 for(let i=0; i<Math.min(mtLv, targets.length); i++) {
                     let t=targets[Math.floor(Math.random()*targets.length)];
-                    setTimeout(()=>{ if(!t.isDead){ t.applyRawDamage(this.atk*1.2,this); spawnAOE(t.x,t.y,60,'#f97316aa',0.5); spawnParticles(t.x,t.y,'#f97316',15,150,0.5); addText(t.x,t.y-30,'\u2604\uFE0F','#f97316',20); } }, i*300);
+                    setTimeout(()=>{ if(!t.isDead){ t.applyRawDamage(this.atk*1.2,this); spawnAOE(t.x,t.y,42,'#f97316aa',0.5); spawnParticles(t.x,t.y,'#f97316',15,150,0.5); addText(t.x,t.y-30,'\u2604\uFE0F','#f97316',20); } }, i*300);
                 }
             }
         }
@@ -1396,6 +1448,9 @@ class Monster extends Entity {
         }
 
         if(target){
+            if(this.mtype === 'summon' && this.owner && dist(this, this.owner) > 300) {
+                target = this.owner; // return to owner
+            }
             if(dist(this,target)>this.range){ let a=Math.atan2(target.y-this.y,target.x-this.x); this.vx=Math.cos(a)*this.moveSpd; this.vy=Math.sin(a)*this.moveSpd; }
             else { this.vx=0; this.vy=0; if(this.attackTimer<=0){this.attackTimer=1/this.aspd; target.applyRawDamage(this.atk,this);} }
         } else if(dist(this,this.home)>50){ let a=Math.atan2(this.home.y-this.y,this.home.x-this.x); this.vx=Math.cos(a)*this.moveSpd; this.vy=Math.sin(a)*this.moveSpd; }
@@ -1651,6 +1706,43 @@ function gameLoop(now){
     }
 
     if(!GS.paused) {
+        // Underdog Buff Logic
+        if(GS.lastUnderdogCheck === undefined) GS.lastUnderdogCheck = 0;
+        if(GS.time - GS.lastUnderdogCheck >= 120) {
+            GS.lastUnderdogCheck = GS.time;
+            let blueScore = GS.scoreBlue; let redScore = GS.scoreRed;
+            let buffFaction = null;
+            if(blueScore + 3 < redScore) buffFaction = 'BLUE';
+            else if(redScore + 3 < blueScore) buffFaction = 'RED';
+            
+            if(buffFaction && window.showBuffAnnouncer) {
+                window.showBuffAnnouncer(buffFaction + ' 진영 언더독 버프 발동!');
+                entities.forEach(e => {
+                    if(e.type === 'hero' && e.faction === buffFaction) {
+                        e.underdogBuffTimer = 30.0;
+                    }
+                });
+            }
+        }
+
+        // Dragon Spawn Logic
+        if(GS.lastDragonCheck === undefined) GS.lastDragonCheck = 0;
+        if(GS.time >= 300 && GS.time - GS.lastDragonCheck >= 300) {
+            GS.lastDragonCheck = GS.time;
+            let d_type = Math.random() < 0.5 ? 'boss_red_dragon' : 'boss_blue_dragon';
+            let d_x = 500 + Math.random() * 2000;
+            let d_y = 500 + Math.random() * 2000;
+            let dragon = new Monster(d_x, d_y, d_type);
+            
+            // Scaling stats based on time
+            let scale = Math.floor(GS.time / 300); // 1 at 5min, 2 at 10min...
+            dragon.maxHp = 5000 * scale; dragon.hp = dragon.maxHp;
+            dragon.atk = 150 * scale;
+            
+            entities.push(dragon);
+            showBanner((d_type==='boss_red_dragon'?'레드':'블루') + ' 드래곤 등장!', '🐲', true);
+        }
+
         GS.time+=dt;
 
         minionTimer+=dt;
@@ -1823,47 +1915,45 @@ function renderInventory(){
 }
 
 function drawMinimap(){
-    if (mCanvas.width !== mCanvas.clientWidth || mCanvas.height !== mCanvas.clientHeight) {
-        mCanvas.width = mCanvas.clientWidth || 80;
-        mCanvas.height = mCanvas.clientHeight || 80;
-    }
-    mCtx.fillStyle='#0f172a'; mCtx.fillRect(0,0,mCanvas.width,mCanvas.height);
-    let sx=mCanvas.width/MAP_SIZE, sy=mCanvas.height/MAP_SIZE;
-    mCtx.fillStyle='rgba(139,90,43,0.4)'; mCtx.fillRect(200*sx,200*sy,200*sx,(2700-400)*sy); mCtx.fillRect(200*sx,200*sy,(2700-400)*sx,200*sy); mCtx.fillRect(200*sx,(2700-400)*sy,(2700-400)*sx,200*sy); mCtx.fillRect((2700-400)*sx,200*sy,200*sx,(2700-400)*sy);
-    mCtx.save(); mCtx.translate(1500*sx,1500*sy); mCtx.rotate(-Math.PI/4); mCtx.fillRect(-1700*sx, -100*sy, 3400*sx, 200*sy); mCtx.restore();
-
-    if(window.mapPings) {
-        let sx = mCanvas.width / MAP_SIZE, sy = mCanvas.height / MAP_SIZE;
-        window.mapPings.forEach(p => {
-            let col = p.faction === 'BLUE' ? '#3b82f6' : '#ef4444';
-            let r = 8 + Math.abs(Math.sin(p.life * 10)) * 6; // Blinking
-            mCtx.strokeStyle = col;
-            mCtx.lineWidth = 2;
-            mCtx.beginPath();
-            mCtx.arc(p.x * sx, p.y * sy, r, 0, Math.PI * 2);
-            mCtx.stroke();
-        });
-    }
-    entities.forEach(e=>{
+    ctx.save();
+    let mw = 150, mh = 150;
+    let mx = window.innerWidth - mw - 20;
+    let my = 20;
+    
+    ctx.fillStyle = 'rgba(15,23,42,0.8)';
+    ctx.strokeStyle = '#334155';
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.roundRect(mx, my, mw, mh, 10); ctx.fill(); ctx.stroke();
+    
+    entities.forEach(e => {
         if(e.isDead) return;
-        let col=e.faction==='BLUE'?'#3b82f6':e.faction==='RED'?'#ef4444':'#f59e0b';
-        if(e.type==='nexus') col=e.faction==='BLUE'?'#34d399':'#f87171';
-        else if(e.type==='nexus_turret') col=e.faction==='BLUE'?'#93c5fd':'#fca5a5';
-        else if(e.type==='tower') col=e.faction==='BLUE'?'#60a5fa':'#f87171';
+        if(e.type !== 'hero' && e.type !== 'tower' && e.type !== 'nexus' && e.type !== 'nexus_turret' && !e.mtype) return;
         
-        let r;
-        if(e===player) { col='#fcd34d'; r=4; }
-        else if(e.type==='nexus') r=6;
-        else if(e.type==='nexus_turret') r=3.5;
-        else if(e.type==='tower') r=3;
-        else if(e.type==='hero') r=3;
-        else if(e.type==='jungle') r=1.5;
-        else r=1.5; // minion
-
-        mCtx.fillStyle=col;
-        mCtx.beginPath(); mCtx.arc(e.x*sx,e.y*sy,r,0,Math.PI*2); mCtx.fill();
+        let px = mx + (e.x / MAP_SIZE) * mw;
+        let py = my + (e.y / MAP_SIZE) * mh;
+        
+        ctx.beginPath();
+        if(e.type === 'hero') {
+            ctx.fillStyle = e.faction === 'BLUE' ? '#3b82f6' : '#ef4444';
+            ctx.arc(px, py, e.isPlayer?4:3, 0, Math.PI*2);
+        } else if(e.type.includes('nexus') || e.type === 'tower') {
+            ctx.fillStyle = e.faction === 'BLUE' ? '#1e3a8a' : '#7f1d1d';
+            ctx.arc(px, py, e.type==='nexus'?5:3, 0, Math.PI*2);
+        } else if(e.mtype && e.mtype.includes('boss')) {
+            ctx.fillStyle = '#f59e0b';
+            ctx.arc(px, py, 4, 0, Math.PI*2);
+        }
+        ctx.fill();
     });
-    mCtx.strokeStyle='rgba(255,255,255,0.7)'; mCtx.strokeRect(camera.x*sx-(window.innerWidth/camera.zoom*sx)/2, camera.y*sy-(window.innerHeight/camera.zoom*sy)/2, window.innerWidth/camera.zoom*sx, window.innerHeight/camera.zoom*sy);
+    
+    if(player && !player.isDead){
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 1;
+        let px = mx + (player.x / MAP_SIZE) * mw;
+        let py = my + (player.y / MAP_SIZE) * mh;
+        ctx.beginPath(); ctx.arc(px, py, 5, 0, Math.PI*2); ctx.stroke();
+    }
+    ctx.restore();
 }
 
 function updateUI(){
@@ -1982,9 +2072,10 @@ window.addKillFeed = function(attacker, victim) {
         window.killStreaks[attacker.heroKey] = (window.killStreaks[attacker.heroKey] || 0) + 1;
         let streakCount = window.killStreaks[attacker.heroKey];
         let streakText = '';
-        if (streakCount >= 3) {
+        if (streakCount >= 2) {
             streakText = `<span class="text-amber-400 animate-pulse font-black"> [${streakCount}연속 킬!]</span>`;
-            if (window.AIChat) window.AIChat.triggerEvent('streak', attacker, streakCount);
+            if(window.showMultiKillAnnouncer) window.showMultiKillAnnouncer(streakCount);
+            if (window.AIChat && streakCount >= 3) window.AIChat.triggerEvent('streak', attacker, streakCount);
         }
         
         let el = document.createElement('div');
@@ -2076,7 +2167,7 @@ window.AIChat = {
         if(!this.chatLog || !hero) return;
         
         // Spawn speech bubble in game
-        window.chatBubbles.push({ hero: hero, text: msg, life: 3.5 });
+        /* Chat deleted */
         
         let aName = getHeroName(hero);
         let hCol = hero.faction === 'BLUE' ? '#60a5fa' : '#f87171';
@@ -2146,6 +2237,20 @@ window.AIChat = {
     update: function(dt) {
         this.timer += dt;
         
+        
+        // Multi-kill Hostile Emoji Meeting
+        heroes.forEach(h => {
+            if(window.killStreaks[h.heroKey] >= 3) {
+                if(Math.random() < 0.1) {
+                    let nearEnemies = heroes.filter(e => e.faction !== h.faction && dist(e, h) < 300);
+                    if(nearEnemies.length > 0) {
+                        let hEmoji = ['🤬', '👿', '🖕', '💢'][Math.floor(Math.random()*4)];
+                        addText(h.x, h.y - 70, hEmoji, '#fff', 28);
+                    }
+                }
+            }
+        });
+
         // Update pings
         for(let i=window.mapPings.length-1; i>=0; i--) {
             window.mapPings[i].life -= dt;
@@ -2232,3 +2337,78 @@ window.AIChat = {
 };
 
 
+
+window.showMultiKillAnnouncer = function(count) {
+    const texts = { 2:'DOUBLE KILL!', 3:'TRIPLE KILL!', 4:'QUADRA KILL!', 5:'PENTA KILL!', 6:'LEGENDARY KILL!', 7:'HEPTA KILL!', 8:'OCTA KILL!', 9:'NONA KILL!', 10:'DECA KILL!' };
+    let t = count <= 10 ? texts[count] : 'GODLIKE!';
+    let el = document.getElementById('multiKillAnnouncer');
+    let textEl = document.getElementById('multiKillText');
+    if(!el || !textEl) return;
+    textEl.innerText = t;
+    el.classList.remove('hidden');
+    textEl.style.opacity = '1';
+    textEl.style.transform = 'scale(1)';
+    playSFX('skill_cast');
+    setTimeout(() => {
+        textEl.style.opacity = '0';
+        textEl.style.transform = 'scale(1.5)';
+        setTimeout(() => { el.classList.add('hidden'); }, 300);
+    }, 2000);
+};
+
+window.showBuffAnnouncer = function(msg) {
+    let el = document.getElementById('buffAnnouncer');
+    let textEl = document.getElementById('buffAnnouncerText');
+    if(!el || !textEl) return;
+    textEl.innerText = msg;
+    el.classList.remove('hidden');
+    playSFX('heal');
+    setTimeout(() => {
+        el.classList.add('hidden');
+    }, 3000);
+};
+
+window.saveAndReload = function() {
+    let name = document.getElementById('playerNameInput').value || '익명';
+    let dominance = document.getElementById('dominanceResult').innerText;
+    let kda = document.getElementById('kdaResult').innerText;
+    
+    if(window.player && window.HERO_TMPL) {
+        let record = {
+            name: name,
+            hero: HERO_TMPL[player.heroKey].name,
+            kda: kda,
+            dominance: dominance,
+            date: new Date().toLocaleDateString()
+        };
+        
+        let hof = JSON.parse(localStorage.getItem('avalon_hof') || '[]');
+        hof.push(record);
+        if(hof.length > 20) hof.shift();
+        localStorage.setItem('avalon_hof', JSON.stringify(hof));
+    }
+    location.reload();
+};
+
+window.showHoF = function() {
+    let hof = JSON.parse(localStorage.getItem('avalon_hof') || '[]');
+    let tbody = document.getElementById('hofTableBody');
+    if(!tbody) return;
+    
+    tbody.innerHTML = '';
+    if(hof.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center p-4 text-slate-400">기록이 없습니다.</td></tr>';
+    } else {
+        hof.slice().reverse().forEach(r => {
+            tbody.innerHTML += `
+            <tr class="border-t border-slate-700">
+                <td class="p-2">${r.name}</td>
+                <td class="p-2">${r.hero}</td>
+                <td class="p-2 text-center text-amber-400 font-bold">${r.kda}</td>
+                <td class="p-2 text-right text-emerald-400 font-bold">${r.dominance}</td>
+            </tr>`;
+        });
+    }
+    
+    document.getElementById('hofScreen').classList.remove('hidden');
+};
