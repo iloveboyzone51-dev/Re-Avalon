@@ -906,7 +906,14 @@ class Hero extends Entity {
             if(keys.a){ this.vx-=this.moveSpd; this.facingDir=-1; }
             if(keys.d){ this.vx+=this.moveSpd; this.facingDir=1; }
         } else {
-            if(joy.active){ this.vx=(joy.dx/50)*this.moveSpd; this.vy=(joy.dy/50)*this.moveSpd; if(joy.dx<0) this.facingDir=-1; else if(joy.dx>0) this.facingDir=1; }
+            if(joy.active){
+                let d = Math.hypot(joy.dx, joy.dy);
+                if(d > 5) {
+                    this.vx=(joy.dx/d)*this.moveSpd; 
+                    this.vy=(joy.dy/d)*this.moveSpd; 
+                    if(joy.dx<0) this.facingDir=-1; else if(joy.dx>0) this.facingDir=1;
+                }
+            }
         }
         let len=Math.hypot(this.vx,this.vy); if(len>this.moveSpd){ this.vx=this.vx/len*this.moveSpd; this.vy=this.vy/len*this.moveSpd; }
     }
@@ -2132,20 +2139,47 @@ window.addEventListener('touchstart',e=>{
         if (GS.platform === 'MOBILE' && isLeftSide && isBottomHalf) {
             joy.active = true; joy.id = t.identifier;
             joy.ox = t.clientX; joy.oy = t.clientY;
+            joy.dx = 0; joy.dy = 0;
+            let jb = document.getElementById('joyBase');
+            if(jb) {
+                jb.classList.remove('hidden');
+                jb.style.left = joy.ox + 'px';
+                jb.style.top = joy.oy + 'px';
+                let jn = document.getElementById('joyNub');
+                if(jn) jn.style.transform = 'translate(0px, 0px)';
+            }
         }
     }
 });
 window.addEventListener('touchmove',e=>{
     if(e.touches.length === 2 && initPinchD) { let d = Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY); camera.zoom = clamp(initZoom * (d/initPinchD), 0.3, 2.0); }
-    else if(joy.active) { for(let t of e.changedTouches) if(t.identifier===joy.id){ let dx=t.clientX-joy.ox, dy=t.clientY-joy.oy, d=Math.hypot(dx,dy); if(d>50){dx=dx/d*50;dy=dy/d*50;} joy.dx=dx; joy.dy=dy; } }
+    else if(joy.active) { 
+        for(let t of e.changedTouches) {
+            if(t.identifier===joy.id){ 
+                let dx=t.clientX-joy.ox, dy=t.clientY-joy.oy, d=Math.hypot(dx,dy); 
+                if(d>50){dx=dx/d*50;dy=dy/d*50;} 
+                joy.dx=dx; joy.dy=dy; 
+                let jn = document.getElementById('joyNub');
+                if(jn) jn.style.transform = `translate(${dx}px, ${dy}px)`;
+            } 
+        }
+    }
 });
 window.addEventListener('touchend',e=>{ 
     if(e.touches.length<2) initPinchD=null; 
     let stillTouching = false;
     for(let t of e.touches) if(t.identifier===joy.id) stillTouching = true;
-    if(!stillTouching){ joy.active=false; joy.dx=0; joy.dy=0; } 
+    if(!stillTouching){ 
+        joy.active=false; joy.dx=0; joy.dy=0; 
+        let jb = document.getElementById('joyBase');
+        if(jb) jb.classList.add('hidden');
+    } 
 });
-window.addEventListener('touchcancel',e=>{ joy.active=false; joy.dx=0; joy.dy=0; });
+window.addEventListener('touchcancel',e=>{ 
+    joy.active=false; joy.dx=0; joy.dy=0; 
+    let jb = document.getElementById('joyBase');
+    if(jb) jb.classList.add('hidden');
+});
 
 // ============ UI ============
 window.selectPlatform=p=>{ GS.platform=p; document.getElementById('btnPlatPC').className=p==='PC'?"px-4 py-2.5 rounded-xl font-bold bg-indigo-600 border text-white w-1/2 text-sm":"px-4 py-2.5 rounded-xl font-bold bg-slate-800 border text-slate-400 w-1/2 text-sm"; document.getElementById('btnPlatMobile').className=p==='MOBILE'?"px-4 py-2.5 rounded-xl font-bold bg-emerald-600 border text-white w-1/2 text-sm":"px-4 py-2.5 rounded-xl font-bold bg-slate-800 border text-slate-400 w-1/2 text-sm"; };
