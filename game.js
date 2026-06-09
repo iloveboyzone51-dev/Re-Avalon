@@ -167,8 +167,8 @@ const HERO_TMPL = {
         skill2:{name:"도약 강타",cd:8, desc:"대상에게 도약하여 주변에 큰 데미지를 주고 1.5초 기절시킵니다."},  
         draw:(ctx,x,y,r,dir,f,anim)=>drawBlockyHero(ctx,x,y,r,dir,f,'berserker',anim) },
     ARCHER:    { name:"궁수",    color:"#10b981", hp:1300, atk:35, aspd:1.3, move:165, range:420, type:"ranged", role_desc:"[원거리 / 지속 딜러 / 순간 회피]",
-        skill1:{name:"화살 폭우",cd:6, desc:"단일 대상에게 연속으로 화살을 발사하여 큰 데미지를 줍니다."}, 
-        skill2:{name:"블링크",  cd:10, desc:"전방으로 순간이동하며 5초간 공격속도가 50% 증가합니다."}, 
+        skill1:{name:"블링크",  cd:10, desc:"전방으로 순간이동하며 5초간 공격속도가 50% 증가합니다."}, 
+        skill2:{name:"화살 폭우",cd:6, desc:"단일 대상에게 연속으로 화살을 발사하여 큰 데미지를 줍니다."}, 
         critChance:0.12, draw:(ctx,x,y,r,dir,f,anim)=>drawBlockyHero(ctx,x,y,r,dir,f,'archer',anim) },
     NECROMANCER:{ name:"네크로맨서",color:"#a855f7",hp:1400, atk:38, aspd:1.0, move:150, range:360, type:"ranged", role_desc:"[원거리 / 마법사 / 소환]",
         skill1:{name:"해골 소환",cd:7, desc:"적의 어그로를 끄는 근접 해골 미니언을 소환합니다."}, 
@@ -1454,8 +1454,8 @@ class Hero extends Entity {
         let cd = Math.max(2, baseCd - sl*0.5);
         if(this.cdr > 0) cd = cd * Math.max(0.3, 1 - this.cdr); // Max 70% CDR
         
-        if(idx===1) { if(this.heroSkill1Timer > 0) return; this.heroSkill1Timer = cd; }
-        else { if(this.heroSkill2Timer > 0) return; this.heroSkill2Timer = cd; }
+        if(idx===1) { if(this.heroSkill1Timer > 0) return; this.heroSkill1Timer = cd; this.heroSkill2Timer = Math.max(this.heroSkill2Timer, 1.0); }
+        else { if(this.heroSkill2Timer > 0) return; this.heroSkill2Timer = cd; this.heroSkill1Timer = Math.max(this.heroSkill1Timer, 1.0); }
         
         let skillDmg = this.atk * (1.5 + sl * 0.5) * (1 + this.skillDmgBonus);
         let nearEnemies = (cx,cy,r) => entities.filter(e=>e.faction!==this.faction&&!e.isDead&&dist({x:cx,y:cy},e)<=r);
@@ -1506,17 +1506,19 @@ class Hero extends Entity {
                 for(let i=0; i<3; i++) setTimeout(()=>spawnParticles(this.x, this.y, '#9f1239', 20, 125, 0.6), i*100);
             }
         } else if(k==='ARCHER') {
-            if(idx===1 && t) { // 폭풍 화살
-                for(let i=0;i<8+sl*2;i++) {
-                    setTimeout(()=>{
-                        if(t.isDead) { let ne = nearEnemies(this.x,this.y,600); if(ne.length>0) t=ne[0]; }
-                        if(t&&!t.isDead) {
-                            projectiles.push(new Projectile(this.x,this.y-100,t,skillDmg*0.5,this,false));
-                            spawnBeam(this.x, this.y-100, t.x, t.y, '#4ade80', 0.15);
-                            spawnParticles(this.x, this.y-100, '#a7f3d0', 5, 100, 0.2);
-                            playSFX('shoot');
-                        }
-                    }, i*60);
+            if(idx===2) { // 폭풍 화살
+                if(t) {
+                    for(let i=0;i<8+sl*2;i++) {
+                        setTimeout(()=>{
+                            if(t.isDead) { let ne = nearEnemies(this.x,this.y,600); if(ne.length>0) t=ne[0]; }
+                            if(t&&!t.isDead) {
+                                projectiles.push(new Projectile(this.x,this.y-100,t,skillDmg*0.5,this,false));
+                                spawnBeam(this.x, this.y-100, t.x, t.y, '#4ade80', 0.15);
+                                spawnParticles(this.x, this.y-100, '#a7f3d0', 5, 100, 0.2);
+                                playSFX('shoot');
+                            }
+                        }, i*60);
+                    }
                 }
             } else { // 회피 사격 (강화)
                 let dx = this.vx || 0; let dy = this.vy || 0;
@@ -2043,8 +2045,8 @@ class Building extends Entity {
         super(x,y,faction,btype);
         this.isBuilding=true;
         if(btype==='nexus'){ this.maxHp=15000; this.atk=0; this.range=0; this.radius=50; }
-        else if(btype==='nexus_turret') { this.maxHp=12000; this.atk=400; this.aspd=1.5; this.range=350; this.radius=22; }
-        else { this.maxHp=9000; this.atk=280; this.aspd=1.2; this.range=360; this.radius=28; } // 타워 버프
+        else if(btype==='nexus_turret') { this.maxHp=18000; this.atk=600; this.defense=50; this.aspd=1.5; this.range=350; this.radius=22; }
+        else { this.maxHp=13500; this.atk=420; this.defense=50; this.aspd=1.2; this.range=360; this.radius=28; } // 타워 버프
         this.hp=this.maxHp;
     }
     update(dt){
@@ -2122,8 +2124,9 @@ class EpicDragon extends Entity {
         super(x, y, 'NEUTRAL', 'epic_dragon');
         this.dtype = dtype; // 'red' or 'blue'
         this.radius = 60; // 5배 크기 (기본 영웅 12)
-        this.maxHp = 20000 * scale; this.hp = this.maxHp;
-        this.atk = 200 * scale;
+        this.maxHp = 30000 * scale; this.hp = this.maxHp;
+        this.atk = 300 * scale;
+        this.defense = 50 * scale;
         this.moveSpd = 80;
         this.range = 150;
         
@@ -2232,46 +2235,77 @@ class EpicDragon extends Entity {
         if(this.facingDir < 0) ctx.scale(-1, 1);
         
         let isFlying = this.flightTimer > 0;
-        let scale = isFlying ? 1.5 : 1.0;
+        let scale = isFlying ? 1.5 : 1.2; // 덩치 20% 더 크게
         ctx.scale(scale, scale);
         
-        let cBody = this.dtype === 'red' ? '#991b1b' : '#0369a1';
-        let cWing = this.dtype === 'red' ? '#7f1d1d' : '#0c4a6e';
-        let cEye  = '#fde047';
+        let cBody = this.dtype === 'red' ? '#e11d48' : '#0ea5e9';
+        let cDark = this.dtype === 'red' ? '#be123c' : '#0284c7';
+        let cWing = this.dtype === 'red' ? '#fb7185' : '#38bdf8';
+        let cEye  = '#111827';
         
         let flyY = isFlying ? Math.sin(this.animTimer * 5) * 20 - 50 : Math.sin(this.animTimer * 2) * 5;
         ctx.translate(0, flyY);
         
-        // 날개 애니메이션
-        let wingRot = isFlying ? Math.sin(this.animTimer * 10) * 0.5 : Math.sin(this.animTimer * 3) * 0.2;
-        ctx.save();
-        ctx.translate(-20, -20);
-        ctx.rotate(wingRot);
-        ctx.fillStyle = cWing;
-        ctx.beginPath();
-        ctx.moveTo(0,0); ctx.lineTo(-80, -60); ctx.lineTo(-40, 20); ctx.closePath();
-        ctx.fill();
-        ctx.restore();
+        let walkPhase = isFlying ? 0 : Math.sin(this.animTimer * 6);
+        let wingPhase = isFlying ? Math.sin(this.animTimer * 12) : Math.sin(this.animTimer * 2) * 0.2;
+
+        // 뒷다리 (Dark)
+        ctx.fillStyle = cDark;
+        ctx.fillRect(-20 + walkPhase*10, 10, 15, 30);
+        ctx.fillRect(-25 + walkPhase*10, 30, 25, 10);
         
-        // 몸통
+        // 꼬리 (Body)
         ctx.fillStyle = cBody;
-        ctx.beginPath(); ctx.ellipse(0, 0, 40, 30, 0, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.moveTo(-30, 0); ctx.lineTo(-90, 0); ctx.lineTo(-30, 20); ctx.fill();
+        // 꼬리 가시 (Dark)
+        ctx.fillStyle = cDark;
+        ctx.beginPath(); ctx.moveTo(-50, 0); ctx.lineTo(-60, -15); ctx.lineTo(-70, 0); ctx.fill();
+        ctx.beginPath(); ctx.moveTo(-70, 0); ctx.lineTo(-80, -10); ctx.lineTo(-90, 0); ctx.fill();
+
+        // 날개 뒤 (Dark)
+        ctx.fillStyle = cDark;
+        ctx.save(); ctx.translate(-10, -10); ctx.rotate(-wingPhase*0.5);
+        ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(-40,-60); ctx.lineTo(20,-40); ctx.fill();
+        ctx.restore();
+
+        // 몸통 (Body)
+        ctx.fillStyle = cBody;
+        ctx.beginPath(); ctx.moveTo(-40, -10); ctx.lineTo(30, -10); ctx.lineTo(30, 25); ctx.lineTo(-40, 25); ctx.fill();
+
+        // 앞다리 (Body)
+        ctx.fillStyle = cBody;
+        ctx.fillRect(10 - walkPhase*10, 10, 15, 30);
+        ctx.fillRect(5 - walkPhase*10, 30, 25, 10);
+        ctx.fillStyle = cDark;
+        ctx.beginPath(); ctx.arc(17.5 - walkPhase*10, 25, 6, 0, Math.PI*2); ctx.fill();
+
+        // 목 (Body)
+        let headPush = this.breathTimer>0 ? 15 : 0;
+        ctx.beginPath(); ctx.moveTo(20, -10); ctx.lineTo(20+headPush, -40); ctx.lineTo(40+headPush, -40); ctx.lineTo(30, -10); ctx.fill();
+
+        // 머리 (Body)
+        ctx.fillRect(20+headPush, -60, 45, 20); 
+        ctx.beginPath(); ctx.moveTo(65+headPush, -60); ctx.lineTo(85+headPush, -50); ctx.lineTo(65+headPush, -40); ctx.fill();
         
-        // 꼬리
-        ctx.beginPath(); ctx.moveTo(-30, 0); ctx.lineTo(-80, 10 + Math.sin(this.animTimer*4)*10); ctx.lineTo(-30, 15); ctx.fill();
-        
-        // 목/머리
-        let headX = 30 + (this.breathTimer>0 ? 10 : 0);
-        ctx.beginPath(); ctx.moveTo(20, -10); ctx.lineTo(headX, -25); ctx.lineTo(20, 10); ctx.fill();
-        ctx.beginPath(); ctx.arc(headX, -25, 15, 0, Math.PI*2); ctx.fill();
-        
-        // 눈
+        // 뿔/귀 (Dark)
+        ctx.fillStyle = cDark;
+        ctx.beginPath(); ctx.moveTo(20+headPush, -60); ctx.lineTo(10+headPush, -80); ctx.lineTo(35+headPush, -60); ctx.fill();
+
+        // 눈 (Eye)
         ctx.fillStyle = cEye;
-        ctx.beginPath(); ctx.arc(headX+5, -28, 3, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(50+headPush, -50, 4, 0, Math.PI*2); ctx.fill();
+
+        // 앞날개 (Wing)
+        ctx.fillStyle = cWing;
+        ctx.save(); ctx.translate(0, -10); ctx.rotate(wingPhase);
+        ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(-60,-80); ctx.lineTo(40,-50); ctx.fill();
+        ctx.fillStyle = cBody;
+        ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(-50,-70); ctx.lineTo(-30,-30); ctx.fill(); 
+        ctx.restore();
         
         ctx.restore();
         
-        // 체력바 (날고 있으면 안보이게)
+        // 체력바
         if(!isFlying) {
             let bw=80, bh=8, bx=this.x-bw/2, by=this.y-this.radius-20;
             ctx.fillStyle='#1e293b'; ctx.fillRect(bx-1,by-1,bw+2,bh+2); ctx.fillStyle='#374151'; ctx.fillRect(bx,by,bw,bh);
