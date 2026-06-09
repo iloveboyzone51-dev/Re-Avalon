@@ -960,7 +960,7 @@ class Hero extends Entity {
         this.heroKey=heroKey; this.isPlayer=isPlayer; this.laneRole = laneRole;
         let t=HERO_TMPL[heroKey];
         this.baseMaxHp=t.hp; this.maxHp=t.hp; this.hp=t.hp; this.baseAtk=t.atk; this.atk=t.atk;
-        this.baseAspd=t.aspd; this.aspd=t.aspd; this.baseMoveSpd=t.move*0.7; this.moveSpd=t.move*0.7;
+        this.baseAspd=t.aspd*1.3; this.aspd=t.aspd*1.3; this.baseMoveSpd=t.move*0.7; this.moveSpd=t.move*0.7;
         this.range=t.range; this.radius=22;
         this.level=1; this.exp=0; this.maxExp=100; this.gold=300;
         this.deaths = 0;
