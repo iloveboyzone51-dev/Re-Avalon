@@ -768,69 +768,133 @@ function drawBlockyHero(ctx, x, y, r, dir, faction, type, attackAnimTimer = 0, e
         }
         ctx.restore();
     } else if (type === 'archon') {
-        // 아칸 (스타크래프트 아칸 모티브) - 형체가 불분명한 에너지 덩어리
+        // 아칸 (로우폴리 크리스탈 & 에너지 구체 모티브)
         ctx.shadowColor = '#3b82f6'; ctx.shadowBlur = 20;
         
-        // 중심 코어 에너지
+        // 다면체(로우폴리) 크리스탈 코어
         ctx.fillStyle = '#eff6ff';
-        ctx.beginPath(); ctx.arc(x, y-r*0.6-breath, r*0.8, 0, Math.PI*2); ctx.fill();
-        
-        // 외부 푸른 플라즈마 (일렁거림)
-        ctx.fillStyle = 'rgba(59, 130, 246, 0.6)';
-        for(let i=0; i<5; i++) {
-            let pAngle = t/200 + i*(Math.PI*2/5);
-            ctx.beginPath(); ctx.arc(x + Math.cos(pAngle)*r*0.3, y-r*0.6-breath + Math.sin(pAngle)*r*0.3, r*0.9, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath();
+        for(let i=0; i<6; i++) {
+            let a = (Math.PI/3)*i;
+            let pr = r*0.7 * (i%2===0 ? 1 : 0.8);
+            ctx.lineTo(x + Math.cos(a)*pr, y - r*0.6 - breath + Math.sin(a)*pr);
         }
+        ctx.closePath(); ctx.fill();
         
-        // 양팔 에너지
+        // 등 뒤에 솟아오른 뾰족한 결정체들 (Polygon spikes)
+        ctx.fillStyle = '#60a5fa';
+        for(let i=0; i<5; i++) {
+            let a = Math.PI*1.2 + i*(Math.PI*0.15); // 위쪽으로 퍼지는 각도
+            ctx.beginPath();
+            ctx.moveTo(x + Math.cos(a)*r*0.4, y - r*0.6 - breath + Math.sin(a)*r*0.4);
+            ctx.lineTo(x + Math.cos(a-0.1)*r*1.2, y - r*0.6 - breath + Math.sin(a-0.1)*r*1.2);
+            ctx.lineTo(x + Math.cos(a+0.1)*r*1.2, y - r*0.6 - breath + Math.sin(a+0.1)*r*1.2);
+            ctx.closePath(); ctx.fill();
+        }
+
+        // 주변 소용돌이 크리스탈 파편
+        ctx.fillStyle = 'rgba(59, 130, 246, 0.8)';
+        for(let i=0; i<4; i++) {
+            let pAngle = t/300 + i*(Math.PI/2);
+            let px = x + Math.cos(pAngle)*r*1.2;
+            let py = y - r*0.5 + Math.sin(pAngle)*r*0.4;
+            ctx.beginPath(); ctx.moveTo(px, py-r*0.2); ctx.lineTo(px+r*0.2, py); ctx.lineTo(px, py+r*0.2); ctx.lineTo(px-r*0.2, py); ctx.closePath(); ctx.fill();
+        }
+
+        // 양팔 (길게 뻗음)
         ctx.save();
         if(isAttacking) {
-            ctx.translate(x, y-r*0.6); ctx.rotate(Math.PI * 0.1 * rotDir); // 양손을 앞으로 뻗음
-            ctx.fillStyle = '#60a5fa'; ctx.beginPath(); ctx.ellipse(r*1.2, 0, r*0.8, r*0.4, 0, 0, Math.PI*2); ctx.fill(); // 앞쪽 팔
-            ctx.beginPath(); ctx.ellipse(r*1.0, -r*0.5, r*0.6, r*0.3, 0, 0, Math.PI*2); ctx.fill(); // 위쪽 팔
+            ctx.translate(x, y-r*0.6); ctx.rotate(Math.PI * 0.15 * rotDir); // 양손을 앞으로 뻗음
+            // 다면체 형태의 거대한 팔뚝
+            ctx.fillStyle = '#93c5fd'; 
+            ctx.beginPath(); ctx.moveTo(r*0.5, -r*0.2); ctx.lineTo(r*1.8, -r*0.1); ctx.lineTo(r*1.6, r*0.2); ctx.lineTo(r*0.5, r*0.3); ctx.closePath(); ctx.fill();
+            // 등쪽 팔
+            ctx.fillStyle = '#3b82f6';
+            ctx.beginPath(); ctx.moveTo(r*0.4, -r*0.6); ctx.lineTo(r*1.4, -r*0.5); ctx.lineTo(r*1.3, -r*0.2); ctx.lineTo(r*0.4, -r*0.1); ctx.closePath(); ctx.fill();
         } else {
             ctx.translate(x, y-r*0.6);
-            ctx.fillStyle = '#60a5fa'; ctx.beginPath(); ctx.ellipse(r*0.8, r*0.2, r*0.5, r*0.3, 0, 0, Math.PI*2); ctx.fill();
-            ctx.beginPath(); ctx.ellipse(-r*0.8, r*0.2, r*0.5, r*0.3, 0, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = '#93c5fd'; 
+            ctx.beginPath(); ctx.moveTo(r*0.4, r*0.2); ctx.lineTo(r*0.9, r*0.4); ctx.lineTo(r*0.7, r*0.6); ctx.lineTo(r*0.3, r*0.5); ctx.closePath(); ctx.fill();
+            ctx.fillStyle = '#3b82f6';
+            ctx.beginPath(); ctx.moveTo(-r*0.4, r*0.2); ctx.lineTo(-r*0.9, r*0.4); ctx.lineTo(-r*0.7, r*0.6); ctx.lineTo(-r*0.3, r*0.5); ctx.closePath(); ctx.fill();
         }
         ctx.restore();
         ctx.shadowBlur = 0;
         
     } else if (type === 'barbarian') {
-        // 바바리안 (디아블로 바바리안 모티브)
-        drawBody('#d97706', '#d97706', '#78350f', '#000000'); // 웃통 벗은 근육질, 가죽 바지
+        // 바바리안 (로우폴리 바이킹 / 디아블로 감성)
         
-        // 워페인트 (얼굴에 붉은 칠)
-        ctx.fillStyle = '#dc2626'; ctx.fillRect(x-r*0.4, y-r*0.7-breath, r*0.8, r*0.1);
+        // 다리 (가죽 부츠 & 장갑)
+        ctx.fillStyle = '#451a03'; // 어두운 가죽
+        ctx.beginPath(); ctx.moveTo(x-r*0.4+lx, y+r*0.3); ctx.lineTo(x-r*0.2+lx, y+r*0.9); ctx.lineTo(x-r*0.4+lx, y+r*0.9); ctx.closePath(); ctx.fill();
+        ctx.beginPath(); ctx.moveTo(x+r*0.2-lx, y+r*0.3); ctx.lineTo(x+r*0.4-lx, y+r*0.9); ctx.lineTo(x+r*0.2-lx, y+r*0.9); ctx.closePath(); ctx.fill();
+        
+        // 치마 (털가죽 로인클로스)
+        ctx.fillStyle = '#78350f';
+        ctx.beginPath(); ctx.moveTo(x-r*0.5, y); ctx.lineTo(x+r*0.5, y); ctx.lineTo(x+r*0.6, y+r*0.5); ctx.lineTo(x, y+r*0.6); ctx.lineTo(x-r*0.6, y+r*0.5); ctx.closePath(); ctx.fill();
+        // 금속 버클
+        ctx.fillStyle = '#94a3b8'; ctx.beginPath(); ctx.moveTo(x, y+r*0.1); ctx.lineTo(x+r*0.2, y+r*0.3); ctx.lineTo(x, y+r*0.5); ctx.lineTo(x-r*0.2, y+r*0.3); ctx.closePath(); ctx.fill();
+
+        // 윗몸 (근육질 맨몸)
+        ctx.fillStyle = '#d97706'; // 구릿빛 피부
+        // 역삼각형 갑빠
+        ctx.beginPath(); ctx.moveTo(x-r*0.7, y-r*0.5-breath); ctx.lineTo(x+r*0.7, y-r*0.5-breath); ctx.lineTo(x+r*0.4, y); ctx.lineTo(x-r*0.4, y); ctx.closePath(); ctx.fill();
+        
+        // 가슴 가로지르는 가죽 끈
+        ctx.fillStyle = '#451a03'; 
+        ctx.beginPath(); ctx.moveTo(x-r*0.6, y-r*0.5-breath); ctx.lineTo(x+r*0.4, y); ctx.lineTo(x+r*0.2, y); ctx.lineTo(x-r*0.4, y-r*0.5-breath); ctx.closePath(); ctx.fill();
+        
+        // 얼굴
+        ctx.fillStyle = '#f59e0b';
+        ctx.fillRect(x-r*0.3, y-r*1.0-breath, r*0.6, r*0.6);
+        
+        // 바이킹 뿔 투구
+        ctx.fillStyle = '#334155'; // 쇠투구
+        ctx.beginPath(); ctx.moveTo(x-r*0.4, y-r*0.9-breath); ctx.lineTo(x+r*0.4, y-r*0.9-breath); ctx.lineTo(x, y-r*1.3-breath); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = '#e2e8f0'; // 뿔
+        ctx.beginPath(); ctx.moveTo(x-r*0.3, y-r*1.0-breath); ctx.lineTo(x-r*0.8, y-r*1.4-breath); ctx.lineTo(x-r*0.1, y-r*1.2-breath); ctx.closePath(); ctx.fill();
+        ctx.beginPath(); ctx.moveTo(x+r*0.3, y-r*1.0-breath); ctx.lineTo(x+r*0.8, y-r*1.4-breath); ctx.lineTo(x+r*0.1, y-r*1.2-breath); ctx.closePath(); ctx.fill();
+        
+        // 회색 덥수룩한 수염
+        ctx.fillStyle = '#64748b';
+        ctx.beginPath(); ctx.moveTo(x-r*0.4, y-r*0.5-breath); ctx.lineTo(x+r*0.4, y-r*0.5-breath); ctx.lineTo(x, y-r*0.1-breath); ctx.closePath(); ctx.fill();
+
+        // 휠윈드 회전 효과 (스킬 발동 시)
+        let isWW = entity && entity.whirlwindTimer > 0;
         
         // 쌍도끼 (Dual Axes)
         ctx.save();
-        if(isAttacking) {
-            ctx.translate(x+r*0.8, y-r*0.2); ctx.rotate(Math.PI * 0.4 * rotDir); // 도끼를 크게 휘두름
-            ctx.shadowColor = '#f97316'; ctx.shadowBlur = 10;
-        } else {
-            ctx.translate(x+r*0.6, y-r*0.1); ctx.rotate(-Math.PI * 0.2 * rotDir);
+        if(isWW) {
+            ctx.translate(x, y); ctx.rotate(t/50); // 빠르게 회전
+            x=0; y=0; // 로컬 좌표계
+            // 회오리 바람 이펙트 (반투명 원)
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+            ctx.beginPath(); ctx.arc(0, 0, r*2.0, 0, Math.PI*2); ctx.fill();
         }
         
         // 오른손 도끼
-        ctx.fillStyle = '#451a03'; ctx.fillRect(-r*0.1, -r*1.2, r*0.2, r*2.0); // 자루
-        ctx.fillStyle = '#94a3b8'; ctx.beginPath(); ctx.arc(r*0.2, -r*1.0, r*0.5, -Math.PI/2, Math.PI/2); ctx.fill(); // 날
-        
-        ctx.restore();
-        ctx.shadowBlur = 0;
-        
         ctx.save();
-        if(isAttacking) {
-            ctx.translate(x-r*0.8, y-r*0.2); ctx.rotate(-Math.PI * 0.4 * rotDir); // 왼손 도끼 교차 휘두르기
+        if(isAttacking && !isWW) {
+            ctx.translate(x+r*0.6, y-r*0.2); ctx.rotate(Math.PI * 0.4 * rotDir); // 도끼를 크게 휘두름
+        } else {
+            ctx.translate(x+r*0.6, y-r*0.1); ctx.rotate(-Math.PI * 0.2 * rotDir);
+        }
+        ctx.fillStyle = '#451a03'; ctx.fillRect(-r*0.1, -r*1.2, r*0.2, r*2.0); // 자루
+        ctx.fillStyle = '#94a3b8'; ctx.beginPath(); ctx.moveTo(r*0.1, -r*1.0); ctx.lineTo(r*0.6, -r*1.2); ctx.lineTo(r*0.8, -r*0.8); ctx.lineTo(r*0.6, -r*0.4); ctx.closePath(); ctx.fill(); // 다면체 날
+        ctx.restore();
+        
+        // 왼손 도끼
+        ctx.save();
+        if(isAttacking && !isWW) {
+            ctx.translate(x-r*0.6, y-r*0.2); ctx.rotate(-Math.PI * 0.4 * rotDir); // 교차 휘두르기
         } else {
             ctx.translate(x-r*0.6, y-r*0.1); ctx.rotate(Math.PI * 0.2 * rotDir);
         }
-        
-        // 왼손 도끼
         ctx.fillStyle = '#451a03'; ctx.fillRect(-r*0.1, -r*1.2, r*0.2, r*2.0); // 자루
-        ctx.fillStyle = '#94a3b8'; ctx.beginPath(); ctx.arc(-r*0.2, -r*1.0, r*0.5, Math.PI/2, Math.PI*1.5); ctx.fill(); // 날 반대편
-        
+        ctx.fillStyle = '#94a3b8'; ctx.beginPath(); ctx.moveTo(-r*0.1, -r*1.0); ctx.lineTo(-r*0.6, -r*1.2); ctx.lineTo(-r*0.8, -r*0.8); ctx.lineTo(-r*0.6, -r*0.4); ctx.closePath(); ctx.fill(); // 날 반대편
         ctx.restore();
+        
+        ctx.restore(); // 휠윈드 회전 종료
     }
     
     ctx.restore();
@@ -1311,7 +1375,9 @@ class Hero extends Entity {
         } else {
             this.attackAnimTimer = 0.2;
             if(this.heroKey === 'BARBARIAN') {
-                spawnSlash(this.x, this.y-this.radius, Math.atan2(target.y-this.y, target.x-this.x), '#94a3b8', 60);
+                let a = Math.atan2(target.y-this.y, target.x-this.x);
+                spawnSlash(this.x, this.y-this.radius, a + 0.3, '#94a3b8', 60); // 오른손 도끼
+                spawnSlash(this.x, this.y-this.radius, a - 0.3, '#94a3b8', 60); // 왼손 도끼
                 let hitTargets = entities.filter(e=>e.faction!==this.faction && !e.isDead && dist(e, this) <= this.range + 30);
                 hitTargets.forEach(tgt => {
                     let dealt=tgt.applyRawDamage(dmg, this); this.totalDmg+=dealt;
@@ -1827,6 +1893,76 @@ class Hero extends Entity {
                     addText(t.x, t.y-50, '파멸의 낙인!', '#c084fc', 28);
                     for(let i=0; i<8; i++) spawnSlash(t.x, t.y, (Math.PI/4)*i, '#581c87', 75);
                 }
+            }
+        } else if(k==='ARCHON') {
+            if(idx===1) { // 사이어닉 스톰 (하얀색 번개비)
+                let tg = t || this;
+                spawnAOE(tg.x, tg.y, 200, '#ffffff66', 0.8);
+                spawnRing(tg.x, tg.y, '#eff6ff', 200, 0.8);
+                for(let i=0; i<15; i++) {
+                    setTimeout(() => {
+                        let bx = tg.x + rand(-180, 180);
+                        let by = tg.y + rand(-180, 180);
+                        spawnBeam(bx+rand(-20,20), by-800, bx, by, '#ffffff', 0.25);
+                        spawnParticles(bx, by, '#e0f2fe', 8, 80, 0.4);
+                        if(Math.random()<0.3) playSFX('shoot');
+                    }, i * 150);
+                }
+                nearEnemies(tg.x, tg.y, 200).forEach(e => {
+                    e.applyRawDamage(skillDmg * 2.5, this);
+                    e.stunTimer = 0.5;
+                });
+                addText(tg.x, tg.y-60, '사이어닉 스톰!', '#ffffff', 24);
+            } else { // 마엘스톰 (갈색 구체 완전 마비)
+                let tg = t || this;
+                let duration = 3.0;
+                spawnAOE(tg.x, tg.y, 180, '#78350fAA', duration); // 짙은 갈색 구체 (오래 남음)
+                spawnRing(tg.x, tg.y, '#92400e', 180, duration);
+                
+                // 마엘스톰 내부의 적 완전 마비
+                nearEnemies(tg.x, tg.y, 180).forEach(e => {
+                    e.applyRawDamage(skillDmg * 1.5, this);
+                    e.stunTimer = duration; // 완전 마비
+                    spawnParticles(e.x, e.y, '#b45309', 20, 100, duration);
+                });
+                addText(tg.x, tg.y-60, '마엘스톰!', '#b45309', 24);
+                
+                // 소용돌이 이펙트 추가 생성
+                for(let i=0; i<8; i++) {
+                    setTimeout(() => spawnSlash(tg.x, tg.y, Math.random()*Math.PI*2, '#78350f', 180), i*300);
+                }
+            }
+        } else if(k==='BARBARIAN') {
+            if(idx===1) { // 점프샷 (지형 균열 + 슬로우)
+                let tg = t || {x: this.x + this.facingDir*200, y: this.y};
+                this.x = tg.x; this.y = tg.y; // 점프 이동
+                spawnAOE(this.x, this.y, 200, '#00000088', 0.6);
+                spawnRing(this.x, this.y, '#ea580c', 200, 0.6);
+                addText(this.x, this.y-60, '점프 샷!!', '#ea580c', 24);
+                
+                // 거대한 지형 균열(Slash) 이펙트를 여러 겹으로
+                for(let i=0; i<12; i++) spawnSlash(this.x, this.y, (Math.PI/6)*i, '#451a03', 250);
+                for(let i=0; i<5; i++) spawnParticles(this.x+rand(-50,50), this.y+rand(-50,50), '#78350f', 20, 150, 0.6);
+                
+                nearEnemies(this.x, this.y, 200).forEach(e => {
+                    e.applyRawDamage(skillDmg * 2.0, this);
+                    e.slowTimer = 4.0; e.slowRate = 0.5; // 강한 슬로우
+                });
+                playSFX('skill_burst');
+            } else { // 휠윈드 (회오리 돌진 + 에어본)
+                this.whirlwindTimer = 3.0; // 3초간 회전
+                this.whirlwindDmg = skillDmg * 0.8;
+                
+                // 적 진영으로 돌진 (탑/바텀/가장 가까운 넥서스 등)
+                let tg = t; 
+                if(!tg) tg = entities.filter(e=>e.type==='nexus' && e.faction!==this.faction)[0];
+                if(tg) {
+                    let a = Math.atan2(tg.y - this.y, tg.x - this.x);
+                    this.vx = Math.cos(a)*600; this.vy = Math.sin(a)*600; // 돌진!
+                }
+                addText(this.x, this.y-60, '휠윈드!!', '#f97316', 24);
+                spawnRing(this.x, this.y, '#fdba74', 150, 3.0);
+                playSFX('skill_burst');
             }
         } else {
             // 미구현 영웅이나 예비용 기본 스킬
