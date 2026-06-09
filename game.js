@@ -739,7 +739,7 @@ class Entity {
         
         let isCrit = amount > (attacker?attacker.atk*1.5:0);
         
-        addText(this.x+rand(-15,15), this.y-this.radius-10, isCrit?'\u{1F4A5}'+dmg+'!':dmg, isCrit?'#ef4444':(attacker===player?'#fbbf24':'#f8fafc'), isCrit?28:14);
+        addText(this.x+rand(-15,15), this.y-this.radius-10, isCrit?'\u{1F4A5}'+Math.floor(dmg)+'!':Math.floor(dmg), isCrit?'#ef4444':(attacker===player?'#fbbf24':'#f8fafc'), isCrit?28:14);
 
         // 히트 플래시 (번쩍임 효과)
         this.hitFlashTimer = 0.1;
@@ -1952,6 +1952,7 @@ function spawnChainEffect(x1,y1,x2,y2) {
 window.addEventListener('keydown',e=>{ let k=e.key.toLowerCase(); if(keys.hasOwnProperty(k)) keys[k]=true; if(k==='o'&&player&&!GS.autoSkill) player.useSkill(1); if(k==='p'&&player&&!GS.autoSkill) player.useSkill(2); });
 window.addEventListener('keyup',e=>{ let k=e.key.toLowerCase(); if(keys.hasOwnProperty(k)) keys[k]=false; });
 window.addEventListener('wheel', e => { 
+    if(e.target.closest('.overflow-y-auto') || e.target.closest('#titleScreen')) return;
     e.preventDefault();
     camera.zoom -= e.deltaY * 0.001; 
     camera.zoom = clamp(camera.zoom, 0.3, 2.0); 
@@ -2469,7 +2470,8 @@ function renderInventory(){
         d.className='w-5 h-5 md:w-10 md:h-10 bg-slate-900 border border-slate-700 rounded flex items-center justify-center text-[10px] md:text-sm relative group';
         if(player&&i<player.inventory.length){
             let item=player.inventory[i];
-            d.innerHTML=`<div class="cursor-pointer text-[12px] md:text-xl">${item.icon}</div><div class="absolute -top-1 -right-1 bg-amber-500 text-slate-900 text-[8px] md:text-[10px] font-black px-0.5 md:px-1 rounded-full">+${item.upgrade}</div>`;
+            let bi=[...BASE_ITEMS,...EVOLUTION_ITEMS].find(b=>b.id===item.id);
+            d.innerHTML=`<div class="cursor-pointer text-[12px] md:text-xl">${bi?bi.icon:'?'}</div><div class="absolute -top-1 -right-1 bg-amber-500 text-slate-900 text-[8px] md:text-[10px] font-black px-0.5 md:px-1 rounded-full">+${item.upgrade}</div>`;
         }
         inv.appendChild(d);
     }
@@ -2582,7 +2584,7 @@ function updateUI(){
     document.getElementById('hudLevelBadge').textContent='Lv.'+player.level; document.getElementById('hudKDA').textContent='K:'+player.kills+' / D:'+player.deaths;
     document.getElementById('hudHpBar').style.width=(player.hp/player.maxHp)*100+'%'; document.getElementById('hudHpText').textContent=Math.floor(player.hp)+' / '+Math.floor(player.maxHp); document.getElementById('hudXpBar').style.width=(player.exp/player.maxExp)*100+'%';
     const inv=document.getElementById('inventorySlots'); inv.innerHTML='';
-    for(let i=0;i<8;i++){ let item=player.inventory[i]; let bi=item?BASE_ITEMS.find(b=>b.id===item.id):null; let content=item?'<span class="text-sm">'+(bi?bi.icon:'?')+'</span>'+(item.upgrade>0?'<span class="absolute -top-1 -right-1 text-[7px] bg-rose-600 text-white rounded px-0.5 font-bold">+'+item.upgrade+'</span>':''):''; inv.innerHTML+='<div class="relative w-6 h-6 md:w-8 md:h-8 rounded bg-slate-900 border border-slate-800 flex items-center justify-center">'+content+'</div>'; }
+    for(let i=0;i<8;i++){ let item=player.inventory[i]; let bi=item?[...BASE_ITEMS,...EVOLUTION_ITEMS].find(b=>b.id===item.id):null; let content=item?'<span class="text-sm">'+(bi?bi.icon:'?')+'</span>'+(item.upgrade>0?'<span class="absolute -top-1 -right-1 text-[7px] bg-rose-600 text-white rounded px-0.5 font-bold">+'+item.upgrade+'</span>':''):''; inv.innerHTML+='<div class="relative w-6 h-6 md:w-8 md:h-8 rounded bg-slate-900 border border-slate-800 flex items-center justify-center">'+content+'</div>'; }
     // 히어로 패시브 쿨다운 표시
     let m1=document.getElementById('maskSkill1'), m2=document.getElementById('maskSkill2');
     if(m1) { if(player.heroSkill1Timer>0){m1.classList.remove('hidden');m1.textContent=player.heroSkill1Timer.toFixed(1);}else m1.classList.add('hidden'); }
