@@ -1,9 +1,15 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
+    <script>
+        // 강력한 캐시 우회: URL에 ?v=1008이 없으면 자동으로 파라미터를 추가해서 새로고침
+        if (window.location.protocol === 'file:' && !window.location.search.includes('v=1008')) {
+            window.location.replace(window.location.pathname + '?v=1008');
+        }
+    </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>운빨 아발론 - AOS 디펜스</title>
+    <title>운빨 아발론 - v1008</title>
     <meta name="description" content="극한의 운빨 성장! 5:5 AOS 웹 MOBA 게임 운빨 아발론">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -142,7 +148,7 @@
                     <span class="text-lg">🔮</span><span class="text-[10px] font-bold text-indigo-400 mt-0.5">암흑사제</span>
                 </button>
             </div>
-            <div class="mt-3 p-2.5 bg-slate-950/60 rounded-xl text-left min-h-[64px] border border-slate-800">
+            <div class="mt-3 p-2.5 bg-slate-950/60 rounded-xl text-left border border-slate-800 h-28 overflow-y-auto custom-scrollbar">
                 <div id="heroDescription" class="text-[11px] text-slate-300 leading-relaxed"></div>
             </div>
         </div>
@@ -255,11 +261,16 @@
                     <span class="text-amber-400 text-xs">💰</span>
                     <span id="hudGoldText" class="text-amber-300 font-black font-mono text-sm">0G</span>
                 </div>
-                <!-- 상점 버튼 -->
-                <button onclick="toggleShop()"
-                        class="bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 font-black text-[11px] px-3 py-2 rounded-xl shadow-lg flex items-center gap-1 border border-amber-300 active:scale-95 transition-transform">
-                    🛒 상점
-                </button>
+                <div class="flex gap-1.5 mt-1">
+                    <button onclick="toggleEvolutionGuide()"
+                            class="bg-gradient-to-r from-amber-600 to-yellow-500 text-slate-950 font-black text-[11px] px-3 py-1.5 rounded-xl shadow-lg flex items-center gap-1 border border-amber-300 active:scale-95 transition-transform">
+                        🌟 도감
+                    </button>
+                    <button onclick="toggleShop()"
+                            class="bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 font-black text-[11px] px-3 py-1.5 rounded-xl shadow-lg flex items-center gap-1 border border-amber-300 active:scale-95 transition-transform">
+                        🛒 상점
+                    </button>
+                </div>
             </div>
             <!-- 인벤토리 슬롯 (2x4 그리드 구조로 변경 및 투명도 증가) -->
             <div class="grid grid-cols-4 gap-1 bg-slate-950/40 p-1.5 rounded-xl border border-slate-800/50 pointer-events-auto" id="inventorySlots">
@@ -275,7 +286,7 @@
             <div class="text-[8px] text-slate-400 hidden md:block">중복구매 = 강화 (+1~+9)</div>
             <button onclick="toggleShop()" class="text-slate-400 hover:text-white text-xl font-bold ml-2">&times;</button>
         </div>
-        <div class="flex flex-col gap-1.5 overflow-y-auto pr-0.5" style="max-height:calc(60vh - 60px);" id="shopItemContainer"></div>
+        <div class="grid grid-cols-2 md:grid-cols-2 gap-2 overflow-y-auto pr-2 custom-scrollbar" style="max-height:calc(60vh - 60px);" id="shopItemContainer"></div>
     </div>
 
     <!-- 하단 HUD (조작 가이드 + 스킬) -->
@@ -313,6 +324,14 @@
                     <span id="txtAutoSkill">MANUAL</span>
                 </button>
             </div>
+
+            <!-- 액티브 아이템 버튼 (기본 숨김) -->
+            <button id="btnActiveItem" onclick="triggerActiveItem()"
+                    class="hidden relative overflow-hidden flex flex-col items-center justify-center active:scale-90 transition-transform shadow-lg mb-1"
+                    style="width:50px; height:50px; border-radius:50%; background:rgba(234,179,8,0.3); border:2px solid rgba(234,179,8,0.7); backdrop-filter:blur(4px);">
+                <span id="txtActiveItemIcon" class="text-xl leading-none drop-shadow">⏳</span>
+                <div id="maskActiveItem" class="hidden absolute inset-0 rounded-full flex items-center justify-center font-mono font-black text-white text-xs" style="background:rgba(15,23,42,0.75);"></div>
+            </button>
 
             <!-- 스킬 2 -->
             <button onmousedown="triggerSkill(2)" ontouchstart="triggerSkill(2); event.preventDefault();"
@@ -386,6 +405,27 @@
     </div>
 </div>
 
+<!-- 진화 도감 모달 -->
+<div id="evolutionGuideModal" class="hidden absolute inset-0 z-50 bg-black/80 flex items-center justify-center p-4 pointer-events-auto">
+    <div class="bg-slate-900 border border-amber-500/50 p-4 md:p-6 rounded-2xl max-w-3xl w-full max-h-[85vh] flex flex-col shadow-2xl relative">
+        <button onclick="toggleEvolutionGuide()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-3xl font-bold">&times;</button>
+        <h2 class="text-2xl md:text-3xl font-black text-amber-400 mb-4 border-b border-slate-700 pb-3 orbitron">🌟 진화 조합 도감</h2>
+        <div class="text-xs md:text-sm text-slate-300 mb-4">장비를 9강까지 강화하고 해당 패시브 스킬을 마스터(Max Lv)하면 자동으로 진화합니다.</div>
+        <div id="evolutionGuideList" class="flex-1 overflow-y-auto pr-2 grid grid-cols-1 md:grid-cols-2 gap-3 custom-scrollbar">
+            <!-- JS로 렌더링 -->
+        </div>
+    </div>
+</div>
+
+<!-- 진화 성공 연출 팝업 -->
+<div id="evolutionSuccessPopup" class="hidden absolute inset-0 z-[80] flex items-center justify-center pointer-events-none bg-black/70 backdrop-blur-sm">
+    <div id="evoPopupBox" class="flex flex-col items-center scale-0 transition-transform duration-500">
+        <div class="text-7xl md:text-9xl mb-4 animate-bounce" id="evoPopupIcon">🗡️</div>
+        <h1 class="text-4xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-b from-amber-200 to-amber-500 drop-shadow-[0_0_20px_rgba(245,158,11,0.8)] orbitron" id="evoPopupName">아발론의 대검</h1>
+        <p class="text-lg md:text-2xl text-white font-bold mt-4 bg-slate-900/80 px-6 py-2 rounded-full border border-amber-500/50" id="evoPopupDesc">[진화] 공격력 극대화</p>
+    </div>
+</div>
+
 <!-- BGM Fallback removed -->
 
 <!-- 메인 캔버스 -->
@@ -396,7 +436,7 @@ window.onerror = function(msg, url, line, col, error) {
     alert("자바스크립트 오류 발생: " + msg + "\n줄 번호: " + line);
 };
 </script>
-<script src="game.js?v=1005"></script>
+<script src="game.js?v=1008"></script>
 
     <!-- 명예의 전당 모달 -->
     <div id="hofScreen" class="hidden absolute inset-0 z-50 bg-black/80 flex items-center justify-center">
@@ -442,7 +482,22 @@ window.onerror = function(msg, url, line, col, error) {
             <h2 class="text-2xl md:text-3xl font-black text-amber-400 mb-6 border-b border-slate-700 pb-3 orbitron">📝 PATCH NOTES</h2>
             <div class="flex-1 overflow-y-auto pr-4 text-sm md:text-base text-slate-300 space-y-4 custom-scrollbar">
                 
-                <details open class="group bg-slate-800/50 p-4 rounded-xl border border-slate-700">
+                                <details class="bg-slate-700/50 rounded-lg border border-slate-600/50" open>
+                            <summary class="cursor-pointer p-3 font-bold text-amber-400 hover:text-amber-300 transition select-none flex justify-between items-center">
+                                v1007 - 편의성 대개편 및 오류 수정 (핫픽스)
+                                <span class="text-xs text-slate-400 font-normal ml-2">최신</span>
+                            </summary>
+                            <div class="p-3 pt-0 text-sm text-slate-200 space-y-2 border-t border-slate-600/50 mt-1 pb-3 px-4">
+                                <ul class="list-disc pl-4 space-y-1">
+                                    <li><span class="font-bold text-emerald-400">버그 픽스:</span> 필드몹/미니언 무적 및 체력바 미표기(검은색) 버그 완전 수정.</li>
+                                    <li><span class="font-bold text-emerald-400">AI 개선:</span> 네크로맨서 소환수가 미니언처럼 행동하며 센터로 달려가던 문제 수정.</li>
+                                    <li><span class="font-bold text-emerald-400">디자인 개선:</span> 네크로맨서 소환수의 그래픽이 검은 연기를 내뿜는 독립적인 개체로 변경.</li>
+                                    <li><span class="font-bold text-emerald-400">UI/UX:</span> PC 환경 상점 아이템 배열을 2열 격자 구조로 변경하여 가독성 강화.</li>
+                                    <li><span class="font-bold text-emerald-400">UI/UX:</span> 모든 상점 아이템에 직관적인 설명을 추가 및 일부 아이템 아이콘 재매칭.</li>
+                                </ul>
+                            </div>
+                        </details>
+                        <details class="bg-slate-700/50 rounded-lg border border-slate-600/50">
                     <summary class="font-bold text-lg text-emerald-400 flex items-center justify-between cursor-pointer list-none">
                         <span class="flex items-center gap-2"><span class="text-xl">✨</span> v1005 패치노트 개선 및 영웅 썸네일</span>
                         <span class="text-slate-500 group-open:rotate-180 transition-transform">▼</span>
