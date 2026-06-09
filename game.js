@@ -513,8 +513,14 @@ class Entity {
         this.y=clamp(this.y+this.vy*dt*spdMult, 10, MAP_SIZE-10);
         this.attackTimer-=dt;
         this.lastAttackedTimer=Math.max(0, this.lastAttackedTimer-dt);
-        this.animPhase+=dt*3;
-        if(this.slowTimer > 0) this.slowTimer -= dt;
+        this.animPhase+=dt*3; if(this.emoteTimer>0){this.emoteTimer-=dt; if(this.emoteTimer<=0)this.emote=null;}
+                if(this.slowTimer > 0) this.slowTimer -= dt;
+        
+        let home = this.faction==='BLUE'?{x:300,y:2700}:{x:2700,y:300};
+        if(dist(this, home) < 400 && this.hp < this.maxHp) {
+            this.hp = Math.min(this.maxHp, this.hp + this.maxHp * 0.03 * dt);
+            if(Math.random()<0.05) { spawnParticles(this.x,this.y-10,'#22c55e',3,50,0.5); addText(this.x,this.y-this.radius-20,'\u2795','#22c55e',20); }
+        }
 
         let isMoving = this.vx!==0||this.vy!==0;
         let inCombat = this.lastAttackedTimer>0;
@@ -552,7 +558,8 @@ class Entity {
         }
 
         this.lastAttackedTimer=REGEN_DELAY+0.5; this.nonCombatTimer=0;
-        let dmg=Math.max(1, Math.floor(amount));
+                let dmg=Math.max(1, Math.floor(amount));
+        if(this.damageReduction) dmg = Math.max(1, dmg * (1 - this.damageReduction));
         
         if(this.shield > 0) {
             let absorbed = Math.min(this.shield, dmg);
@@ -576,23 +583,9 @@ class Entity {
         
         let isCrit = amount > (attacker?attacker.atk*1.5:0);
         
-        // 피격 넉백 및 경직(Hit-stun)
-        if(!this.isBuilding && attacker && !attacker.isBuilding) {
-            let angle = Math.atan2(this.y - attacker.y, this.x - attacker.x);
-            let kbForce = isCrit ? 250 : 100; // 넉백 수치 대폭 증가
-            this.x += Math.cos(angle) * kbForce * 0.1;
-            this.y += Math.sin(angle) * kbForce * 0.1;
-            
-            // 피격 경직 (0.15초~0.3초간 움직임 정지)
-            this.stunTimer = Math.max(this.stunTimer || 0, isCrit ? 0.3 : 0.15);
-        }
 
-        // 히트스톱 (크리티컬이거나, 플레이어가 때렸을 때)
-        if(isCrit) {
-            GS.hitStopTimer = 0.04;
-        }
         
-        addText(this.x+rand(-15,15), this.y-this.radius-10, isCrit?'\u{1F4A5}'+dmg:dmg, attacker===player?'#fbbf24':'#f8fafc', isCrit?18:14);
+        addText(this.x+rand(-15,15), this.y-this.radius-10, isCrit?'\u{1F4A5}'+dmg+'!':dmg, isCrit?'#ef4444':(attacker===player?'#fbbf24':'#f8fafc'), isCrit?28:14);
 
         // 히트 플래시 (번쩍임 효과)
         this.hitFlashTimer = 0.1;
@@ -710,7 +703,10 @@ class Hero extends Entity {
             
             // Grrr Giant buff
             if(this.grrrGiantTimer > 0) {
-                effAtk *= 1.5; effMove *= 1.2; effAspd *= 1.2;
+                effAtk *= 1.5; effMove *= 1.2; effAspd *= 1.2; this.damageReduction = 0.3;
+                if(!this.isGiant) { this.isGiant=true; this.baseRadius=this.radius; this.baseMaxHp=this.maxHp; this.maxHp*=1.5; this.hp+=this.baseMaxHp*0.5; this.radius*=1.8; }
+            } else if(this.isGiant) {
+                this.isGiant=false; this.damageReduction = 0; this.maxHp=this.baseMaxHp; this.hp=Math.min(this.hp,this.maxHp); this.radius=this.baseRadius;
             }
             
             // Underdog buff
@@ -989,12 +985,8 @@ class Hero extends Entity {
 
         playSFX('skill_burst');
         if(idx === 1 && k === 'grrr') {
-            this.grrrGiantTimer = 12;
-            this.baseRadius = this.radius;
-            this.radius *= 1.8;
-            this.atk *= 1.5; this.maxHp *= 2; this.hp += this.maxHp/2;
-            this.moveSpd *= 1.2; this.aspd *= 1.2;
-            addText(this.x, this.y-50, '거대화!', '#fcd34d', 20);
+            this.grrrGiantTimer = 10;
+            addText(this.x, this.y-50, '거대화! 체력+50% 공방+50% 이속+20%', '#fcd34d', 18);
         } else if(idx === 2 && k === 'grrr') {
             spawnAOE(this.x, this.y, 180, '#f59e0b88', 0.5);
             let targets = entities.filter(e => e.faction !== this.faction && !e.isDead && dist(this, e) <= 180);
@@ -1405,8 +1397,8 @@ class Minion extends Entity {
         // 미니언 성장 스케일 강화 (300초마다 2배)
         let scale=1+GS.time/300; this.maxHp=Math.floor(400*scale); this.hp=this.maxHp; this.atk=Math.floor(15*scale); this.aspd=1.0; this.moveSpd=120; this.range=30; this.radius=10;
         
-        let bTop=[{x:300,y:2700},{x:300,y:300},{x:2700,y:300}], bMid=[{x:300,y:2700},{x:1500,y:1500},{x:2700,y:300}], bBot=[{x:300,y:2700},{x:2700,y:2700},{x:2700,y:300}];
-        let rTop=[{x:2700,y:300},{x:300,y:300},{x:300,y:2700}], rMid=[{x:2700,y:300},{x:1500,y:1500},{x:300,y:2700}], rBot=[{x:2700,y:300},{x:2700,y:2700},{x:300,y:2700}];
+        let bTop=[{x:300,y:2700},{x:300,y:300},{x:2700,y:300}], bMid=[{x:300,y:2700},{x:1500,y:1500},{x:2700,y:300}], bBot=[{x:300,y:2700},{x:300,y:2400},{x:2400,y:2400},{x:2400,y:300},{x:2700,y:300}];
+        let rTop=[{x:2700,y:300},{x:2700,y:300},{x:300,y:300},{x:300,y:2700}], rMid=[{x:2700,y:300},{x:1500,y:1500},{x:300,y:2700}], rBot=[{x:2700,y:300},{x:2400,y:300},{x:2400,y:2400},{x:300,y:2400},{x:300,y:2700}];
         this.waypoints = faction==='BLUE' ? (lane==='top'?bTop:lane==='mid'?bMid:bBot) : (lane==='top'?rTop:lane==='mid'?rMid:rBot);
         this.wpIdx=1; this.animPhase=Math.random()*Math.PI*2;
     }
@@ -1444,7 +1436,8 @@ class Minion extends Entity {
         ctx.fillRect(this.x-this.radius*0.6, this.y-this.radius+ly, this.radius*1.2, this.radius*1.5);
         ctx.fillStyle='#fca5a5'; ctx.fillRect(this.x-this.radius*0.4, this.y-this.radius*0.8+ly, this.radius*0.8, this.radius*0.5);
         ctx.fillStyle='#1e293b'; ctx.fillRect(this.x-this.radius*0.2, this.y-this.radius*0.6+ly, 2, 2); ctx.fillRect(this.x+this.radius*0.1, this.y-this.radius*0.6+ly, 2, 2);
-        let bw=24,bh=4,bx=this.x-bw/2,by=this.y-this.radius-10; ctx.fillStyle='#374151'; ctx.fillRect(bx,by,bw,bh); ctx.fillStyle=this.faction==='BLUE'?'#3b82f6':'#ef4444'; ctx.fillRect(bx,by,bw*(this.hp/this.maxHp),bh);
+                let bw=24,bh=4,bx=this.x-bw/2,by=this.y-this.radius-10; ctx.fillStyle='#374151'; ctx.fillRect(bx,by,bw,bh); ctx.fillStyle=this.faction==='BLUE'?'#3b82f6':'#ef4444'; ctx.fillRect(bx,by,bw*(this.hp/this.maxHp),bh);
+        if(this.emote) { ctx.font = '28px sans-serif'; ctx.fillText(this.emote, this.x - 14, this.y - this.radius*1.5 - 20); }
     }
 }
 
@@ -1472,7 +1465,23 @@ class Monster extends Entity {
                 target = this.owner; // return to owner
             }
             if(dist(this,target)>this.range){ let a=Math.atan2(target.y-this.y,target.x-this.x); this.vx=Math.cos(a)*this.moveSpd; this.vy=Math.sin(a)*this.moveSpd; }
-            else { this.vx=0; this.vy=0; if(this.attackTimer<=0){this.attackTimer=1/this.aspd; target.applyRawDamage(this.atk,this);} }
+            else { this.vx=0; this.vy=0; if(this.attackTimer<=0){
+    this.attackTimer=1/this.aspd; 
+    if(this.mtype === 'boss_dragon') {
+        let r = Math.random();
+        if(r < 0.3) {
+            spawnAOE(this.x, this.y, 250, '#ef444488', 1.0);
+            let targets = entities.filter(e => e.faction !== this.faction && !e.isDead && dist(this, e) <= 250);
+            targets.forEach(t => t.applyRawDamage(this.atk*1.5, this));
+            playSFX('skill_burst');
+        } else if(r < 0.6) {
+            spawnRing(this.x, this.y, '#f59e0b', 300, 0.8);
+            let targets = entities.filter(e => e.faction !== this.faction && !e.isDead && dist(this, e) <= 300);
+            targets.forEach(t => { t.applyRawDamage(this.atk*2, this); t.stunTimer = 1.0; });
+            playSFX('skill_cast');
+        } else target.applyRawDamage(this.atk,this);
+    } else target.applyRawDamage(this.atk,this);
+} }
         } else if(dist(this,this.home)>50){ let a=Math.atan2(this.home.y-this.y,this.home.x-this.x); this.vx=Math.cos(a)*this.moveSpd; this.vy=Math.sin(a)*this.moveSpd; }
         else { this.vx=0; this.vy=0; }
     }
@@ -1698,6 +1707,7 @@ function renderShop(){
 // ============ 메인 루프 ============
 const canvas=document.getElementById('gameCanvas'); const ctx=canvas.getContext('2d');
 const mCanvas=document.getElementById('minimapCanvas'); const mCtx=mCanvas.getContext('2d');
+mCanvas.width=160; mCanvas.height=160;
 
 let canvasDPR = 1;
 function resizeCanvas() {
@@ -1718,12 +1728,7 @@ function gameLoop(now){
     // dt 클램프 완화: 프레임 드랍이 생겨도 최대 0.2초(5 FPS) 분량의 시간을 한 번에 처리해 현실 시간과 싱크를 맞춤
     let dt=Math.min((now-GS.lastFrame)/1000, 0.2); GS.lastFrame=now;
     
-    if(!GS.paused && GS.hitStopTimer > 0) {
-        GS.hitStopTimer -= dt;
-        draw();
-        requestAnimationFrame(gameLoop);
-        return;
-    }
+
 
     if(!GS.paused) {
         // Underdog Buff Logic
