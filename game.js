@@ -545,8 +545,6 @@ function drawBlockyHero(ctx, x, y, r, dir, faction, type, attackAnimTimer = 0) {
                 }
                 ctx.restore();
             }
-        }
-        ctx.restore();
     } else if(type === 'thor') {
         drawBody('#bfdbfe', '#2563eb', '#1e3a8a');
         // 헬멧 (날개)
