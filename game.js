@@ -2266,7 +2266,6 @@ window.updateStatusWindow = () => {
     let makeItem = (h) => {
         let t = HERO_TMPL[h.heroKey];
         return `<div class="flex items-center gap-3 bg-slate-950/50 p-2 rounded border border-slate-800">
-            <div class="w-10 h-10 rounded-lg flex items-center justify-center text-xl bg-slate-800 shadow-inner">${t.icon}</div>
             <div class="flex-1 flex flex-col">
                 <span class="font-bold text-slate-200" style="color:${t.color}">${t.name}</span>
                 <span class="text-[10px] text-slate-400">Lv.${h.level} | ${h.heroKey==='JOKER'?'도박사':t.role_desc.split(' ')[1]}</span>
@@ -2286,11 +2285,13 @@ window.toggleStatusWindow = () => {
     let el = document.getElementById('statusWindowOverlay');
     if(el.classList.contains('hidden')) {
         el.classList.remove('hidden');
+        el.classList.add('flex');
         window.updateStatusWindow();
         statusUpdateInterval = setInterval(window.updateStatusWindow, 500);
     } else {
         el.classList.add('hidden');
-        if(statusUpdateInterval) clearInterval(statusUpdateInterval);
+        el.classList.remove('flex');
+        if(statusUpdateInterval) { clearInterval(statusUpdateInterval); statusUpdateInterval = null; }
     }
 };
 
