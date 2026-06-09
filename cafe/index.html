@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <script>
+        // 강력한 캐시 우회: URL에 ?v=1008이 없으면 자동으로 파라미터를 추가해서 새로고침
+        if (window.location.protocol === 'file:' && !window.location.search.includes('v=1008')) {
+            window.location.replace(window.location.pathname + '?v=1008');
+        }
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>운빨 아발론 - v1008</title>
+    <meta name="description" content="극한의 운빨 성장! 5:5 AOS 웹 MOBA 게임 운빨 아발론">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&family=Orbitron:wght@700;900&display=swap');
+        *, *::before, *::after { box-sizing: border-box; }
+        body, html { margin:0; padding:0; width:100%; height:100dvh; overflow:hidden; background:#05070c;
+            user-select:none; -webkit-user-select:none; touch-action:none;
+            font-family:'Noto Sans KR',system-ui,sans-serif; -webkit-touch-callout:none; }
+        canvas { display:block; image-rendering:auto; }
+        .orbitron { font-family:'Orbitron',sans-serif; }
+        /* 스킬 버튼 */
+        .skill-btn { width:64px; height:64px; border-radius:50%; display:flex; flex-direction:column; align-items:center; justify-content:center; transition:transform 0.1s; }
+        .skill-btn:active { transform:scale(0.88); }
+        .skill-btn-main { width:80px; height:80px; border-radius:50%; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+        /* 체력바 애니메이션 */
+        #hudHpBar { transition: width 0.15s ease; }
+        #hudXpBar { transition: width 0.3s ease; }
+        /* 킬 배너 트랜지션 */
+        #systemKillBanner { transition: opacity 0.3s ease, transform 0.3s ease; }
+        /* 모바일 조이스틱 안내 오버레이 */
+        #joyGuide { pointer-events:none; position:absolute; left:0; bottom:0; width:50%; height:100%; display:flex; align-items:flex-end; padding-bottom:40px; padding-left:20px; }
+        .joy-circle { width:100px; height:100px; border-radius:50%; border:3px solid rgba(255,255,255,0.2); background:rgba(255,255,255,0.05); display:flex; align-items:center; justify-content:center; }
+        /* 뱀서라이크 스킬 선택 카드 */
+        .skill-card {
+            width: 160px; padding: 20px 14px; border-radius: 16px; cursor: pointer;
+            background: linear-gradient(135deg, #1e293b, #0f172a);
+            border: 2px solid #334155; text-align: center;
+            transition: all 0.2s ease; position: relative; overflow: hidden;
+        }
+        .skill-card:hover {
+            border-color: #fbbf24; transform: translateY(-8px) scale(1.05);
+            box-shadow: 0 0 30px rgba(251,191,36,0.3);
+        }
+        .skill-card:active { transform: scale(0.95); }
+        .skill-card::before {
+            content: ''; position: absolute; inset: 0;
+            background: linear-gradient(135deg, transparent, rgba(251,191,36,0.05));
+            opacity: 0; transition: opacity 0.2s;
+        }
+        .skill-card:hover::before { opacity: 1; }
+        @keyframes skillPopIn { from { opacity:0; transform:scale(0.5) translateY(30px); } to { opacity:1; transform:scale(1) translateY(0); } }
+        .skill-card { animation: skillPopIn 0.4s ease-out backwards; }
+        .skill-card:nth-child(2) { animation-delay: 0.1s; }
+        .skill-card:nth-child(3) { animation-delay: 0.2s; }
+        summary { list-style: none; }
+        summary::-webkit-details-marker { display: none; }
+    </style>
+</head>
+<body>
+
+<!-- 가로모드 강제 오버레이 (모바일 세로 지원을 위해 제거됨) -->
+
+<!-- ══════════ 타이틀 화면 ══════════ -->
+<div id="titleScreen" class="absolute inset-0 z-50 flex flex-col items-center justify-start overflow-y-auto text-white"
+     style="background: radial-gradient(ellipse at 50% 0%, rgba(16,185,129,0.12) 0%, transparent 60%), radial-gradient(ellipse at 80% 100%, rgba(139,92,246,0.1) 0%, transparent 60%), linear-gradient(135deg,#050c0b,#04070f,#0a0518); padding-top: max(20px, env(safe-area-inset-top)); padding-bottom: max(20px, env(safe-area-inset-bottom)); -webkit-overflow-scrolling: touch;">
+    <!-- 배경 격자 -->
+    <div class="absolute inset-0 pointer-events-none"
+         style="background-image:linear-gradient(rgba(255,255,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.03) 1px,transparent 1px);background-size:60px 60px;"></div>
+
+    <div class="relative z-10 w-full max-w-3xl px-2 py-4 md:py-8 flex flex-col items-center gap-3 md:gap-5">
+        <!-- 타이틀 -->
+        <div class="text-center">
+            <h1 class="orbitron text-4xl md:text-6xl font-black tracking-widest mb-1"
+                style="background:linear-gradient(135deg,#34d399,#818cf8,#f472b6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">
+                운빨 아발론
+            </h1>
+            <p class="text-[11px] md:text-sm text-slate-400 tracking-[0.3em] uppercase font-bold mb-3">5v5 Extreme RNG · AOS · Web MOBA</p>
+            <button onclick="document.getElementById('patchNotesModal').classList.remove('hidden')" class="px-4 py-1.5 bg-slate-800/80 border border-amber-500/50 text-amber-400 text-xs md:text-sm rounded-full hover:bg-slate-700 hover:text-amber-300 transition-colors shadow-[0_0_10px_rgba(245,158,11,0.2)]">
+                📝 최근 업데이트 내역 (패치노트)
+            </button>
+        </div>
+
+        <!-- 플랫폼 선택 -->
+        <div class="flex gap-3 bg-slate-900/70 p-2 rounded-2xl border border-slate-800 w-full max-w-xs backdrop-blur-md">
+            <button id="btnPlatPC" onclick="selectPlatform('PC')"
+                    class="px-4 py-2.5 rounded-xl font-bold bg-indigo-600 border border-indigo-400 text-white w-1/2 text-sm transition-all active:scale-95">💻 PC</button>
+            <button id="btnPlatMobile" onclick="selectPlatform('MOBILE')"
+                    class="px-4 py-2.5 rounded-xl font-bold bg-slate-800 border border-slate-700 text-slate-400 w-1/2 text-sm transition-all active:scale-95">📱 모바일</button>
+        </div>
+
+        <!-- 진영 선택 -->
+        <div class="w-full max-w-sm bg-slate-900/70 border border-slate-800 rounded-2xl p-4 backdrop-blur-md">
+            <h3 class="text-xs font-bold text-slate-400 mb-3 tracking-widest uppercase">진영 선택</h3>
+            <div class="grid grid-cols-2 gap-3">
+                <button id="btnFactionBlue" onclick="selectFaction('BLUE')"
+                        class="py-3 px-3 rounded-xl border-2 border-emerald-500 bg-emerald-950/40 flex flex-col items-center gap-0.5 transition-all active:scale-95">
+                    <span class="text-emerald-400 font-black text-sm tracking-wider">🔵 블루팀</span>
+                    <span class="text-[9px] text-emerald-600">좌하단 본진</span>
+                </button>
+                <button id="btnFactionRed" onclick="selectFaction('RED')"
+                        class="py-3 px-3 rounded-xl border-2 border-transparent bg-slate-800/50 flex flex-col items-center gap-0.5 transition-all active:scale-95">
+                    <span class="text-slate-400 font-black text-sm tracking-wider">🔴 레드팀</span>
+                    <span class="text-[9px] text-slate-600">우상단 본진</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- 영웅 선택 -->
+        <div class="w-full max-w-2xl bg-slate-900/70 border border-slate-800 rounded-2xl p-4 backdrop-blur-md">
+            <h3 class="text-xs font-bold text-slate-400 mb-3 tracking-widest uppercase">영웅 선택 (나머지 9명은 AI 무작위 배정)</h3>
+            <div class="grid grid-cols-3 md:grid-cols-5 gap-2">
+                <button id="btnHeroBERSERKER" onclick="selectHero('BERSERKER')"
+                        class="py-2 px-1 rounded-xl border-2 border-emerald-500 bg-slate-800/60 flex flex-col items-center transition-all active:scale-90">
+                    <span class="text-lg">⚔️</span><span class="text-[10px] font-bold text-white mt-0.5">광전사</span>
+                </button>
+                <button id="btnHeroARCHER" onclick="selectHero('ARCHER')"
+                        class="py-2 px-1 rounded-xl border-2 border-transparent bg-slate-800/60 flex flex-col items-center transition-all active:scale-90">
+                    <span class="text-lg">🏹</span><span class="text-[10px] font-bold text-white mt-0.5">궁수</span>
+                </button>
+                <button id="btnHeroNECROMANCER" onclick="selectHero('NECROMANCER')"
+                        class="py-2 px-1 rounded-xl border-2 border-transparent bg-slate-800/60 flex flex-col items-center transition-all active:scale-90">
+                    <span class="text-lg">💀</span><span class="text-[10px] font-bold text-purple-300 mt-0.5">네크로맨서</span>
+                </button>
+                <button id="btnHerogrrr" onclick="selectHero('grrr')"
+                        class="py-2 px-1 rounded-xl border-2 border-transparent bg-slate-800/60 flex flex-col items-center transition-all active:scale-90">
+                    <span class="text-lg">🦁</span><span class="text-[10px] font-bold text-yellow-300 mt-0.5">그르르</span>
+                </button>
+                <button id="btnHeroVAMPIRE" onclick="selectHero('VAMPIRE')"
+                        class="py-2 px-1 rounded-xl border-2 border-transparent bg-slate-800/60 flex flex-col items-center transition-all active:scale-90">
+                    <span class="text-lg">🧛</span><span class="text-[10px] font-bold text-rose-300 mt-0.5">뱀파이어</span>
+                </button>
+                <button id="btnHeroTHOR" onclick="selectHero('THOR')"
+                        class="py-2 px-1 rounded-xl border-2 border-transparent bg-slate-800/60 flex flex-col items-center transition-all active:scale-90">
+                    <span class="text-lg">⚡</span><span class="text-[10px] font-bold text-blue-300 mt-0.5">토르</span>
+                </button>
+                <button id="btnHeroICEBORN" onclick="selectHero('ICEBORN')"
+                        class="py-2 px-1 rounded-xl border-2 border-transparent bg-slate-800/60 flex flex-col items-center transition-all active:scale-90">
+                    <span class="text-lg">❄️</span><span class="text-[10px] font-bold text-sky-300 mt-0.5">이스버그</span>
+                </button>
+                <button id="btnHeroJOKER" onclick="selectHero('JOKER')"
+                        class="py-2 px-1 rounded-xl border-2 border-transparent bg-slate-800/60 flex flex-col items-center transition-all active:scale-90">
+                    <span class="text-lg">🃏</span><span class="text-[10px] font-bold text-purple-400 mt-0.5">조커블레이드</span>
+                </button>
+                <button id="btnHeroDARKPRIEST" onclick="selectHero('DARKPRIEST')"
+                        class="py-2 px-1 rounded-xl border-2 border-transparent bg-slate-800/60 flex flex-col items-center transition-all active:scale-90">
+                    <span class="text-lg">🔮</span><span class="text-[10px] font-bold text-indigo-400 mt-0.5">암흑사제</span>
+                </button>
+            </div>
+            <div class="mt-3 p-2.5 bg-slate-950/60 rounded-xl text-left border border-slate-800 h-28 overflow-y-auto custom-scrollbar">
+                <div id="heroDescription" class="text-[11px] text-slate-300 leading-relaxed"></div>
+            </div>
+        </div>
+
+        <!-- 핵심 차별점 요약 -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-2 w-full max-w-2xl text-center">
+            <div class="bg-slate-900/50 border border-slate-800 rounded-xl p-2.5">
+                <div class="text-xl mb-1">🎲</div>
+                <div class="text-[9px] text-slate-300 font-bold">극한 운빨 성장</div>
+                <div class="text-[8px] text-slate-500">레벨업마다 무작위 스탯</div>
+            </div>
+            <div class="bg-slate-900/50 border border-slate-800 rounded-xl p-2.5">
+                <div class="text-xl mb-1">🤖</div>
+                <div class="text-[9px] text-slate-300 font-bold">고도화 AI 9명</div>
+                <div class="text-[8px] text-slate-500">자율 전략 동료+적</div>
+            </div>
+            <div class="bg-slate-900/50 border border-slate-800 rounded-xl p-2.5">
+                <div class="text-xl mb-1">🐲</div>
+                <div class="text-[9px] text-slate-300 font-bold">에픽 보스</div>
+                <div class="text-[8px] text-slate-500">드래곤·고블린·서든데스</div>
+            </div>
+            <div class="bg-slate-900/50 border border-slate-800 rounded-xl p-2.5">
+                <div class="text-xl mb-1">⚠️</div>
+                <div class="text-[9px] text-slate-300 font-bold">20분 서든데스</div>
+                <div class="text-[8px] text-slate-500">강제 한타 크리쳐</div>
+            </div>
+        </div>
+
+        <!-- 시작 버튼 -->
+        <div class="flex flex-col md:flex-row gap-4 justify-center items-center w-full">
+            <button onclick="startGame()"
+                    class="relative px-14 py-4 rounded-full font-black text-xl tracking-widest active:scale-95 transition-all orbitron overflow-hidden"
+                    style="background:linear-gradient(135deg,#10b981,#6366f1);box-shadow:0 0 30px rgba(16,185,129,0.4);">
+                <span class="relative z-10">⚔️ 전장 진입</span>
+            </button>
+            <button onclick="showHoF()" class="px-8 py-4 rounded-full font-black text-xl active:scale-95 transition-all orbitron bg-amber-600 hover:bg-amber-500 shadow-lg shadow-amber-500/30 border-2 border-amber-300 text-white">
+                🏆 명예의 전당
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════ 인게임 HUD ══════════ -->
+<div id="gameHUD" class="absolute inset-0 z-10 pointer-events-none hidden select-none flex-col justify-between p-2">
+
+    <!-- 상단 HUD -->
+    <div class="flex justify-between items-start pointer-events-auto w-full relative">
+
+        <!-- 좌상단: 플레이어 정보 -->
+        <div class="flex flex-col gap-1 z-20 md:scale-150 md:origin-top-left">
+            <!-- 캐릭터 정보 카드 -->
+            <div class="flex items-center gap-2 bg-slate-950/90 border border-slate-800 rounded-xl p-2 shadow-2xl backdrop-blur-md">
+                <div class="w-36">
+                    <div class="flex items-center justify-between mb-1">
+                        <div class="flex items-center gap-1.5">
+                            <span id="hudHeroName" class="font-black text-white text-xs">영웅</span>
+                            <span id="hudLevelBadge" class="text-[8px] px-1.5 py-0.5 rounded-md bg-amber-500 text-slate-950 font-black">Lv.1</span>
+                        </div>
+                        <span id="hudKDA" class="text-[8px] text-slate-400 font-mono bg-slate-900 px-1 rounded border border-slate-700">K:0 D:0</span>
+                    </div>
+                    <!-- HP바 -->
+                    <div class="h-3 bg-slate-900 rounded-full overflow-hidden relative border border-slate-800 mb-1">
+                        <div id="hudHpBar" class="h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full w-full"></div>
+                        <span id="hudHpText" class="absolute inset-0 text-[8px] font-mono font-black text-white flex items-center justify-center drop-shadow">100/100</span>
+                    </div>
+                    <!-- XP바 -->
+                    <div class="h-1.5 bg-slate-900 rounded-full overflow-hidden">
+                        <div id="hudXpBar" class="h-full bg-gradient-to-r from-amber-400 to-yellow-300 rounded-full" style="width:0%"></div>
+                    </div>
+                    <!-- 비전투 회복 표시 -->
+                    <div id="regenIndicator" class="hidden text-[8px] text-emerald-400 font-bold mt-0.5">♻ 회복 중...</div>
+                </div>
+            </div>
+
+            <!-- 미니맵 이동됨 -->
+            <div class="bg-slate-950/90 border border-slate-800 rounded-xl p-1 shadow-xl backdrop-blur-md" style="width:80px;">
+                <div class="flex justify-between items-center mb-0.5 px-0.5">
+                    <span class="text-[6px] text-slate-500 font-bold uppercase">MAP</span>
+                    <span id="gameTimerMini" class="text-[6px] text-amber-400 font-mono font-bold">00:00</span>
+                </div>
+                <div class="relative w-full overflow-hidden rounded" style="height:80px; background:#0f172a;">
+                    <canvas id="minimapCanvas" style="width:100%; height:100%;"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- 중앙 상단: 스코어 + 타이머 (절대 위치 제거하여 겹침 방지) -->
+        <div class="flex flex-col items-center gap-1 shrink-0 z-10 pt-1 md:scale-150 md:origin-top md:pt-4">
+            <div class="bg-slate-950/90 border border-slate-800 rounded-2xl px-2.5 md:px-5 py-1 text-center shadow-2xl flex items-center gap-2 md:gap-6 text-white backdrop-blur-md origin-top">
+                <div class="text-emerald-400 font-black text-lg flex flex-col leading-none">
+                    <span class="text-[7px] text-slate-400 tracking-widest font-bold">BLUE</span>
+                    <span id="scoreBlue">0</span>
+                </div>
+                <div class="flex flex-col items-center">
+                    <span id="gameTimer" class="font-mono text-xl font-black text-slate-200 orbitron">00:00</span>
+                    <div id="suddenDeathWarn" class="hidden text-[8px] text-red-500 font-black animate-pulse">⚠ 서든데스</div>
+                </div>
+                <div class="text-rose-400 font-black text-lg flex flex-col leading-none">
+                    <span class="text-[7px] text-slate-400 tracking-widest font-bold">RED</span>
+                    <span id="scoreRed">0</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 우상단: 상점 + 인벤토리 -->
+        <div class="flex flex-col items-end gap-1.5 z-20 md:scale-150 md:origin-top-right">
+            <div class="flex flex-col items-end gap-1 pointer-events-auto">
+                <!-- 골드 표시 -->
+                <div class="bg-slate-950/95 border border-amber-500/50 rounded-lg px-2 py-1 flex items-center gap-1.5">
+                    <span class="text-amber-400 text-xs">💰</span>
+                    <span id="hudGoldText" class="text-amber-300 font-black font-mono text-sm">0G</span>
+                </div>
+                <div class="flex gap-1.5 mt-1">
+                    <button onclick="toggleEvolutionGuide()"
+                            class="bg-gradient-to-r from-amber-600 to-yellow-500 text-slate-950 font-black text-[11px] px-3 py-1.5 rounded-xl shadow-lg flex items-center gap-1 border border-amber-300 active:scale-95 transition-transform">
+                        🌟 도감
+                    </button>
+                    <button onclick="toggleShop()"
+                            class="bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 font-black text-[11px] px-3 py-1.5 rounded-xl shadow-lg flex items-center gap-1 border border-amber-300 active:scale-95 transition-transform">
+                        🛒 상점
+                    </button>
+                </div>
+            </div>
+            <!-- 인벤토리 슬롯 (2x4 그리드 구조로 변경 및 투명도 증가) -->
+            <div class="grid grid-cols-4 gap-1 bg-slate-950/40 p-1.5 rounded-xl border border-slate-800/50 pointer-events-auto" id="inventorySlots">
+                <!-- JS가 채움 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 상점 패널 (슬라이드 업 형태로 모바일 최적화) -->
+    <div id="shopUI" class="absolute right-0 bottom-0 md:right-4 md:top-20 md:bottom-auto z-40 bg-slate-950/98 border border-slate-700 rounded-t-2xl md:rounded-2xl p-3 w-full md:w-80 text-white hidden pointer-events-auto shadow-2xl backdrop-blur-xl" style="max-height: 60vh; transition: transform 0.3s ease-out;">
+        <div class="flex justify-between items-center border-b border-slate-800 pb-2 mb-2">
+            <h2 class="text-sm font-black text-amber-400">🛒 보급소</h2>
+            <div class="text-[8px] text-slate-400 hidden md:block">중복구매 = 강화 (+1~+9)</div>
+            <button onclick="toggleShop()" class="text-slate-400 hover:text-white text-xl font-bold ml-2">&times;</button>
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-2 gap-2 overflow-y-auto pr-2 custom-scrollbar" style="max-height:calc(60vh - 60px);" id="shopItemContainer"></div>
+    </div>
+
+    <!-- 하단 HUD (조작 가이드 + 스킬) -->
+    <div class="flex justify-between items-end pointer-events-none w-full mt-auto relative">
+
+        <!-- PC 가이드 -->
+        <div id="pcGuideText" class="hidden md:block pointer-events-auto bg-slate-950/90 border border-slate-800 rounded-xl p-3 text-[9px] text-slate-400 shadow-lg backdrop-blur-md">
+            <div class="font-black text-white mb-1 text-xs">🎮 조작</div>
+            <div>이동: <kbd class="bg-slate-800 px-1 rounded border border-slate-700 font-mono">WASD</kbd></div>
+            <div class="mt-0.5">줌: <kbd class="bg-slate-800 px-1 rounded border border-slate-700 font-mono">마우스 휠</kbd></div>
+            <div class="mt-0.5 text-amber-400 font-bold">⚡ 스킬 자동 발동! 레벨업 시 스킬 선택!</div>
+        </div>
+
+        <!-- 모바일 조이스틱 안내 -->
+        <div id="joyGuide" class="hidden pointer-events-none">
+            <div class="joy-circle"><span class="text-white/40 text-xs font-bold">이동</span></div>
+        </div>
+
+        <!-- 패시브 스킬 표시 영역 (하단 중앙) -->
+        <div id="passiveSkillBar" class="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1 flex-wrap pointer-events-none z-10 justify-center w-full max-w-[200px]"></div>
+
+        <!-- 스킬 버튼 (우하단 플로팅) -->
+        <div id="uiSkillBar" class="pointer-events-auto absolute bottom-4 right-4 flex flex-col items-center gap-2 z-20">
+            <div class="flex gap-2">
+                <!-- SFX 토글 -->
+                <button onclick="toggleSFX()" id="btnToggleSFX"
+                        class="text-[12px] font-black px-2 py-0.5 rounded-full border transition-all active:scale-90 shadow-md text-emerald-400 border-slate-400 bg-slate-800/85">
+                    🔊
+                </button>
+                <!-- AUTO 스킬 -->
+                <button onmousedown="toggleAutoSkill()" ontouchstart="toggleAutoSkill(); event.preventDefault();"
+                        id="btnAutoSkill"
+                        class="text-[9px] font-black px-2 py-0.5 rounded-full border transition-all active:scale-90 shadow-md"
+                        style="background:rgba(100,116,139,0.85); color:#fff; border-color:rgba(148,163,184,0.6);">
+                    <span id="txtAutoSkill">MANUAL</span>
+                </button>
+            </div>
+
+            <!-- 액티브 아이템 버튼 (기본 숨김) -->
+            <button id="btnActiveItem" onclick="triggerActiveItem()"
+                    class="hidden relative overflow-hidden flex flex-col items-center justify-center active:scale-90 transition-transform shadow-lg mb-1"
+                    style="width:50px; height:50px; border-radius:50%; background:rgba(234,179,8,0.3); border:2px solid rgba(234,179,8,0.7); backdrop-filter:blur(4px);">
+                <span id="txtActiveItemIcon" class="text-xl leading-none drop-shadow">⏳</span>
+                <div id="maskActiveItem" class="hidden absolute inset-0 rounded-full flex items-center justify-center font-mono font-black text-white text-xs" style="background:rgba(15,23,42,0.75);"></div>
+            </button>
+
+            <!-- 스킬 2 -->
+            <button onmousedown="triggerSkill(2)" ontouchstart="triggerSkill(2); event.preventDefault();"
+                    class="relative overflow-hidden flex flex-col items-center justify-center active:scale-90 transition-transform shadow-lg"
+                    style="width:60px; height:60px; border-radius:50%; background:rgba(99,102,241,0.3); border:2px solid rgba(99,102,241,0.7); backdrop-filter:blur(4px);">
+                <span id="txtSkill2Icon" class="text-2xl leading-none drop-shadow">💫</span>
+                <div id="maskSkill2" class="hidden absolute inset-0 rounded-full flex items-center justify-center font-mono font-black text-amber-400 text-xs" style="background:rgba(15,23,42,0.75);"></div>
+            </button>
+
+            <!-- 스킬 1 -->
+            <button onmousedown="triggerSkill(1)" ontouchstart="triggerSkill(1); event.preventDefault();"
+                    class="relative overflow-hidden flex flex-col items-center justify-center active:scale-90 transition-transform shadow-lg"
+                    style="width:60px; height:60px; border-radius:50%; background:rgba(16,185,129,0.3); border:2px solid rgba(16,185,129,0.7); backdrop-filter:blur(4px);">
+                <span id="txtSkill1Icon" class="text-2xl leading-none drop-shadow">✨</span>
+                <div id="maskSkill1" class="hidden absolute inset-0 rounded-full flex items-center justify-center font-mono font-black text-amber-400 text-xs" style="background:rgba(15,23,42,0.75);"></div>
+            </button>
+        </div>
+    </div>
+
+    
+    <!-- Kill Feed -->
+    <div id="killFeed" class="absolute top-16 right-4 w-64 pointer-events-none z-20 flex flex-col items-end gap-1 overflow-hidden" style="max-height: 200px;"></div>
+    
+    <!-- 부활 오버레이 -->
+    <div id="respawnOverlay" class="hidden absolute inset-0 z-30 bg-transparent flex-col items-center justify-center pointer-events-none">
+        <h2 class="text-6xl md:text-8xl font-black text-rose-500 tracking-widest mb-6 orbitron"
+            style="text-shadow:0 0 30px rgba(239,68,68,0.8)">DEAD</h2>
+        <p class="text-lg font-mono text-white bg-slate-900/90 px-8 py-4 rounded-2xl border border-slate-700 shadow-2xl">
+            부활까지: <span id="respawnTimeText" class="text-amber-400 font-black text-3xl ml-2">0.0</span>초
+        </p>
+    </div>
+
+    <!-- 킬 알림 배너 -->
+    <div id="systemKillBanner" class="absolute top-12 left-1/2 -translate-x-1/2 z-20 pointer-events-none" style="opacity:0;transform:translateX(-50%) scale(0.95);">
+        <div id="killBannerBox" class="bg-gradient-to-r from-emerald-900 to-slate-900 border border-emerald-500 px-4 md:px-8 py-1.5 md:py-2.5 rounded-full shadow-2xl flex items-center gap-2 md:gap-3 whitespace-nowrap">
+            <span id="killBannerIcon" class="text-base md:text-xl">⚔️</span>
+            <span id="killBannerText" class="font-black text-white text-xs md:text-sm tracking-widest"></span>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════ 게임 오버 화면 ══════════ -->
+<div id="gameOverScreen" class="hidden absolute inset-0 z-50 flex flex-col items-center justify-center bg-slate-950/97 p-4 text-white">
+    <div class="text-center flex flex-col items-center w-full max-w-xl bg-slate-900/90 border border-slate-800 rounded-3xl p-6 shadow-2xl overflow-y-auto" style="max-height:85vh;">
+        <h2 id="txtGameResult" class="text-6xl font-black tracking-widest mb-6 orbitron">VICTORY</h2>
+        <div id="scoreboardArea" class="w-full mb-6"></div>
+        <div class="mb-4 hidden" id="hiddenResultData">
+            <span id="kdaResult">0/0/0</span>
+            <span id="dominanceResult">0%</span>
+        </div>
+        <div class="flex flex-col gap-2 w-full max-w-sm mx-auto mb-6">
+            <input type="text" id="playerNameInput" placeholder="닉네임 입력 (명예의 전당)" class="px-4 py-3 rounded-xl bg-slate-800 border border-slate-600 text-white text-center text-lg focus:outline-none focus:border-amber-500" maxlength="10">
+            <button onclick="saveAndReload()"
+                    class="px-8 py-3.5 rounded-full font-black text-sm md:text-lg tracking-widest active:scale-95 transition-all mt-2"
+                    style="background:linear-gradient(135deg,#10b981,#6366f1);box-shadow:0 0 20px rgba(16,185,129,0.4);">
+                💾 명예의 전당 기록 및 메뉴로
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- 뱀서라이크 스킬 선택 팝업 -->
+<div id="skillSelectionOverlay" class="hidden fixed inset-0 z-[60] flex flex-col items-center justify-center" style="background:radial-gradient(ellipse at center, rgba(251,191,36,0.08) 0%, rgba(0,0,0,0.85) 70%);">
+    <div class="text-center mb-6 animate-bounce">
+        <div class="text-5xl mb-2">⬆️</div>
+        <h2 class="orbitron text-2xl md:text-3xl font-black text-amber-400" style="text-shadow:0 0 20px rgba(251,191,36,0.5);">LEVEL UP!</h2>
+        <p class="text-sm text-slate-300 mt-1">스킬을 선택하세요</p>
+    </div>
+    <div id="skillCards" class="flex gap-4 md:gap-6 flex-wrap justify-center px-4">
+        <!-- JS가 카드를 채움 -->
+    </div>
+</div>
+
+<!-- 진화 도감 모달 -->
+<div id="evolutionGuideModal" class="hidden absolute inset-0 z-50 bg-black/80 flex items-center justify-center p-4 pointer-events-auto">
+    <div class="bg-slate-900 border border-amber-500/50 p-4 md:p-6 rounded-2xl max-w-3xl w-full max-h-[85vh] flex flex-col shadow-2xl relative">
+        <button onclick="toggleEvolutionGuide()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-3xl font-bold">&times;</button>
+        <h2 class="text-2xl md:text-3xl font-black text-amber-400 mb-4 border-b border-slate-700 pb-3 orbitron">🌟 진화 조합 도감</h2>
+        <div class="text-xs md:text-sm text-slate-300 mb-4">장비를 9강까지 강화하고 해당 패시브 스킬을 마스터(Max Lv)하면 자동으로 진화합니다.</div>
+        <div id="evolutionGuideList" class="flex-1 overflow-y-auto pr-2 grid grid-cols-1 md:grid-cols-2 gap-3 custom-scrollbar">
+            <!-- JS로 렌더링 -->
+        </div>
+    </div>
+</div>
+
+<!-- 진화 성공 연출 팝업 -->
+<div id="evolutionSuccessPopup" class="hidden absolute inset-0 z-[80] flex items-center justify-center pointer-events-none bg-black/70 backdrop-blur-sm">
+    <div id="evoPopupBox" class="flex flex-col items-center scale-0 transition-transform duration-500">
+        <div class="text-7xl md:text-9xl mb-4 animate-bounce" id="evoPopupIcon">🗡️</div>
+        <h1 class="text-4xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-b from-amber-200 to-amber-500 drop-shadow-[0_0_20px_rgba(245,158,11,0.8)] orbitron" id="evoPopupName">아발론의 대검</h1>
+        <p class="text-lg md:text-2xl text-white font-bold mt-4 bg-slate-900/80 px-6 py-2 rounded-full border border-amber-500/50" id="evoPopupDesc">[진화] 공격력 극대화</p>
+    </div>
+</div>
+
+<!-- BGM Fallback removed -->
+
+<!-- 메인 캔버스 -->
+<canvas id="gameCanvas" class="absolute inset-0 z-0" style="width:100%;height:100%;"></canvas>
+
+<script>
+window.onerror = function(msg, url, line, col, error) {
+    alert("자바스크립트 오류 발생: " + msg + "\n줄 번호: " + line);
+};
+</script>
+<script src="game.js?v=1008"></script>
+
+    <!-- 명예의 전당 모달 -->
+    <div id="hofScreen" class="hidden absolute inset-0 z-50 bg-black/80 flex items-center justify-center">
+        <div class="bg-slate-900 border-2 border-amber-500 p-8 rounded-2xl max-w-2xl w-full max-h-[80vh] flex flex-col shadow-[0_0_50px_rgba(245,158,11,0.3)]">
+            <h2 class="text-4xl font-black text-amber-500 text-center mb-6 orbitron">🏆 HALL OF FAME 🏆</h2>
+            <div class="flex-1 overflow-y-auto mb-6 pr-2 custom-scrollbar">
+                <table class="w-full text-left text-sm md:text-base">
+                    <thead class="bg-slate-800 text-slate-300">
+                        <tr>
+                            <th class="p-2 rounded-tl">닉네임</th>
+                            <th class="p-2">영웅</th>
+                            <th class="p-2 text-center">K / D / A</th>
+                            <th class="p-2 text-right rounded-tr">지배력</th>
+                        </tr>
+                    </thead>
+                    <tbody id="hofTableBody" class="text-white">
+                        <!-- JS injected -->
+                    </tbody>
+                </table>
+            </div>
+            <button onclick="document.getElementById('hofScreen').classList.add('hidden')" class="w-full py-3 bg-slate-700 hover:bg-slate-600 text-white font-bold rounded-xl active:scale-95 transition">닫기</button>
+        </div>
+    </div>
+    
+    <!-- 다중 킬 전광판 -->
+    <div id="multiKillAnnouncer" class="hidden absolute top-28 inset-x-0 z-40 pointer-events-none flex flex-col items-center justify-center">
+        <div id="multiKillText" class="text-center text-4xl md:text-7xl font-black italic orbitron text-transparent bg-clip-text bg-gradient-to-b from-amber-300 to-rose-600 drop-shadow-[0_10px_20px_rgba(225,29,72,0.8)] scale-150 opacity-0 transition-all duration-300">
+            DOUBLE KILL!
+        </div>
+    </div>
+    
+    <!-- 진영 버프 알림판 -->
+    <div id="buffAnnouncer" class="hidden absolute top-48 inset-x-0 z-40 pointer-events-none flex flex-col items-center justify-center px-4">
+        <div class="bg-gradient-to-r from-transparent via-amber-600/90 to-transparent w-full max-w-xl py-3 rounded-full text-center shadow-lg border-y border-amber-400">
+            <h3 id="buffAnnouncerText" class="text-lg md:text-2xl font-black text-white drop-shadow-[0_0_10px_rgba(0,0,0,0.8)] animate-pulse">UNDERDOG BUFF!</h3>
+        </div>
+    </div>
+
+    <!-- 패치노트 모달 -->
+    <div id="patchNotesModal" class="hidden absolute inset-0 z-[70] bg-black/80 flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-700 p-6 md:p-8 rounded-2xl max-w-2xl w-full max-h-[85vh] flex flex-col shadow-2xl relative">
+            <button onclick="document.getElementById('patchNotesModal').classList.add('hidden')" class="absolute top-4 right-4 text-slate-400 hover:text-white text-3xl font-bold">&times;</button>
+            <h2 class="text-2xl md:text-3xl font-black text-amber-400 mb-6 border-b border-slate-700 pb-3 orbitron">📝 PATCH NOTES</h2>
+            <div class="flex-1 overflow-y-auto pr-4 text-sm md:text-base text-slate-300 space-y-4 custom-scrollbar">
+                
+                                <details class="bg-slate-700/50 rounded-lg border border-slate-600/50" open>
+                            <summary class="cursor-pointer p-3 font-bold text-amber-400 hover:text-amber-300 transition select-none flex justify-between items-center">
+                                v1007 - 편의성 대개편 및 오류 수정 (핫픽스)
+                                <span class="text-xs text-slate-400 font-normal ml-2">최신</span>
+                            </summary>
+                            <div class="p-3 pt-0 text-sm text-slate-200 space-y-2 border-t border-slate-600/50 mt-1 pb-3 px-4">
+                                <ul class="list-disc pl-4 space-y-1">
+                                    <li><span class="font-bold text-emerald-400">버그 픽스:</span> 필드몹/미니언 무적 및 체력바 미표기(검은색) 버그 완전 수정.</li>
+                                    <li><span class="font-bold text-emerald-400">AI 개선:</span> 네크로맨서 소환수가 미니언처럼 행동하며 센터로 달려가던 문제 수정.</li>
+                                    <li><span class="font-bold text-emerald-400">디자인 개선:</span> 네크로맨서 소환수의 그래픽이 검은 연기를 내뿜는 독립적인 개체로 변경.</li>
+                                    <li><span class="font-bold text-emerald-400">UI/UX:</span> PC 환경 상점 아이템 배열을 2열 격자 구조로 변경하여 가독성 강화.</li>
+                                    <li><span class="font-bold text-emerald-400">UI/UX:</span> 모든 상점 아이템에 직관적인 설명을 추가 및 일부 아이템 아이콘 재매칭.</li>
+                                </ul>
+                            </div>
+                        </details>
+                        <details class="bg-slate-700/50 rounded-lg border border-slate-600/50">
+                    <summary class="font-bold text-lg text-emerald-400 flex items-center justify-between cursor-pointer list-none">
+                        <span class="flex items-center gap-2"><span class="text-xl">✨</span> v1005 패치노트 개선 및 영웅 썸네일</span>
+                        <span class="text-slate-500 group-open:rotate-180 transition-transform">▼</span>
+                    </summary>
+                    <div class="mt-4 border-t border-slate-700/50 pt-3">
+                        <ul class="list-disc pl-5 space-y-2">
+                            <li><strong class="text-white">패치노트 UI 개선:</strong> 최신 패치노트 2개만 기본으로 펼쳐져 있고, 이전 패치는 접힌 채로 제공되도록 변경했습니다.</li>
+                            <li><strong class="text-white">영웅 선택창 개편:</strong> 영웅 선택 시 해당 영웅의 기본 공격 범위(단일/광역) 및 공격 사거리(근/중/원)를 텍스트로 명확히 표시합니다.</li>
+                            <li><strong class="text-white">영웅 썸네일 미리보기:</strong> 영웅 선택 설명란 좌측에 캐릭터의 실제 인게임 외형(미리보기) 캔버스를 추가하여 생김새를 직관적으로 확인할 수 있습니다.</li>
+                        </ul>
+                    </div>
+                </details>
+
+                <details open class="group bg-slate-800/50 p-4 rounded-xl border border-slate-700">
+                    <summary class="font-bold text-lg text-emerald-400 flex items-center justify-between cursor-pointer list-none">
+                        <span class="flex items-center gap-2"><span class="text-xl">✨</span> v1008 주요 업데이트</span>
+                        <span class="text-slate-500 group-open:rotate-180 transition-transform">▼</span>
+                    </summary>
+                    <div class="mt-4 border-t border-slate-700/50 pt-3">
+                        <ul class="list-disc pl-5 space-y-2">
+                            <li><strong class="text-white">버그 대거 수정:</strong> 존야, 오라클 부활 등 치명적 아이템 결함을 완전히 고치고 타이머 버그를 없앴습니다.</li>
+                            <li><strong class="text-white">서든데스 & 황금 고블린:</strong> 18분이 지나면 넥서스 체력이 깎이는 서든데스 모드와 8분경 황금 고블린 등장 이벤트가 생겼습니다.</li>
+                            <li><strong class="text-white">진화 시스템 완화:</strong> 무기 진화 요구 수치가 9강에서 7강으로 대폭 줄고, 진화 시 알림이 강화되었습니다.</li>
+                            <li><strong class="text-white">통계창 및 밸런스 패치:</strong> 게임 종료 후 기여도와 KDA가 제공되며, 밸런스 하향과 스탯 상한선이 도입되었습니다.</li>
+                        </ul>
+                    </div>
+                </details>
+
+                <details class="group bg-slate-800/50 p-4 rounded-xl border border-slate-700">
+                    <summary class="font-bold text-lg text-blue-400 flex items-center justify-between cursor-pointer list-none">
+                        <span class="flex items-center gap-2"><span class="text-xl">✨</span> 이전 주요 업데이트 (v1004)</span>
+                        <span class="text-slate-500 group-open:rotate-180 transition-transform">▼</span>
+                    </summary>
+                    <div class="mt-4 border-t border-slate-700/50 pt-3">
+                        <ul class="list-disc pl-5 space-y-2">
+                            <li><strong class="text-white">미니맵 정상화:</strong> 맵이 까맣게 나오던 렌더링 오류를 수정하여 정상 표기되도록 해결했습니다.</li>
+                            <li><strong class="text-white">상태 이상 시각적 연출:</strong> 기절(💫), 둔화(🐢), 에어본(띄워짐), 빙결(🧊) 상태의 그래픽 효과를 추가했습니다.</li>
+                            <li><strong class="text-white">조커 & 암흑사제 상향:</strong> 기본 공격 투사체 적중 시 주변에 광역(스플래시) 피해를 입히도록 상향 조정했습니다.</li>
+                            <li><strong class="text-white">결과창 닉네임 입력 수정:</strong> 게임 종료 후 명예의 전당 저장을 위한 닉네임 기재란을 추가했습니다.</li>
+                        </ul>
+                    </div>
+                </details>
+
+                <details class="group bg-slate-800/50 p-4 rounded-xl border border-slate-700">
+                    <summary class="font-bold text-lg text-blue-400 flex items-center justify-between cursor-pointer list-none">
+                        <span class="flex items-center gap-2"><span class="text-xl">✨</span> 이전 업데이트 (v1003)</span>
+                        <span class="text-slate-500 group-open:rotate-180 transition-transform">▼</span>
+                    </summary>
+                    <div class="mt-4 border-t border-slate-700/50 pt-3">
+                        <ul class="list-disc pl-5 space-y-2">
+                            <li><strong class="text-white">영웅 스킬 설명 추가:</strong> 영웅 선택 화면에서 각 영웅의 역할군(포지션)과 2종류 고유 스킬의 상세 효과를 표기했습니다.</li>
+                            <li><strong class="text-white">신규 영웅 공속 버프:</strong> 신규 영웅 3종의 평타 속도가 30% 증가했습니다.</li>
+                            <li><strong class="text-white">이스버그 중거리 전환:</strong> 이스버그가 사거리 220의 중거리 딜러로 포지션 변경되었습니다.</li>
+                            <li><strong class="text-white">네크로맨서 소환수 개편:</strong> 해골 미니언이 일반 미니언과 구별되도록 칠흑색 바디와 보라색 눈, 검은 연기 이펙트를 탑재했습니다.</li>
+                        </ul>
+                    </div>
+                </details>
+
+            </div>
+            <button onclick="document.getElementById('patchNotesModal').classList.add('hidden')" class="mt-6 w-full py-3 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl active:scale-95 transition">확인했습니다</button>
+        </div>
+    </div>
+    
+</body>
+</html>
