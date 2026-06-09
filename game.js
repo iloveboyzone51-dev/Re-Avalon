@@ -160,7 +160,10 @@ const HERO_TMPL = {
     BERSERKER: { name:"광전사", color:"#ef4444", hp:2000, atk:55, aspd:1.3, move:185, range:90,  type:"melee",  skill1:{name:"회전 참격",cd:5}, skill2:{name:"도약 강타",cd:8},  draw:(ctx,x,y,r,dir,f,anim)=>drawBlockyHero(ctx,x,y,r,dir,f,'berserker',anim) },
     ARCHER:    { name:"궁수",    color:"#10b981", hp:1300, atk:40, aspd:1.3, move:165, range:420, type:"ranged", skill1:{name:"화살 폭우",cd:6}, skill2:{name:"블링크",  cd:10}, critChance:0.15, draw:(ctx,x,y,r,dir,f,anim)=>drawBlockyHero(ctx,x,y,r,dir,f,'archer',anim) },
     NECROMANCER:{ name:"네크로맨서",color:"#a855f7",hp:1200, atk:30, aspd:1.0, move:150, range:360, type:"ranged", skill1:{name:"해골 소환",cd:7}, skill2:{name:"저주 역병",cd:11}, draw:(ctx,x,y,r,dir,f,anim)=>drawBlockyHero(ctx,x,y,r,dir,f,'necromancer',anim) },
-    MECHANIC:  { name:"메카닉",  color:"#f59e0b", hp:1500, atk:38, aspd:0.9, move:145, range:300, type:"ranged", skill1:{name:"터렛 설치",cd:12},skill2:{name:"긴급 수리",cd:15}, draw:(ctx,x,y,r,dir,f,anim)=>drawBlockyHero(ctx,x,y,r,dir,f,'mechanic',anim) },
+    grrr: { name:'그르르', color:"#f59e0b", hp:1600, atk:70, aspd:0.9, move:150, range:60, type:"melee",
+        skill1:{name:'거대화', type:'self_buff', cd:18, desc:'몸집이 커지며 능력이 증가함'},
+        skill2:{name:'포효', type:'aoe_stun', cd:12, desc:'주변의 적을 스턴시킴'},
+        draw:(ctx,x,y,r,dir,f,anim)=>drawBlockyHero(ctx,x,y,r,dir,f,'grrr',anim) },
     VAMPIRE:   { name:"뱀파이어",color:"#f43f5e", hp:1800, atk:50, aspd:1.2, move:175, range:110, type:"melee",  skill1:{name:"흡혈 파동",cd:7}, skill2:{name:"박쥐 강습",cd:9},  lifeSteal:0.20, draw:(ctx,x,y,r,dir,f,anim)=>drawBlockyHero(ctx,x,y,r,dir,f,'vampire',anim) },
     THOR:      { name:"토르",    color:"#60a5fa", hp:2300, atk:65, aspd:0.85,move:175, range:100, type:"melee",  skill1:{name:"번개 강타",cd:9}, skill2:{name:"충격파",  cd:11}, draw:(ctx,x,y,r,dir,f,anim)=>drawBlockyHero(ctx,x,y,r,dir,f,'thor',anim) }
 };
@@ -197,7 +200,7 @@ const PASSIVE_SKILLS = [
 ];
 
 // ============ 전역 상태 ============
-let GS = { status:'TITLE', platform:'PC', faction:'BLUE', hero:'BERSERKER', time:0, lastFrame:0, paused:false, autoSkill:false, hitStopTimer:0, sfxEnabled:true };
+let GS = { status:'TITLE', platform:'PC', faction:'BLUE', hero:'grrr', time:0, lastFrame:0, paused:false, autoSkill:false, hitStopTimer:0, sfxEnabled:true };
 let camera = { x:1500, y:2500, zoom:0.65 };
 let player = null;
 let entities = [];
@@ -1915,45 +1918,32 @@ function renderInventory(){
 }
 
 function drawMinimap(){
-    ctx.save();
-    let mw = 150, mh = 150;
-    let mx = window.innerWidth - mw - 20;
-    let my = 20;
-    
-    ctx.fillStyle = 'rgba(15,23,42,0.8)';
-    ctx.strokeStyle = '#334155';
-    ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.roundRect(mx, my, mw, mh, 10); ctx.fill(); ctx.stroke();
-    
+    if(!window.mCtx) return;
+    let mCtx = window.mCtx;
+    mCtx.clearRect(0,0,mCanvas.width,mCanvas.height);
+    let sx = mCanvas.width / MAP_SIZE, sy = mCanvas.height / MAP_SIZE;
     entities.forEach(e => {
         if(e.isDead) return;
         if(e.type !== 'hero' && e.type !== 'tower' && e.type !== 'nexus' && e.type !== 'nexus_turret' && !e.mtype) return;
         
-        let px = mx + (e.x / MAP_SIZE) * mw;
-        let py = my + (e.y / MAP_SIZE) * mh;
-        
-        ctx.beginPath();
+        mCtx.beginPath();
         if(e.type === 'hero') {
-            ctx.fillStyle = e.faction === 'BLUE' ? '#3b82f6' : '#ef4444';
-            ctx.arc(px, py, e.isPlayer?4:3, 0, Math.PI*2);
+            mCtx.fillStyle = e.faction === 'BLUE' ? '#3b82f6' : '#ef4444';
+            mCtx.arc(e.x*sx, e.y*sy, e.isPlayer?4:3, 0, Math.PI*2);
         } else if(e.type.includes('nexus') || e.type === 'tower') {
-            ctx.fillStyle = e.faction === 'BLUE' ? '#1e3a8a' : '#7f1d1d';
-            ctx.arc(px, py, e.type==='nexus'?5:3, 0, Math.PI*2);
+            mCtx.fillStyle = e.faction === 'BLUE' ? '#1e3a8a' : '#7f1d1d';
+            mCtx.arc(e.x*sx, e.y*sy, e.type==='nexus'?5:3, 0, Math.PI*2);
         } else if(e.mtype && e.mtype.includes('boss')) {
-            ctx.fillStyle = '#f59e0b';
-            ctx.arc(px, py, 4, 0, Math.PI*2);
+            mCtx.fillStyle = '#f59e0b';
+            mCtx.arc(e.x*sx, e.y*sy, 4, 0, Math.PI*2);
         }
-        ctx.fill();
+        mCtx.fill();
     });
-    
     if(player && !player.isDead){
-        ctx.strokeStyle = '#fff';
-        ctx.lineWidth = 1;
-        let px = mx + (player.x / MAP_SIZE) * mw;
-        let py = my + (player.y / MAP_SIZE) * mh;
-        ctx.beginPath(); ctx.arc(px, py, 5, 0, Math.PI*2); ctx.stroke();
+        mCtx.strokeStyle = '#fff';
+        mCtx.lineWidth = 1;
+        mCtx.beginPath(); mCtx.arc(player.x*sx, player.y*sy, 5, 0, Math.PI*2); mCtx.stroke();
     }
-    ctx.restore();
 }
 
 function updateUI(){
@@ -2239,10 +2229,11 @@ window.AIChat = {
         
         
         // Multi-kill Hostile Emoji Meeting
-        heroes.forEach(h => {
-            if(window.killStreaks[h.heroKey] >= 3) {
+        let currentHeroes = entities.filter(e => e.type === 'hero');
+        currentHeroes.forEach(h => {
+            if(window.killStreaks && window.killStreaks[h.heroKey] >= 3) {
                 if(Math.random() < 0.1) {
-                    let nearEnemies = heroes.filter(e => e.faction !== h.faction && dist(e, h) < 300);
+                    let nearEnemies = currentHeroes.filter(e => e.faction !== h.faction && dist(e, h) < 300);
                     if(nearEnemies.length > 0) {
                         let hEmoji = ['🤬', '👿', '🖕', '💢'][Math.floor(Math.random()*4)];
                         addText(h.x, h.y - 70, hEmoji, '#fff', 28);
