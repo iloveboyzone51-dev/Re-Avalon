@@ -784,7 +784,7 @@ class Hero extends Entity {
         this.borkActive=false; this.hasWarmog=false;
         this.isRetreating=false; this.aiShopTimer=rand(5,15);
         this.facingDir=1;
-        this.updateItems();
+        this.applyStats();
     }
     update(dt){
         if(this.attackAnimTimer > 0) this.attackAnimTimer -= dt;
