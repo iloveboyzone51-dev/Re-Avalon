@@ -165,27 +165,35 @@ const HERO_TMPL = {
     BERSERKER: { name:"광전사", color:"#ef4444", hp:1900, atk:52, aspd:1.3, move:185, range:90,  type:"melee", role_desc:"[근접 / 브루저 / 광역 제어]",
         skill1:{name:"회전 참격",cd:5, desc:"주변 반경 내 적들에게 광역 데미지를 주고 0.5초 기절시킵니다."}, 
         skill2:{name:"도약 강타",cd:8, desc:"대상에게 도약하여 주변에 큰 데미지를 주고 1.5초 기절시킵니다."},  
-        draw:(ctx,x,y,r,dir,f,anim)=>drawBlockyHero(ctx,x,y,r,dir,f,'berserker',anim) },
+        draw:(ctx,x,y,r,dir,f,anim,ent)=>drawBlockyHero(ctx,x,y,r,dir,f,'berserker',anim,ent) },
+    ARCHON:    { name:"아칸",      color:"#3b82f6", hp:1400, atk:60, aspd:1.8, move:150, range:150, type:"ranged", role_desc:"[중거리 / 광역 폭딜 / 제어]",
+        skill1:{name:"사이어닉 스톰",cd:6, desc:"지정 범위에 3초간 지속적인 하얀 번개를 내리쳐 광역 피해를 줍니다."}, 
+        skill2:{name:"마엘스톰",    cd:12, desc:"지정 범위 내 적을 갈색 원형에 가두어 완전 마비시킵니다."}, 
+        draw:(ctx,x,y,r,dir,f,anim,ent)=>drawBlockyHero(ctx,x,y,r,dir,f,'archon',anim,ent) },
+    BARBARIAN: { name:"바바리안",  color:"#fb923c", hp:2200, atk:55, aspd:1.3, move:175, range:90,  type:"melee", role_desc:"[근접 / 브루저 / 광역 딜러]",
+        skill1:{name:"점프샷",      cd:7, desc:"적진으로 도약하여 넓은 범위의 적들을 느리게 만듭니다."}, 
+        skill2:{name:"휠윈드",      cd:10, desc:"3초간 무기를 회전하며 지속 광역 피해를 주고 적을 띄웁니다."}, 
+        draw:(ctx,x,y,r,dir,f,anim,ent)=>drawBlockyHero(ctx,x,y,r,dir,f,'barbarian',anim,ent) },
     ARCHER:    { name:"궁수",    color:"#10b981", hp:1300, atk:35, aspd:1.3, move:165, range:420, type:"ranged", role_desc:"[원거리 / 지속 딜러 / 순간 회피]",
         skill1:{name:"블링크",  cd:10, desc:"전방으로 순간이동하며 5초간 공격속도가 50% 증가합니다."}, 
         skill2:{name:"화살 폭우",cd:6, desc:"단일 대상에게 연속으로 화살을 발사하여 큰 데미지를 줍니다."}, 
-        critChance:0.12, draw:(ctx,x,y,r,dir,f,anim)=>drawBlockyHero(ctx,x,y,r,dir,f,'archer',anim) },
+        critChance:0.12, draw:(ctx,x,y,r,dir,f,anim,ent)=>drawBlockyHero(ctx,x,y,r,dir,f,'archer',anim,ent) },
     NECROMANCER:{ name:"네크로맨서",color:"#a855f7",hp:1400, atk:38, aspd:1.0, move:150, range:360, type:"ranged", role_desc:"[원거리 / 마법사 / 소환]",
         skill1:{name:"해골 소환",cd:7, desc:"적의 어그로를 끄는 근접 해골 미니언을 소환합니다."}, 
         skill2:{name:"저주 역병",cd:11, desc:"넓은 범위에 도트 데미지를 주며 이동속도를 크게 감소시킵니다."}, 
-        draw:(ctx,x,y,r,dir,f,anim)=>drawBlockyHero(ctx,x,y,r,dir,f,'necromancer',anim) },
+        draw:(ctx,x,y,r,dir,f,anim,ent)=>drawBlockyHero(ctx,x,y,r,dir,f,'necromancer',anim,ent) },
     grrr: { name:'그르르', color:"#f59e0b", hp:1600, atk:70, aspd:0.9, move:165, range:80, type:"melee", role_desc:"[근접 / 탱커 / 폭주]",
         skill1:{name:'거대화', type:'self_buff', cd:18, desc:'일정 시간 동안 크기가 커지며 최대 체력/방어/공속/이속이 폭증합니다.'},
         skill2:{name:'포효', type:'aoe_stun', cd:12, desc:'크게 포효하여 주변의 모든 적을 2초간 강력하게 기절시킵니다.'},
-        draw:(ctx,x,y,r,dir,f,anim)=>drawBlockyHero(ctx,x,y,r,dir,f,'grrr',anim) },
+        draw:(ctx,x,y,r,dir,f,anim,ent)=>drawBlockyHero(ctx,x,y,r,dir,f,'grrr',anim,ent) },
     VAMPIRE:   { name:"뱀파이어",color:"#f43f5e", hp:1700, atk:45, aspd:1.2, move:175, range:110, type:"melee", role_desc:"[근접 / 암살자 / 피흡]",
         skill1:{name:"흡혈 파동",cd:7, desc:"전방 부채꼴 범위의 적들에게 데미지를 주고 데미지 비례 체력을 회복합니다."}, 
         skill2:{name:"박쥐 강습",cd:9, desc:"적의 배후로 순간이동하며 데미지를 주고 1.5초간 기절시킵니다."},  
-        lifeSteal:0.20, draw:(ctx,x,y,r,dir,f,anim)=>drawBlockyHero(ctx,x,y,r,dir,f,'vampire',anim) },
+        lifeSteal:0.20, draw:(ctx,x,y,r,dir,f,anim,ent)=>drawBlockyHero(ctx,x,y,r,dir,f,'vampire',anim,ent) },
     THOR:      { name:"토르",    color:"#60a5fa", hp:2000, atk:58, aspd:0.9, move:175, range:100, type:"melee", role_desc:"[근접 / 마법사 / 광역 폭딜]",
         skill1:{name:"번개 강타",cd:9, desc:"목표물에 번개를 떨어뜨려 주변에 큰 데미지와 스턴을 부여합니다."}, 
         skill2:{name:"충격파",  cd:11, desc:"주변 넓은 범위에 매우 큰 데미지를 주고 적들을 밀어내며 에어본시킵니다."}, 
-        draw:(ctx,x,y,r,dir,f,anim)=>drawBlockyHero(ctx,x,y,r,dir,f,'thor',anim) },
+        draw:(ctx,x,y,r,dir,f,anim,ent)=>drawBlockyHero(ctx,x,y,r,dir,f,'thor',anim,ent) },
     ICEBORN: {
         name:"이스버그", color:"#38bdf8",
         hp:2200, atk:48, aspd:1.24, move:160, range:220, type:"ranged", role_desc:"[중거리 / 마법사 / 빙결 제어]",
@@ -304,6 +312,8 @@ function spawnSlash(x,y,angle,color,r=60){ slashEffects.push({x,y,angle,color,r,
 function spawnAOE(x,y,r,color,life=0.6){ aoeEffects.push({x,y,r,color,life,maxLife:life}); }
 
 let beamEffects = [];    // 빔/번개 효과
+let laserEffects = [];
+let stormZones = [];
 let ringEffects = [];    // 충격파 링
 let textureEffects = []; // 특수 형상 이펙트
 
@@ -351,7 +361,7 @@ function showBanner(text,icon='⚔️',isBlue=true){
 }
 
 // ============ 2.5D SVG 캐릭터 렌더링 ============
-function drawBlockyHero(ctx, x, y, r, dir, faction, type, attackAnimTimer = 0) {
+function drawBlockyHero(ctx, x, y, r, dir, faction, type, attackAnimTimer = 0, entity = null) {
     let rotDir = dir < 0 ? -1 : 1;
     let t = performance.now();
     let isAttacking = attackAnimTimer > 0;
@@ -1205,19 +1215,57 @@ class Hero extends Entity {
 
         if(HERO_TMPL[this.heroKey].type==='ranged'){
             this.attackAnimTimer = 0.2;
-            projectiles.push(new Projectile(this.x, this.y-this.radius, target, dmg, this, isCrit));
-            if(this.isPlayer) playSFX('shoot');
+            if(this.heroKey === 'ARCHON') {
+                laserEffects.push({x1:this.x, y1:this.y-this.radius, x2:target.x, y2:target.y-target.radius, color:'#ffffff', life:0.15, maxLife:0.15, width:15});
+                spawnAOE(target.x, target.y, 80, '#ffffff44', 0.2);
+                let hitTargets = entities.filter(e=>e.faction!==this.faction && !e.isDead && dist(e, target) <= 80);
+                hitTargets.forEach(tgt => {
+                    let dealt=tgt.applyRawDamage(dmg, this); this.totalDmg+=dealt;
+                    this.triggerOnHitPassives(tgt);
+                });
+                if(this.isPlayer) playSFX('shoot');
+            } else {
+                projectiles.push(new Projectile(this.x, this.y-this.radius, target, dmg, this, isCrit));
+                if(this.isPlayer) playSFX('shoot');
+            }
         } else {
             this.attackAnimTimer = 0.2;
-            let dealt=target.applyRawDamage(dmg, this); this.totalDmg+=dealt;
-            // 궤적 이펙트 (반달 모양)
-            let a = Math.atan2(target.y-this.y, target.x-this.x);
-            spawnSlash(this.x, this.y-this.radius, a, this.faction==='BLUE'?'#93c5fd':'#fca5a5', 30);
-            this.triggerOnHitPassives(target);
-            if(this.lifeSteal>0) { this.hp=Math.min(this.maxHp, this.hp+dealt*this.lifeSteal); playSFX('heal'); }
-            if(this.burnDmg>0&&!target.isBuilding) target.burnTicks.push({dmg:this.burnDmg,ticks:3,timer:1.0,src:this});
-            if(this.stunChance>0&&Math.random()<this.stunChance&&!target.isBuilding) target.stunTimer=1.0;
-            spawnSlash(this.x+Math.cos(a)*this.range*0.5, this.y+Math.sin(a)*this.range*0.5, a, isCrit?'#fbbf24':HERO_TMPL[this.heroKey].color);
+            if(this.heroKey === 'BARBARIAN') {
+                spawnSlash(this.x, this.y-this.radius, Math.atan2(target.y-this.y, target.x-this.x), '#94a3b8', 60);
+                let hitTargets = entities.filter(e=>e.faction!==this.faction && !e.isDead && dist(e, this) <= this.range + 30);
+                hitTargets.forEach(tgt => {
+                    let dealt=tgt.applyRawDamage(dmg, this); this.totalDmg+=dealt;
+                    this.triggerOnHitPassives(tgt);
+                    if(this.lifeSteal>0) this.hp=Math.min(this.maxHp, this.hp+dealt*this.lifeSteal);
+                });
+                if(this.isPlayer) playSFX('hit');
+            } else {
+                let dealt=target.applyRawDamage(dmg, this); this.totalDmg+=dealt;
+                let a = Math.atan2(target.y-this.y, target.x-this.x);
+                spawnSlash(this.x, this.y-this.radius, a, this.faction==='BLUE'?'#93c5fd':'#fca5a5', 30);
+                this.triggerOnHitPassives(target);
+                if(this.lifeSteal>0) { this.hp=Math.min(this.maxHp, this.hp+dealt*this.lifeSteal); playSFX('heal'); }
+                if(this.burnDmg>0&&!target.isBuilding) target.burnTicks.push({dmg:this.burnDmg,ticks:3,timer:1.0,src:this});
+                if(this.stunChance>0&&Math.random()<this.stunChance&&!target.isBuilding) target.stunTimer=1.0;
+                spawnSlash(this.x+Math.cos(a)*this.range*0.5, this.y+Math.sin(a)*this.range*0.5, a, isCrit?'#fbbf24':HERO_TMPL[this.heroKey].color);
+            }
+        }
+    }
+        if(this.whirlwindTimer > 0) {
+            this.whirlwindTimer -= dt;
+            this.attackTimer = 0.5; 
+            if(!this.wwTick) this.wwTick = 0;
+            this.wwTick -= dt;
+            if(this.wwTick <= 0) {
+                this.wwTick = 0.3;
+                spawnSlash(this.x, this.y-this.radius, Math.random()*Math.PI*2, '#cbd5e1', 120);
+                entities.forEach(e => {
+                    if(e.faction !== this.faction && !e.isDead && dist(this, e) <= 120) {
+                        e.applyRawDamage(this.whirlwindDmg || 50, this);
+                        if(Math.random() < 0.2) e.airborneTimer = 0.5; 
+                    }
+                });
+            }
         }
     }
     onKill(target){
@@ -1986,7 +2034,7 @@ class Hero extends Entity {
         let t=HERO_TMPL[this.heroKey];
         if(this.stunTimer>0){ ctx.strokeStyle='#fbbf24'; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(this.x, this.y-this.radius, this.radius*1.4, 0, Math.PI*2); ctx.stroke(); }
         
-        t.draw(ctx, this.x, this.y, this.radius, this.facingDir, this.faction, this.attackAnimTimer);
+        t.draw(ctx, this.x, this.y, this.radius, this.facingDir, this.faction, this.attackAnimTimer, this);
         
         if(this.heroKey === 'grrr' && this.isGiant) {
             let pulse = 0.5 + Math.sin(performance.now()/200) * 0.35;
@@ -3105,6 +3153,19 @@ function gameLoop(now){
         for(let i=aoeEffects.length-1;i>=0;i--){aoeEffects[i].life-=dt;if(aoeEffects[i].life<=0)aoeEffects.splice(i,1);}
         for(let i=ringEffects.length-1;i>=0;i--) { ringEffects[i].life-=dt; ringEffects[i].r = ringEffects[i].maxR*(1-ringEffects[i].life/ringEffects[i].maxLife); if(ringEffects[i].life<=0) ringEffects.splice(i,1); }
         for(let i=beamEffects.length-1;i>=0;i--) { beamEffects[i].life-=dt; if(beamEffects[i].life<=0) beamEffects.splice(i,1); }
+        for(let i=laserEffects.length-1;i>=0;i--) { laserEffects[i].life-=dt; if(laserEffects[i].life<=0) laserEffects.splice(i,1); }
+        for(let i=stormZones.length-1;i>=0;i--) {
+            let sz = stormZones[i];
+            sz.life -= dt;
+            if(Math.random() < 0.4) spawnBeam(sz.x+rand(-sz.radius, sz.radius), sz.y+rand(-sz.radius, sz.radius)-200, sz.x+rand(-20,20), sz.y+rand(-20,20), '#ffffff', 0.15);
+            if(!sz.tickTimer) sz.tickTimer = 0;
+            sz.tickTimer -= dt;
+            if(sz.tickTimer <= 0) {
+                sz.tickTimer = 0.5;
+                entities.forEach(e => { if(e.faction !== sz.faction && !e.isDead && dist({x:sz.x,y:sz.y}, e) <= sz.radius) e.applyRawDamage(sz.dmg, sz.attacker); });
+            }
+            if(sz.life<=0) stormZones.splice(i,1);
+        }
         
         if(window.AIChat) window.AIChat.update(dt);
         entities=entities.filter(e=>!e.isDead||e.type==='hero'||(e.type==='jungle'&&!e.mtype.includes('boss')&&e.mtype!=='summon')); projectiles=projectiles.filter(p=>!p.isDead);
@@ -3200,6 +3261,16 @@ function draw(){
     });
 
     // 번개 빔 렌더
+    laserEffects.forEach(be => {
+        let alpha = (be.life / be.maxLife);
+        ctx.globalAlpha = alpha;
+        ctx.strokeStyle = be.color;
+        ctx.lineWidth = be.width;
+        ctx.lineCap = 'round';
+        ctx.shadowColor = be.color; ctx.shadowBlur = 15;
+        ctx.beginPath(); ctx.moveTo(be.x1, be.y1); ctx.lineTo(be.x2, be.y2); ctx.stroke();
+        ctx.shadowBlur=0; ctx.globalAlpha=1; ctx.lineCap='butt';
+    });
     beamEffects.forEach(be => {
         let alpha = (be.life / be.maxLife);
         ctx.globalAlpha = alpha;
