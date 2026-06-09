@@ -690,11 +690,9 @@ class Entity {
         if(this.curseTimer>0) this.curseTimer-=dt;
         if(this.airborneTimer>0) this.airborneTimer-=dt;
         if(this.slowTimer > 0) this.slowTimer -= dt;
+        if(this.defBuffTimer > 0) this.defBuffTimer -= dt;
         if(this.stunTimer>0){ 
-            this.stunTimer-=dt; 
-            if(this.stunTimer<=0) this.isFrozen=false;
-            return; 
-        }
+            this.stunTimer-=dt;
         let spdMult = (this.slowTimer > 0) ? (1 - this.slowRate) : 1;
         if (!this.isBuilding) {
             this.x=clamp(this.x+this.vx*dt*spdMult, 10, MAP_SIZE-10);
@@ -761,7 +759,8 @@ class Entity {
         this.lastAttackedTimer=REGEN_DELAY+0.5; this.nonCombatTimer=0;
         let dmg=Math.max(1, Math.floor(amount));
         if(this.damageReduction) dmg = Math.max(1, dmg * (1 - this.damageReduction));
-        if(this.defense > 0) dmg = dmg * (100 / (100 + this.defense));
+        let effDef = this.defense + ((this.defBuffTimer > 0 && this.defBuffAmount) ? this.defBuffAmount : 0);
+        if(effDef > 0) dmg = dmg * (100 / (100 + effDef));
         
         if(this.shield > 0) {
             let absorbed = Math.min(this.shield, dmg);
@@ -1439,7 +1438,7 @@ class Hero extends Entity {
                             nearEnemies(this.x, this.y, 350).forEach(e => e.applyRawDamage(skillDmg*1.5, this));
                             spawnRing(this.x, this.y, '#ef4444', 350, 0.4);
                         } else if(eff < 0.66) {
-                            this.defense += this.maxHp * 0.15;
+                            this.defBuffTimer = 3.0; this.defBuffAmount = this.maxHp * 0.15;
                             spawnRing(this.x, this.y, '#3b82f6', 150, 0.4);
                         } else {
                             this.atkSpdBuffTimer = 3.0; this.atkSpdBuffRate = 1.5;
@@ -1455,7 +1454,7 @@ class Hero extends Entity {
                     addText(this.x, this.y-70, '🃏 잭팟! +'+bet+'G', '#fbbf24', 28);
                     spawnRing(this.x, this.y, '#fbbf24', 400, 0.6);
                     nearEnemies(this.x, this.y, 400).forEach(e => {
-                        e.applyRawDamage(skillDmg * 3, this);
+                        e.applyRawDamage(skillDmg * 3 + bet * 2.5, this);
                         e.stunTimer = 1.0;
                     });
                 } else {
@@ -1469,7 +1468,7 @@ class Hero extends Entity {
             }
         } else if(k==='DARKPRIEST') {
             if(idx===1) {
-                let allies = entities.filter(e => e.faction === this.faction && !e.isDead && e.type === 'hero' && e !== this);
+                let allies = entities.filter(e => e.faction === this.faction && !e.isDead && !e.isBuilding && e !== this);
                 
                 if(t) {
                     let boostedDmg = skillDmg * 2.5;
@@ -2199,6 +2198,7 @@ function getDefaultZoom() {
 }
 
 window.startGame=()=>{
+    if(statusUpdateInterval) { clearInterval(statusUpdateInterval); statusUpdateInterval=null; }
     if(window.trackHeroSelect) window.trackHeroSelect(GS.hero);
     autoDetectPlatform();
     initAudio();
