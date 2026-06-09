@@ -354,11 +354,18 @@
     <div class="text-center flex flex-col items-center w-full max-w-xl bg-slate-900/90 border border-slate-800 rounded-3xl p-6 shadow-2xl overflow-y-auto" style="max-height:85vh;">
         <h2 id="txtGameResult" class="text-6xl font-black tracking-widest mb-6 orbitron">VICTORY</h2>
         <div id="scoreboardArea" class="w-full mb-6"></div>
-        <button onclick="saveAndReload()"
-                class="px-12 py-3.5 rounded-full font-black text-lg tracking-widest active:scale-95 transition-all orbitron"
-                style="background:linear-gradient(135deg,#10b981,#6366f1);box-shadow:0 0 20px rgba(16,185,129,0.4);">
-            🔄 다시 시작
-        </button>
+        <div class="mb-4 hidden" id="hiddenResultData">
+            <span id="kdaResult">0/0/0</span>
+            <span id="dominanceResult">0%</span>
+        </div>
+        <div class="flex flex-col gap-2 w-full max-w-sm mx-auto mb-6">
+            <input type="text" id="playerNameInput" placeholder="닉네임 입력 (명예의 전당)" class="px-4 py-3 rounded-xl bg-slate-800 border border-slate-600 text-white text-center text-lg focus:outline-none focus:border-amber-500" maxlength="10">
+            <button onclick="saveAndReload()"
+                    class="px-8 py-3.5 rounded-full font-black text-sm md:text-lg tracking-widest active:scale-95 transition-all mt-2"
+                    style="background:linear-gradient(135deg,#10b981,#6366f1);box-shadow:0 0 20px rgba(16,185,129,0.4);">
+                💾 명예의 전당 기록 및 메뉴로
+            </button>
+        </div>
     </div>
 </div>
 
@@ -384,7 +391,7 @@ window.onerror = function(msg, url, line, col, error) {
     alert("자바스크립트 오류 발생: " + msg + "\n줄 번호: " + line);
 };
 </script>
-<script src="game.js?v=1003"></script>
+<script src="game.js?v=1004"></script>
 
     <!-- 명예의 전당 모달 -->
     <div id="hofScreen" class="hidden absolute inset-0 z-50 bg-black/80 flex items-center justify-center">

@@ -603,14 +603,19 @@ class Entity {
         if(this.isDead) return;
         if(this.hitFlashTimer>0) this.hitFlashTimer-=dt;
         if(this.curseTimer>0) this.curseTimer-=dt;
-        if(this.stunTimer>0){ this.stunTimer-=dt; return; }
+        if(this.airborneTimer>0) this.airborneTimer-=dt;
+        if(this.slowTimer > 0) this.slowTimer -= dt;
+        if(this.stunTimer>0){ 
+            this.stunTimer-=dt; 
+            if(this.stunTimer<=0) this.isFrozen=false;
+            return; 
+        }
         let spdMult = (this.slowTimer > 0) ? (1 - this.slowRate) : 1;
         this.x=clamp(this.x+this.vx*dt*spdMult, 10, MAP_SIZE-10);
         this.y=clamp(this.y+this.vy*dt*spdMult, 10, MAP_SIZE-10);
         this.attackTimer-=dt;
         this.lastAttackedTimer=Math.max(0, this.lastAttackedTimer-dt);
         this.animPhase+=dt*3; if(this.emoteTimer>0){this.emoteTimer-=dt; if(this.emoteTimer<=0)this.emote=null;}
-                if(this.slowTimer > 0) this.slowTimer -= dt;
         
         let home = this.faction==='BLUE'?{x:300,y:2700}:{x:2700,y:300};
         if(dist(this, home) < 400 && this.hp < this.maxHp) {
@@ -1196,7 +1201,11 @@ class Hero extends Entity {
                 nearEnemies(tg.x, tg.y, 250).forEach(e=>{e.applyRawDamage(skillDmg*1.8,this); e.stunTimer=1.2;});
             } else {
                 spawnRing(this.x, this.y, '#93c5fd', 400, 0.6);
-                nearEnemies(this.x, this.y, 400).forEach(e=>{e.applyRawDamage(skillDmg,this); e.slowTimer=2; e.slowRate=0.2;});
+                nearEnemies(this.x, this.y, 400).forEach(e=>{
+                    e.applyRawDamage(skillDmg,this); 
+                    e.slowTimer=2; e.slowRate=0.2; 
+                    e.stunTimer=1.0; e.airborneTimer=1.0;
+                });
             }
         } else if(k==='ICEBORN') {
             if(idx===1) {
@@ -1210,7 +1219,7 @@ class Hero extends Entity {
             } else {
                 let tg = t || this;
                 spawnAOE(tg.x, tg.y, 100, '#bae6fd99', 0.8);
-                nearEnemies(tg.x, tg.y, 100).forEach(e => { e.applyRawDamage(skillDmg*1.5, this); e.stunTimer = 2.0; });
+                nearEnemies(tg.x, tg.y, 100).forEach(e => { e.applyRawDamage(skillDmg*1.5, this); e.stunTimer = 2.0; e.isFrozen = true; });
                 spawnSpecial(tg.x, tg.y, '#7dd3fc', 'plus', 10, 100, 0.5);
             }
         } else if(k==='JOKER') {
@@ -1712,17 +1721,23 @@ class Projectile {
     constructor(x,y,target,dmg,attacker,isCrit,ptype='arrow'){
         this.x=x; this.y=y; this.target=target; this.dmg=dmg; this.attacker=attacker; this.isCrit=isCrit; this.ptype=ptype;
         this.speed=ptype==='tower'?550:400; this.isDead=false;
+        this.isSplash = attacker && attacker.type==='hero' && (attacker.heroKey==='JOKER' || attacker.heroKey==='DARKPRIEST');
+        if(attacker && attacker.heroKey==='ICEBORN') this.ptype='ice';
     }
     update(dt){
         if(this.target.isDead){this.isDead=true;return;}
-        if(dist(this,this.target)<15){
-            this.target.applyRawDamage(this.dmg,this.attacker);
-            if(this.attacker && this.attacker.type === 'hero') this.attacker.totalDmg += this.dmg;
-            if(this.attacker && this.attacker.triggerOnHitPassives) this.attacker.triggerOnHitPassives(this.target);
-            if(this.attacker.lifeSteal>0&&this.attacker.type==='hero') { this.attacker.hp=Math.min(this.attacker.maxHp,this.attacker.hp+this.dmg*this.attacker.lifeSteal); playSFX('heal'); }
-            if(this.attacker.burnDmg>0&&!this.target.isBuilding) this.target.burnTicks.push({dmg:this.attacker.burnDmg,ticks:3,timer:1.0,src:this.attacker});
-            if(this.attacker.stunChance>0&&Math.random()<this.attacker.stunChance&&!this.target.isBuilding) this.target.stunTimer=1.0;
-            spawnParticles(this.target.x,this.target.y-this.target.radius*0.5, this.isCrit?'#ff6b35':'#fbbf24', 8, 120, 0.3);
+        if(dist(this,this.target)<15 || (this.isSplash && dist(this,this.target)<40)){
+            let hitTargets = this.isSplash ? entities.filter(e => e.faction!==this.attacker.faction && !e.isDead && dist(e, this.target) <= 120) : [this.target];
+            if(this.isSplash) spawnAOE(this.target.x, this.target.y, 120, '#a855f7aa', 0.5);
+            hitTargets.forEach(tgt => {
+                tgt.applyRawDamage(this.dmg,this.attacker);
+                if(this.attacker && this.attacker.type === 'hero') this.attacker.totalDmg += this.dmg;
+                if(this.attacker && this.attacker.triggerOnHitPassives) this.attacker.triggerOnHitPassives(tgt);
+                if(this.attacker.lifeSteal>0&&this.attacker.type==='hero') { this.attacker.hp=Math.min(this.attacker.maxHp,this.attacker.hp+this.dmg*this.attacker.lifeSteal); playSFX('heal'); }
+                if(this.attacker.burnDmg>0&&!tgt.isBuilding) tgt.burnTicks.push({dmg:this.attacker.burnDmg,ticks:3,timer:1.0,src:this.attacker});
+                if(this.attacker.stunChance>0&&Math.random()<this.attacker.stunChance&&!tgt.isBuilding) tgt.stunTimer=1.0;
+                spawnParticles(tgt.x,tgt.y-tgt.radius*0.5, this.isCrit?'#ff6b35':'#fbbf24', 8, 120, 0.3);
+            });
             this.isDead=true;
         } else {
             let a=Math.atan2(this.target.y-this.y,this.target.x-this.x);
@@ -1732,7 +1747,10 @@ class Projectile {
     draw(ctx){
         ctx.save(); ctx.translate(this.x,this.y); ctx.rotate(Math.atan2(this.target.y-this.y,this.target.x-this.x));
         if(this.ptype==='arrow'){ ctx.fillStyle='#92400e'; ctx.fillRect(-10,-1.5,14,3); }
-        else { ctx.shadowColor='#fbbf24'; ctx.shadowBlur=10; ctx.fillStyle='#fbbf24'; ctx.beginPath(); ctx.arc(0,0,6,0,Math.PI*2); ctx.fill(); ctx.shadowBlur=0; }
+        else if(this.ptype==='ice'){
+            ctx.shadowColor='#38bdf8'; ctx.shadowBlur=10; ctx.fillStyle='#e0f2fe';
+            ctx.beginPath(); ctx.moveTo(-10, -5); ctx.lineTo(10, 0); ctx.lineTo(-10, 5); ctx.closePath(); ctx.fill(); ctx.shadowBlur=0;
+        } else { ctx.shadowColor='#fbbf24'; ctx.shadowBlur=10; ctx.fillStyle='#fbbf24'; ctx.beginPath(); ctx.arc(0,0,6,0,Math.PI*2); ctx.fill(); ctx.shadowBlur=0; }
         ctx.restore();
     }
 }
@@ -1900,7 +1918,7 @@ function renderShop(){
 
 // ============ 메인 루프 ============
 const canvas=document.getElementById('gameCanvas'); const ctx=canvas.getContext('2d');
-const mCanvas=document.getElementById('minimapCanvas'); const mCtx=mCanvas.getContext('2d');
+const mCanvas=document.getElementById('minimapCanvas'); window.mCtx=mCanvas.getContext('2d'); const mCtx=window.mCtx;
 mCanvas.width=160; mCanvas.height=160;
 
 let canvasDPR = 1;
@@ -2025,7 +2043,29 @@ function draw(){
     ctx.strokeStyle='rgba(255,255,255,0.03)'; for(let i=0;i<=MAP_SIZE;i+=200){ ctx.beginPath();ctx.moveTo(i,0);ctx.lineTo(i,MAP_SIZE);ctx.stroke(); ctx.beginPath();ctx.moveTo(0,i);ctx.lineTo(MAP_SIZE,i);ctx.stroke(); }
     drawEnv(ctx);
 
-    let all=[...entities, ...projectiles].filter(e=>!e.isDead||e.type==='jungle'); all.sort((a,b)=>a.y-b.y); all.forEach(e=>e.draw(ctx));
+    let all=[...entities, ...projectiles].filter(e=>!e.isDead||e.type==='jungle'); all.sort((a,b)=>a.y-b.y); 
+    all.forEach(e => {
+        if(e.type === 'hero' || e.type === 'minion' || e.type === 'jungle') {
+            ctx.save();
+            if(e.airborneTimer > 0) ctx.translate(0, -Math.sin(e.airborneTimer*Math.PI) * 60);
+            e.draw(ctx);
+            if(e.isFrozen) {
+                ctx.fillStyle = 'rgba(186, 230, 253, 0.6)';
+                ctx.fillRect(e.x - e.radius*1.5, e.y - e.radius*2.5, e.radius*3, e.radius*3);
+                ctx.strokeStyle = '#38bdf8'; ctx.lineWidth = 2;
+                ctx.strokeRect(e.x - e.radius*1.5, e.y - e.radius*2.5, e.radius*3, e.radius*3);
+                ctx.font = '24px sans-serif'; ctx.fillText('🧊', e.x - 12, e.y - e.radius*1.5);
+            }
+            if(e.stunTimer > 0 && !e.isFrozen) {
+                ctx.font = '24px sans-serif'; ctx.fillText('💫', e.x - 12, e.y - e.radius*2.5);
+            } else if(e.slowTimer > 0 && !e.isFrozen) {
+                ctx.font = '20px sans-serif'; ctx.fillText('🐢', e.x - 10, e.y - e.radius*2.5);
+            }
+            ctx.restore();
+        } else {
+            e.draw(ctx);
+        }
+    });
 
     // 분신 렌더링
     entities.forEach(e => {
