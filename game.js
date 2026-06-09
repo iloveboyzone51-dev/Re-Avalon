@@ -2799,7 +2799,12 @@ function updateUI(){
     document.getElementById('hudLevelBadge').textContent='Lv.'+player.level; document.getElementById('hudKDA').textContent='K:'+player.kills+' / D:'+player.deaths;
     document.getElementById('hudHpBar').style.width=(player.hp/player.maxHp)*100+'%'; document.getElementById('hudHpText').textContent=Math.floor(player.hp)+' / '+Math.floor(player.maxHp); document.getElementById('hudXpBar').style.width=(player.exp/player.maxExp)*100+'%';
     const inv=document.getElementById('inventorySlots'); inv.innerHTML='';
-    for(let i=0;i<8;i++){ let item=player.inventory[i]; let bi=item?[...BASE_ITEMS,...EVOLUTION_ITEMS].find(b=>b.id===item.id):null; let content=item?'<span class="text-sm">'+(bi?bi.icon:'?')+'</span>'+(item.upgrade>0?'<span class="absolute -top-1 -right-1 text-[7px] bg-rose-600 text-white rounded px-0.5 font-bold">+'+item.upgrade+'</span>':''):''; inv.innerHTML+='<div class="relative w-6 h-6 md:w-8 md:h-8 rounded bg-slate-900 border border-slate-800 flex items-center justify-center">'+content+'</div>'; }
+    for(let i=0;i<8;i++){ 
+        let item=player.inventory[i]; 
+        let bi=item?[...BASE_ITEMS,...EVOLUTION_ITEMS].find(b=>b.id===item.id):null; 
+        let content=item?'<div class="flex items-center justify-center w-full h-full text-[13px] md:text-base leading-none pt-0.5">'+(bi?bi.icon:'?')+'</div>'+(item.upgrade>0?'<div class="absolute -top-1.5 -right-1.5 md:-top-2 md:-right-2 text-[9px] bg-rose-600 text-white rounded-[4px] px-1 py-px font-bold leading-none shadow z-10">+'+item.upgrade+'</div>':''):''; 
+        inv.innerHTML+='<div class="relative w-7 h-7 md:w-10 md:h-10 rounded-lg bg-slate-900 border border-slate-700 flex items-center justify-center shadow-inner">'+content+'</div>'; 
+    }
     // 히어로 패시브 쿨다운 표시
     let m1=document.getElementById('maskSkill1'), m2=document.getElementById('maskSkill2');
     if(m1) { if(player.heroSkill1Timer>0){m1.classList.remove('hidden');m1.textContent=player.heroSkill1Timer.toFixed(1);}else m1.classList.add('hidden'); }
