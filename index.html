@@ -473,10 +473,10 @@
 
 <script>
 window.onerror = function(msg, url, line, col, error) {
-    alert("자바스크립트 오류 발생: " + msg + "\n줄 번호: " + line + "\n컬럼: " + col + "\n에러 객체: " + (error ? error.stack : 'none'));
+    console.error("자바스크립트 오류 발생: ", msg, "줄:", line, "컬럼:", col, "에러:", error);
 };
 </script>
-<script src="game.js?v=1008" crossorigin="anonymous"></script>
+<script src="game.js?v=1008"></script>
 
     <!-- 명예의 전당 모달 -->
     <div id="hofScreen" class="hidden absolute inset-0 z-50 bg-black/80 flex items-center justify-center">
