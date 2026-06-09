@@ -157,29 +157,51 @@ const WARMOG_REGEN      = 0.10;    // 워모그 초당 10%
 
 // ============ 영웅 템플릿 (근접/원거리 밸런스 전면 수정) ============
 const HERO_TMPL = {
-    BERSERKER: { name:"광전사", color:"#ef4444", hp:2000, atk:55, aspd:1.3, move:185, range:90,  type:"melee",  skill1:{name:"회전 참격",cd:5}, skill2:{name:"도약 강타",cd:8},  draw:(ctx,x,y,r,dir,f,anim)=>drawBlockyHero(ctx,x,y,r,dir,f,'berserker',anim) },
-    ARCHER:    { name:"궁수",    color:"#10b981", hp:1300, atk:40, aspd:1.3, move:165, range:420, type:"ranged", skill1:{name:"화살 폭우",cd:6}, skill2:{name:"블링크",  cd:10}, critChance:0.15, draw:(ctx,x,y,r,dir,f,anim)=>drawBlockyHero(ctx,x,y,r,dir,f,'archer',anim) },
-    NECROMANCER:{ name:"네크로맨서",color:"#a855f7",hp:1200, atk:30, aspd:1.0, move:150, range:360, type:"ranged", skill1:{name:"해골 소환",cd:7}, skill2:{name:"저주 역병",cd:11}, draw:(ctx,x,y,r,dir,f,anim)=>drawBlockyHero(ctx,x,y,r,dir,f,'necromancer',anim) },
+    BERSERKER: { name:"광전사", color:"#ef4444", hp:1900, atk:52, aspd:1.3, move:185, range:90,  type:"melee",  skill1:{name:"회전 참격",cd:5}, skill2:{name:"도약 강타",cd:8},  draw:(ctx,x,y,r,dir,f,anim)=>drawBlockyHero(ctx,x,y,r,dir,f,'berserker',anim) },
+    ARCHER:    { name:"궁수",    color:"#10b981", hp:1300, atk:35, aspd:1.3, move:165, range:420, type:"ranged", skill1:{name:"화살 폭우",cd:6}, skill2:{name:"블링크",  cd:10}, critChance:0.15, draw:(ctx,x,y,r,dir,f,anim)=>drawBlockyHero(ctx,x,y,r,dir,f,'archer',anim) },
+    NECROMANCER:{ name:"네크로맨서",color:"#a855f7",hp:1400, atk:38, aspd:1.0, move:150, range:360, type:"ranged", skill1:{name:"해골 소환",cd:7}, skill2:{name:"저주 역병",cd:11}, draw:(ctx,x,y,r,dir,f,anim)=>drawBlockyHero(ctx,x,y,r,dir,f,'necromancer',anim) },
     grrr: { name:'그르르', color:"#f59e0b", hp:1600, atk:70, aspd:0.9, move:150, range:60, type:"melee",
-        skill1:{name:'거대화', type:'self_buff', cd:18, desc:'몸집이 커지며 능력이 증가함'},
-        skill2:{name:'포효', type:'aoe_stun', cd:12, desc:'주변의 적을 스턴시킴'},
+        skill1:{name:'거대화', type:'self_buff', cd:18, desc:'몸집이 커지고 능력치 증가'},
+        skill2:{name:'포효', type:'aoe_stun', cd:12, desc:'주변 적을 스턴시킴'},
         draw:(ctx,x,y,r,dir,f,anim)=>drawBlockyHero(ctx,x,y,r,dir,f,'grrr',anim) },
-    VAMPIRE:   { name:"뱀파이어",color:"#f43f5e", hp:1800, atk:50, aspd:1.2, move:175, range:110, type:"melee",  skill1:{name:"흡혈 파동",cd:7}, skill2:{name:"박쥐 강습",cd:9},  lifeSteal:0.20, draw:(ctx,x,y,r,dir,f,anim)=>drawBlockyHero(ctx,x,y,r,dir,f,'vampire',anim) },
-    THOR:      { name:"토르",    color:"#60a5fa", hp:2300, atk:65, aspd:0.85,move:175, range:100, type:"melee",  skill1:{name:"번개 강타",cd:9}, skill2:{name:"충격파",  cd:11}, draw:(ctx,x,y,r,dir,f,anim)=>drawBlockyHero(ctx,x,y,r,dir,f,'thor',anim) }
+    VAMPIRE:   { name:"뱀파이어",color:"#f43f5e", hp:1700, atk:45, aspd:1.2, move:175, range:110, type:"melee",  skill1:{name:"흡혈 파동",cd:7}, skill2:{name:"박쥐 강습",cd:9},  lifeSteal:0.20, draw:(ctx,x,y,r,dir,f,anim)=>drawBlockyHero(ctx,x,y,r,dir,f,'vampire',anim) },
+    THOR:      { name:"토르",    color:"#60a5fa", hp:2300, atk:65, aspd:0.85,move:175, range:100, type:"melee",  skill1:{name:"번개 강타",cd:9}, skill2:{name:"충격파",  cd:11}, draw:(ctx,x,y,r,dir,f,anim)=>drawBlockyHero(ctx,x,y,r,dir,f,'thor',anim) },
+    ICEBORN: {
+        name:"이스버그", color:"#38bdf8",
+        hp:2200, atk:48, aspd:0.95, move:160, range:85, type:"melee",
+        skill1: { name:"빙결 창격", cd:7, desc:"전방 원뿔형 범위에 얼음 창을 투척. 적 이동속도 60% 감소 2.5초" },
+        skill2: { name:"얼음 감옥", cd:14, desc:"대상 위치에 얼음 기둥 소환. 반경 100 내 적 2초 완전 빙결(스턴)" },
+        draw:(ctx,x,y,r,dir,f,anim) => drawBlockyHero(ctx,x,y,r,dir,f,'iceborn',anim)
+    },
+    JOKER: {
+        name:"조커블레이드", color:"#a855f7",
+        hp:1400, atk:42, aspd:1.4, move:175, range:360, type:"ranged",
+        critChance:0.12,
+        skill1: { name:"왕의 패", cd:8, desc:"카드 3장을 무작위로 뽑음. 각각 공격/방어/특수 효과 중 랜덤 발동" },
+        skill2: { name:"전체 배팅", cd:16, desc:"현재 골드의 20%를 베팅. 50% 확률로 2배 환급. 실패 시 0. 그리고 강력한 카드 폭풍 발동" },
+        draw:(ctx,x,y,r,dir,f,anim) => drawBlockyHero(ctx,x,y,r,dir,f,'joker',anim)
+    },
+    DARKPRIEST: {
+        name:"암흑사제", color:"#7c3aed",
+        hp:1500, atk:35, aspd:1.0, move:155, range:380, type:"ranged",
+        skill1: { name:"영혼 착취", cd:10, desc:"아군 영웅 한 명의 HP 15%를 흡수해 강화 투사체 발사. 아군 동의 없음." },
+        skill2: { name:"저주의 낙인", cd:14, desc:"대상 적에게 저주 낙인. 10초간 아군 모든 공격이 대상에게 30% 추가 피해" },
+        draw:(ctx,x,y,r,dir,f,anim) => drawBlockyHero(ctx,x,y,r,dir,f,'darkpriest',anim)
+    }
 };
 
 // ============ 아이템 ============
 const BASE_ITEMS = [
-    { id:'atk',      name:'전사의 장검', cost:300, stat:'atk',      val:18,   icon:'⚔️' },
-    { id:'aspd',     name:'광전사의 단검',   cost:350, stat:'aspd',     val:0.18, icon:'🗡️' },
+    { id:'atk',      name:'전사의 투구', cost:300, stat:'atk',      val:18,   icon:'⚔️' },
+    { id:'aspd',     name:'광전사의 칼',   cost:350, stat:'aspd',     val:0.18, icon:'🗡️' },
     { id:'hp',       name:'거인의 심장',   cost:250, stat:'hp',       val:200,  icon:'❤️' },
     { id:'move',     name:'바람의 장화',   cost:250, stat:'move',     val:18,   icon:'🥾' },
     { id:'crit',     name:'암살자의 비수',    cost:450, stat:'crit',     val:0.08, icon:'💥' },
     { id:'lifesteal',name:'흡혈귀의 이빨',        cost:550, stat:'lifesteal',val:0.12, icon:'🩸' },
     { id:'reflect',  name:'가시 갑옷',    cost:400, stat:'reflect',  val:0.12, icon:'🛡️' },
-    { id:'burn',     name:'작열하는 지팡이',      cost:400, stat:'burn',     val:18,   icon:'🔥' },
-    { id:'stun',     name:'천둥의 망치',    cost:650, stat:'stun',     val:0.08, icon:'⚡' },
-    { id:'shield',   name:'수호자의 방패',      cost:500, stat:'shield',   val:80,   icon:'🔰' },
+    { id:'burn',     name:'화염검',      cost:400, stat:'burn',     val:18,   icon:'🔥' },
+    { id:'stun',     name:'기절무기',    cost:650, stat:'stun',     val:0.08, icon:'⚡' },
+    { id:'shield',   name:'방어막',      cost:500, stat:'shield',   val:80,   icon:'🔰' }
 ];
 const ENHANCE_RATES = [1,1,1,0.6,0.5,0.4,0.3,0.2,0.1];
 
@@ -196,7 +218,12 @@ const PASSIVE_SKILLS = [
     { id:'berserkerSoul', name:'광전사의 혼', icon:'💀', desc:'HP가 낮을수록 공격력 증가', maxLv:3 },
     { id:'shadowClone', name:'분신술', icon:'👥', desc:'주기적으로 분신 소환', maxLv:3 },
     { id:'swiftWind', name:'질풍', icon:'💨', desc:'이동속도/공격속도 증가', maxLv:4 },
-    { id:'poisonCloud', name:'독안개', icon:'☠️', desc:'주기적으로 주변에 독구름 생성', maxLv:4 }
+    { id:'poisonCloud', name:'독안개', icon:'☠️', desc:'주기적으로 주변에 독구름 생성', maxLv:4 },
+    { id:'vampireAura', name:'흡혈 오라', icon:'🧛', desc:'주변 적 체력을 초당 흡수', maxLv:3 },
+    { id:'bombTrail', name:'폭탄 발자국', icon:'💣', desc:'이동 시 뒤에 폭탄을 흘림', maxLv:3 },
+    { id:'mirrorImage', name:'허상 거울', icon:'🪞', desc:'피격 시 일정 확률로 자신을 복제', maxLv:2 },
+    { id:'bloodFury', name:'피의 분노', icon:'😡', desc:'처치 시 일시적 공속 50% 폭증', maxLv:3 },
+    { id:'stormWalker', name:'폭풍 발걸음', icon:'🌪️', desc:'주변에 지속적인 번개 구름 형성', maxLv:3 }
 ];
 
 // ============ 전역 상태 ============
@@ -410,13 +437,17 @@ function drawBlockyHero(ctx, x, y, r, dir, faction, type, attackAnimTimer = 0) {
         
         } else if(type === 'grrr') {
         drawBody('#d97706', '#92400e', '#78350f');
-        // 사자 갈기
-        ctx.fillStyle = '#b45309'; ctx.beginPath(); ctx.arc(0, -r*0.6, r*0.85, 0, Math.PI*2); ctx.fill();
-        // 머리 (약간 둥글게)
-        ctx.fillStyle = '#f59e0b'; ctx.beginPath(); ctx.arc(0, -r*0.6, r*0.5, 0, Math.PI*2); ctx.fill();
-        // 귀
-        ctx.fillStyle = '#d97706'; ctx.beginPath(); ctx.arc(-r*0.4, -r*1.0, r*0.2, 0, Math.PI*2); ctx.fill();
-        ctx.beginPath(); ctx.arc(r*0.4, -r*1.0, r*0.2, 0, Math.PI*2); ctx.fill();
+        // 사자 갈기 (더 풍성하게)
+        ctx.fillStyle = '#b45309'; ctx.beginPath(); ctx.arc(0, -r*0.6, r*0.9, 0, Math.PI*2); ctx.fill();
+        // 머리 
+        ctx.fillStyle = '#f59e0b'; ctx.beginPath(); ctx.arc(0, -r*0.6, r*0.6, 0, Math.PI*2); ctx.fill();
+        // 귀 
+        ctx.fillStyle = '#d97706'; ctx.beginPath(); ctx.arc(-r*0.5, -r*1.1, r*0.25, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(r*0.5, -r*1.1, r*0.25, 0, Math.PI*2); ctx.fill();
+        // 눈 (야성적인 붉은 눈)
+        ctx.fillStyle = '#dc2626';
+        ctx.fillRect(-r*0.3, -r*0.7, r*0.15, r*0.1); 
+        ctx.fillRect(r*0.15, -r*0.7, r*0.15, r*0.1);
         
         ctx.save();
         if(isAttacking) {
@@ -445,6 +476,54 @@ function drawBlockyHero(ctx, x, y, r, dir, faction, type, attackAnimTimer = 0) {
             ctx.fillStyle = 'rgba(96,165,250,0.8)';
             ctx.beginPath(); ctx.arc(0, -r*0.7, r*1.2, 0, Math.PI*2); ctx.fill(); // 번개 이펙트
         }
+        ctx.restore();
+    } else if (type === 'iceborn') {
+        drawBody('#e0f2fe', '#0ea5e9', '#0284c7');
+        // 얼음 창
+        ctx.save();
+        if(isAttacking) {
+            ctx.translate(x+r*0.9, y);
+            ctx.rotate(Math.PI * 0.3 * rotDir);
+        } else {
+            ctx.translate(x+r*0.5, y-r*0.2);
+        }
+        ctx.fillStyle = '#bae6fd'; ctx.fillRect(-r*0.05, -r*1.5, r*0.1, r*3.0);
+        ctx.fillStyle = '#38bdf8'; 
+        ctx.beginPath(); ctx.moveTo(-r*0.2, -r*1.5); ctx.lineTo(r*0.2, -r*1.5); ctx.lineTo(0, -r*2.5); ctx.closePath(); ctx.fill();
+        ctx.restore();
+    } else if (type === 'joker') {
+        drawBody('#fdf4ff', '#9333ea', '#581c87');
+        // 조커 모자
+        ctx.fillStyle = '#a855f7';
+        ctx.beginPath(); ctx.moveTo(x-r*0.5, y-r*0.9); ctx.lineTo(x-r*0.8, y-r*1.5); ctx.lineTo(x-r*0.1, y-r*1.1); ctx.fill();
+        ctx.beginPath(); ctx.moveTo(x+r*0.5, y-r*0.9); ctx.lineTo(x+r*0.8, y-r*1.5); ctx.lineTo(x+r*0.1, y-r*1.1); ctx.fill();
+        
+        ctx.save();
+        if(isAttacking) {
+            ctx.translate(x+r*0.8, y-r*0.3);
+            ctx.rotate(Math.PI * 0.4 * rotDir);
+        } else {
+            ctx.translate(x+r*0.6, y);
+        }
+        // 카드 쥐고 있는 손
+        ctx.fillStyle = '#f87171'; ctx.fillRect(0, -r*0.5, r*0.4, r*0.6);
+        ctx.fillStyle = '#ffffff'; ctx.fillRect(-r*0.1, -r*0.4, r*0.6, r*0.4);
+        ctx.restore();
+    } else if (type === 'darkpriest') {
+        drawBody('#f3f4f6', '#4c1d95', '#1e1b4b');
+        // 후드
+        ctx.fillStyle = '#312e81';
+        ctx.beginPath(); ctx.arc(x, y-r*0.8, r*0.6, 0, Math.PI*2); ctx.fill();
+        // 사악한 지팡이
+        ctx.save();
+        if(isAttacking) {
+            ctx.translate(x+r*0.8, y-r*0.5);
+            ctx.rotate(Math.PI * 0.5 * rotDir);
+        } else {
+            ctx.translate(x+r*0.6, y-r*0.2);
+        }
+        ctx.fillStyle = '#374151'; ctx.fillRect(-r*0.05, -r*1.2, r*0.1, r*2.0);
+        ctx.fillStyle = '#8b5cf6'; ctx.beginPath(); ctx.arc(0, -r*1.2, r*0.3, 0, Math.PI*2); ctx.fill();
         ctx.restore();
     }
     
@@ -503,10 +582,12 @@ class Entity {
         this.animPhase=Math.random()*Math.PI*2;
         this.slowTimer=0; this.slowRate=0;
         this.hitFlashTimer=0;
+        this.curseTimer=0;
     }
     update(dt){
         if(this.isDead) return;
         if(this.hitFlashTimer>0) this.hitFlashTimer-=dt;
+        if(this.curseTimer>0) this.curseTimer-=dt;
         if(this.stunTimer>0){ this.stunTimer-=dt; return; }
         let spdMult = (this.slowTimer > 0) ? (1 - this.slowRate) : 1;
         this.x=clamp(this.x+this.vx*dt*spdMult, 10, MAP_SIZE-10);
@@ -570,7 +651,15 @@ class Entity {
             if(dmg <= 0) return 0;
         }
 
+        if(this.curseTimer > 0) dmg *= 1.3;
         this.hp-=dmg;
+        
+        if (this.passiveSkills && this.passiveSkills['mirrorImage'] > 0) {
+            if(Math.random() < 0.15 + (this.passiveSkills['mirrorImage']-1)*0.05) {
+                this.shadowClones = this.shadowClones || [];
+                this.shadowClones.push({x:this.x+rand(-50,50),y:this.y+rand(-50,50),life:5,atk:this.atk*0.5,animPhase:Math.random()*Math.PI*2});
+            }
+        }
         
         // 정글몹 어그로 반격 로직 추가
         if(this.type === 'jungle' && attacker && !attacker.isBuilding) this.aggroTarget = attacker;
@@ -855,10 +944,25 @@ class Hero extends Entity {
         this.kills++;
         this.triggerOnKillPassives(target);
         if(target.type==='hero'){
+            this.killStreak = (this.killStreak || 0) + 1;
+            let now = Date.now();
+            if(!this.lastKillTime || now - this.lastKillTime < 5000) {
+                this.multiKill = (this.multiKill || 0) + 1;
+            } else {
+                this.multiKill = 1;
+            }
+            this.lastKillTime = now;
+            
+            let hName = HERO_TMPL[this.heroKey].name;
+            if(this.multiKill === 2) showBanner(hName + ' 더블 킬!', '✌️', this.faction==='BLUE');
+            else if(this.multiKill === 3) showBanner(hName + ' 트리플 킬!!', '🔥', this.faction==='BLUE');
+            else if(this.multiKill >= 4) showBanner(hName + ' 쿼드라 킬!!!', '💥', this.faction==='BLUE');
+            else if(this.killStreak >= 3) showBanner(hName + '가 미쳐 날뛰고 있습니다!', '👹', this.faction==='BLUE');
+            else showBanner(hName + ' 처치!', '⚔️', this.faction==='BLUE');
+
             this.gold+=250; this.gainExp(80);
             if(target.faction!=='BLUE') GS.scoreBlue++; else GS.scoreRed++;
             document.getElementById('scoreBlue').textContent=GS.scoreBlue; document.getElementById('scoreRed').textContent=GS.scoreRed;
-            showBanner(HERO_TMPL[target.heroKey].name + ' 처치!', '⚔️', this.faction==='BLUE');
             if(this.isPlayer) addText(this.x, this.y-40, '+250G / 80XP', '#fbbf24', 16);
         } else if(target.type==='minion'){ 
             this.gold+=60; this.gainExp(25);
@@ -894,6 +998,7 @@ class Hero extends Entity {
     }
     onDeath(attacker){
         this.deaths++;
+        this.killStreak = 0;
         this.respawnTimer = Math.min(5 + this.level * 0.8, 25); // 부활 시간 조정
         if (attacker && attacker.type === 'hero' && this.type === 'hero') {
             if(window.addKillFeed) addKillFeed(attacker, this);
@@ -1078,6 +1183,68 @@ class Hero extends Entity {
                 spawnRing(this.x, this.y, '#93c5fd', 400, 0.6);
                 nearEnemies(this.x, this.y, 400).forEach(e=>{e.applyRawDamage(skillDmg,this); e.slowTimer=2; e.slowRate=0.2;});
             }
+        } else if(k==='ICEBORN') {
+            if(idx===1) {
+                let a = this.facingDir > 0 ? 0 : Math.PI;
+                if(t) a = Math.atan2(t.y - this.y, t.x - this.x);
+                spawnAOE(this.x + Math.cos(a)*100, this.y + Math.sin(a)*100, 150, '#38bdf888', 0.5);
+                nearEnemies(this.x, this.y, 300).forEach(e => {
+                    let ea = Math.atan2(e.y - this.y, e.x - this.x);
+                    if(Math.abs(ea - a) < Math.PI/3) { e.applyRawDamage(skillDmg*1.2, this); e.slowTimer = 2.5; e.slowRate = 0.4; }
+                });
+            } else {
+                let tg = t || this;
+                spawnAOE(tg.x, tg.y, 100, '#bae6fd99', 0.8);
+                nearEnemies(tg.x, tg.y, 100).forEach(e => { e.applyRawDamage(skillDmg*1.5, this); e.stunTimer = 2.0; });
+                spawnSpecial(tg.x, tg.y, '#7dd3fc', 'plus', 10, 100, 0.5);
+            }
+        } else if(k==='JOKER') {
+            if(idx===1) {
+                for(let i=0; i<3; i++) {
+                    setTimeout(() => {
+                        let eff = Math.random();
+                        if(eff < 0.33) {
+                            nearEnemies(this.x, this.y, 350).forEach(e => e.applyRawDamage(skillDmg*1.5, this));
+                            spawnRing(this.x, this.y, '#ef4444', 350, 0.4);
+                        } else if(eff < 0.66) {
+                            this.shield += this.maxHp * 0.15;
+                            spawnRing(this.x, this.y, '#3b82f6', 150, 0.4);
+                        } else {
+                            this.atkSpdBuffTimer = 3.0; this.atkSpdBuffRate = 1.5;
+                            spawnRing(this.x, this.y, '#10b981', 150, 0.4);
+                        }
+                    }, i*200);
+                }
+            } else {
+                let bet = Math.floor(this.gold * 0.2);
+                this.gold -= bet;
+                if(Math.random() < 0.5) {
+                    this.gold += bet * 2;
+                    addText(this.x, this.y-70, '잭팟!', '#fbbf24', 28);
+                    spawnRing(this.x, this.y, '#fbbf24', 400, 0.6);
+                    nearEnemies(this.x, this.y, 400).forEach(e => { e.applyRawDamage(skillDmg*3, this); e.stunTimer = 1.0; });
+                } else {
+                    addText(this.x, this.y-70, '꽝...', '#9ca3af', 20);
+                }
+            }
+        } else if(k==='DARKPRIEST') {
+            if(idx===1) {
+                let allies = entities.filter(e => e.faction === this.faction && !e.isDead && e.type === 'hero' && e !== this);
+                if(allies.length > 0) {
+                    let sacrifice = allies[Math.floor(Math.random() * allies.length)];
+                    let drain = sacrifice.maxHp * 0.15;
+                    sacrifice.hp = Math.max(1, sacrifice.hp - drain);
+                    spawnBeam(sacrifice.x, sacrifice.y, this.x, this.y, '#7c3aed', 0.3);
+                    
+                    if(t) projectiles.push(new Projectile(this.x, this.y, t, skillDmg*2.5, this, false));
+                }
+            } else {
+                if(t) {
+                    t.curseTimer = 10.0;
+                    spawnAOE(t.x, t.y, 80, '#4c1d95', 1.0);
+                    addText(t.x, t.y-50, '낙인!', '#a855f7', 24);
+                }
+            }
         } else {
             if(t) {
                 if(HERO_TMPL[k].type==='ranged') { for(let i=0;i<3+sl;i++) setTimeout(()=>{if(!t.isDead) projectiles.push(new Projectile(this.x,this.y,t,skillDmg*0.5,this,false));}, i*100); }
@@ -1150,6 +1317,42 @@ class Hero extends Entity {
         }
         // 영혼 수확 버프
         if(this.soulBuffTimer>0){this.soulBuffTimer-=dt; if(this.soulBuffTimer<=0) this.soulAtkBonus=0;}
+
+        // 신규 패시브 지속 효과
+        let pVamp = this.passiveSkills['vampireAura'] || 0;
+        if(pVamp > 0) {
+            let drain = pVamp * 5 * dt;
+            entities.forEach(e => {
+                if(e.faction !== this.faction && !e.isDead && dist(this, e) <= 150) {
+                    e.hp -= drain; this.hp = Math.min(this.maxHp, this.hp + drain);
+                    spawnParticles(e.x, e.y, '#f43f5e', 1, 30, 0.2);
+                }
+            });
+        }
+        let pBomb = this.passiveSkills['bombTrail'] || 0;
+        if(pBomb > 0 && Math.hypot(this.vx, this.vy) > 10) {
+            this.passiveTimers.bombTrail = (this.passiveTimers.bombTrail || 0) - dt;
+            if(this.passiveTimers.bombTrail <= 0) {
+                spawnAOE(this.x, this.y, 60, '#ef444455', 1.0);
+                entities.forEach(e => {
+                    if(e.faction !== this.faction && !e.isDead && dist(this, e) <= 60) e.applyRawDamage(pBomb * 10, this);
+                });
+                this.passiveTimers.bombTrail = 1.5;
+            }
+        }
+        let pStorm = this.passiveSkills['stormWalker'] || 0;
+        if(pStorm > 0) {
+            this.passiveTimers.stormWalker = (this.passiveTimers.stormWalker || 0) - dt;
+            if(this.passiveTimers.stormWalker <= 0) {
+                entities.forEach(e => {
+                    if(e.faction !== this.faction && !e.isDead && dist(this, e) <= 200) {
+                        e.applyRawDamage(pStorm * 15, this);
+                        spawnParticles(e.x, e.y, '#fef08a', 5, 80, 0.4);
+                    }
+                });
+                this.passiveTimers.stormWalker = 2.0;
+            }
+        }
     }
     triggerOnHitPassives(target) {
         if(!target||target.isDead) return;
@@ -1185,6 +1388,13 @@ class Hero extends Entity {
             this.hp=Math.min(this.maxHp,this.hp+this.maxHp*(0.05+(shLv-1)*0.03));
             this.soulAtkBonus=this.baseAtk*(0.08+(shLv-1)*0.06); this.soulBuffTimer=5;
             spawnParticles(this.x,this.y,'#a78bfa',15,100,0.5); addText(this.x,this.y-40,'👻 영혼 수확!','#a78bfa',16); playSFX('heal');
+        }
+        let pBlood = this.passiveSkills['bloodFury'] || 0;
+        if(pBlood > 0) {
+            this.atkSpdBuffTimer = 3.0 + (pBlood-1);
+            this.atkSpdBuffRate = 1.5;
+            spawnParticles(this.x, this.y, '#dc2626', 10, 100, 0.4);
+            addText(this.x, this.y-50, '😡 피의 분노!', '#ef4444', 16);
         }
     }
     showSkillSelection() {
@@ -1280,9 +1490,9 @@ class Building extends Entity {
     constructor(x,y,faction,btype){
         super(x,y,faction,btype);
         this.isBuilding=true;
-        if(btype==='nexus'){ this.maxHp=10000; this.atk=0; this.range=0; this.radius=50; }
-        else if(btype==='nexus_turret') { this.maxHp=8000; this.atk=400; this.aspd=1.5; this.range=350; this.radius=22; }
-        else { this.maxHp=6000; this.atk=280; this.aspd=1.2; this.range=360; this.radius=28; } // 타워 버프
+        if(btype==='nexus'){ this.maxHp=15000; this.atk=0; this.range=0; this.radius=50; }
+        else if(btype==='nexus_turret') { this.maxHp=12000; this.atk=400; this.aspd=1.5; this.range=350; this.radius=22; }
+        else { this.maxHp=9000; this.atk=280; this.aspd=1.2; this.range=360; this.radius=28; } // 타워 버프
         this.hp=this.maxHp;
     }
     update(dt){
@@ -1301,7 +1511,9 @@ class Building extends Entity {
                 if(target.type === 'jungle') dmg = Math.floor(dmg * 0.4); 
                 // 쌍발 투사체 (9번 요구사항)
                 projectiles.push(new Projectile(this.x,this.y-this.radius,target,dmg,this,false,'tower'));
-                setTimeout(() => { if(!this.isDead && !target.isDead) projectiles.push(new Projectile(this.x,this.y-this.radius,target,dmg,this,false,'tower')); }, 150);
+                if(this.type === 'nexus_turret') {
+                    setTimeout(() => { if(!this.isDead && !target.isDead) projectiles.push(new Projectile(this.x,this.y-this.radius,target,dmg,this,false,'tower')); }, 150);
+                }
                 if(this.faction === player?.faction) playSFX('tower');
             }
         }
@@ -1313,6 +1525,15 @@ class Building extends Entity {
             document.getElementById('txtGameResult').textContent=win?'🏆 VICTORY':'💀 DEFEAT';
             document.getElementById('txtGameResult').style.color=win?'#34d399':'#f87171';
             buildScoreboard();
+        } else if (this.type === 'tower' || this.type === 'nexus_turret') {
+            let oppFaction = this.faction === 'BLUE' ? 'RED' : 'BLUE';
+            entities.forEach(e => {
+                if(e.type === 'hero' && e.faction === oppFaction) {
+                    e.gold += 500;
+                    if(e === player) addText(e.x, e.y-40, '타워 파괴 +500G!', '#fbbf24', 18);
+                }
+            });
+            showBanner('타워 파괴!', '💥', this.faction !== 'BLUE');
         }
         spawnParticles(this.x,this.y,'#f59e0b',30,300,1.5);
     }
@@ -1340,8 +1561,8 @@ class Building extends Entity {
 class Minion extends Entity {
     constructor(x,y,faction,lane){
         super(x,y,faction,'minion'); this.lane=lane;
-        // 미니언 성장 스케일 강화 (300초마다 2배)
-        let scale=1+GS.time/300; this.maxHp=Math.floor(400*scale); this.hp=this.maxHp; this.atk=Math.floor(15*scale); this.aspd=1.0; this.moveSpd=120; this.range=30; this.radius=10;
+        // 미니언 성장 스케일 강화 (속도 완화, 최대 3.5배 캡 적용)
+        let scale=Math.min(1+GS.time/400, 3.5); this.maxHp=Math.floor(400*scale); this.hp=this.maxHp; this.atk=Math.floor(15*scale); this.aspd=1.0; this.moveSpd=120; this.range=30; this.radius=10;
         
         let bTop=[{x:300,y:2700},{x:300,y:300},{x:2700,y:300}], bMid=[{x:300,y:2700},{x:1500,y:1500},{x:2700,y:300}], bBot=[{x:300,y:2700},{x:300,y:2400},{x:2400,y:2400},{x:2400,y:300},{x:2700,y:300}];
         let rTop=[{x:2700,y:300},{x:2700,y:300},{x:300,y:300},{x:300,y:2700}], rMid=[{x:2700,y:300},{x:1500,y:1500},{x:300,y:2700}], rBot=[{x:2700,y:300},{x:2400,y:300},{x:2400,y:2400},{x:300,y:2400},{x:300,y:2700}];
@@ -1886,33 +2107,111 @@ function renderInventory(){
     }
 }
 
-function drawMinimap(){
-    if(!window.mCtx) return;
-    let mCtx = window.mCtx;
-    mCtx.clearRect(0,0,mCanvas.width,mCanvas.height);
-    let sx = mCanvas.width / MAP_SIZE, sy = mCanvas.height / MAP_SIZE;
+function drawMinimap() {
+    if (!window.mCtx) return;
+    const mc = window.mCtx;
+    const W  = mCanvas.width;   // 160
+    const H  = mCanvas.height;  // 160
+
+    // ── 배경 클리어 ──
+    mc.clearRect(0, 0, W, H);
+    mc.fillStyle = '#0f172a';
+    mc.fillRect(0, 0, W, H);
+
+    // ── 좌표 변환 헬퍼 ──
+    const tx = (wx) => (wx / MAP_SIZE) * W;
+    const ty = (wy) => (wy / MAP_SIZE) * H;
+
+    // ────────────────────────────────────────
+    // [1] 3라인 도로 표시 (라인 상태)
+    // ────────────────────────────────────────
+    const laneAlpha = 0.35;
+    mc.fillStyle = `rgba(139,90,43,${laneAlpha})`;
+
+    // 탑 라인 (좌상단 ㄱ자)
+    mc.fillRect(tx(200), ty(200), tx(200), ty(2300)); // 세로 (좌측 벽)
+    mc.fillRect(tx(200), ty(200), tx(2300), ty(200)); // 가로 (상단 벽)
+
+    // 바텀 라인 (우하단 ㄱ자)
+    mc.fillRect(tx(2500), ty(200), tx(200), ty(2300)); // 세로 (우측 벽)
+    mc.fillRect(tx(200), ty(2500), tx(2300), ty(200)); // 가로 (하단 벽)
+
+    // 미드 라인 (대각선)
+    mc.save();
+    mc.translate(W/2, H/2);
+    mc.rotate(-Math.PI/4);
+    mc.fillRect(-W*0.58, -H*0.035, W*1.16, H*0.07);
+    mc.restore();
+
+    // ────────────────────────────────────────
+    // [2] 타워(라인 상태) 표시 — 잔존 여부로 라인 장악 가시화
+    // ────────────────────────────────────────
     entities.forEach(e => {
         if(e.isDead) return;
-        if(e.type !== 'hero' && e.type !== 'tower' && e.type !== 'nexus' && e.type !== 'nexus_turret' && !e.mtype) return;
-        
-        mCtx.beginPath();
-        if(e.type === 'hero') {
-            mCtx.fillStyle = e.faction === 'BLUE' ? '#3b82f6' : '#ef4444';
-            mCtx.arc(e.x*sx, e.y*sy, e.isPlayer?4:3, 0, Math.PI*2);
-        } else if(e.type.includes('nexus') || e.type === 'tower') {
-            mCtx.fillStyle = e.faction === 'BLUE' ? '#1e3a8a' : '#7f1d1d';
-            mCtx.arc(e.x*sx, e.y*sy, e.type==='nexus'?5:3, 0, Math.PI*2);
-        } else if(e.mtype && e.mtype.includes('boss')) {
-            mCtx.fillStyle = '#f59e0b';
-            mCtx.arc(e.x*sx, e.y*sy, 4, 0, Math.PI*2);
-        }
-        mCtx.fill();
+        if(e.type !== 'tower') return; // nexus_turret, nexus 제외
+
+        let col = e.faction === 'BLUE' ? '#3b82f6' : '#ef4444';
+        mc.fillStyle = col;
+        mc.globalAlpha = 0.6;
+        mc.fillRect(tx(e.x) - 2.5, ty(e.y) - 2.5, 5, 5); // 작은 사각형
+        mc.globalAlpha = 1;
     });
-    if(player && !player.isDead){
-        mCtx.strokeStyle = '#fff';
-        mCtx.lineWidth = 1;
-        mCtx.beginPath(); mCtx.arc(player.x*sx, player.y*sy, 5, 0, Math.PI*2); mCtx.stroke();
+
+    // ────────────────────────────────────────
+    // [3] 영웅 위치 표시 (핵심)
+    // ────────────────────────────────────────
+    entities.forEach(e => {
+        if(e.type !== 'hero' || e.isDead) return;
+
+        let ex = tx(e.x);
+        let ey = ty(e.y);
+
+        if(e === player) {
+            // 플레이어: 크고 흰 테두리 + 팀 색
+            mc.strokeStyle = '#ffffff';
+            mc.lineWidth   = 1.5;
+            mc.fillStyle   = e.faction === 'BLUE' ? '#60a5fa' : '#f87171';
+            mc.beginPath();
+            mc.arc(ex, ey, 4.5, 0, Math.PI*2);
+            mc.fill();
+            mc.stroke();
+
+            // 플레이어 위에 삼각형 화살표
+            mc.fillStyle = '#ffffff';
+            mc.beginPath();
+            mc.moveTo(ex, ey - 7);
+            mc.lineTo(ex - 3, ey - 13);
+            mc.lineTo(ex + 3, ey - 13);
+            mc.closePath();
+            mc.fill();
+        } else {
+            // AI 영웅: 팀 색 원
+            mc.fillStyle = e.faction === 'BLUE' ? '#3b82f6' : '#ef4444';
+            mc.beginPath();
+            mc.arc(ex, ey, 3, 0, Math.PI*2);
+            mc.fill();
+        }
+    });
+
+    // ────────────────────────────────────────
+    // [4] 카메라 시야 사각형 표시 (현재 화면 범위)
+    // ────────────────────────────────────────
+    if(player) {
+        let visW = (window.innerWidth  / camera.zoom) / MAP_SIZE * W;
+        let visH = (window.innerHeight / camera.zoom) / MAP_SIZE * H;
+        let vcx  = tx(camera.x) - visW/2;
+        let vcy  = ty(camera.y) - visH/2;
+        mc.strokeStyle = 'rgba(255,255,255,0.25)';
+        mc.lineWidth   = 1;
+        mc.strokeRect(vcx, vcy, visW, visH);
     }
+
+    // ────────────────────────────────────────
+    // [5] 미니맵 테두리
+    // ────────────────────────────────────────
+    mc.strokeStyle = '#334155';
+    mc.lineWidth   = 1.5;
+    mc.strokeRect(0, 0, W, H);
 }
 
 function updateUI(){

@@ -99,10 +99,10 @@
         <!-- 영웅 선택 -->
         <div class="w-full max-w-2xl bg-slate-900/70 border border-slate-800 rounded-2xl p-4 backdrop-blur-md">
             <h3 class="text-xs font-bold text-slate-400 mb-3 tracking-widest uppercase">영웅 선택 (나머지 9명은 AI 무작위 배정)</h3>
-            <div class="grid grid-cols-3 md:grid-cols-6 gap-2">
+            <div class="grid grid-cols-3 md:grid-cols-5 gap-2">
                 <button id="btnHeroBERSERKER" onclick="selectHero('BERSERKER')"
                         class="py-2 px-1 rounded-xl border-2 border-emerald-500 bg-slate-800/60 flex flex-col items-center transition-all active:scale-90">
-                    <span class="text-lg">🗡️</span><span class="text-[10px] font-bold text-white mt-0.5">광전사</span>
+                    <span class="text-lg">⚔️</span><span class="text-[10px] font-bold text-white mt-0.5">광전사</span>
                 </button>
                 <button id="btnHeroARCHER" onclick="selectHero('ARCHER')"
                         class="py-2 px-1 rounded-xl border-2 border-transparent bg-slate-800/60 flex flex-col items-center transition-all active:scale-90">
@@ -110,7 +110,7 @@
                 </button>
                 <button id="btnHeroNECROMANCER" onclick="selectHero('NECROMANCER')"
                         class="py-2 px-1 rounded-xl border-2 border-transparent bg-slate-800/60 flex flex-col items-center transition-all active:scale-90">
-                    <span class="text-lg">💀</span><span class="text-[10px] font-bold text-purple-300 mt-0.5">네크로</span>
+                    <span class="text-lg">💀</span><span class="text-[10px] font-bold text-purple-300 mt-0.5">네크로맨서</span>
                 </button>
                 <button id="btnHerogrrr" onclick="selectHero('grrr')"
                         class="py-2 px-1 rounded-xl border-2 border-transparent bg-slate-800/60 flex flex-col items-center transition-all active:scale-90">
@@ -123,6 +123,18 @@
                 <button id="btnHeroTHOR" onclick="selectHero('THOR')"
                         class="py-2 px-1 rounded-xl border-2 border-transparent bg-slate-800/60 flex flex-col items-center transition-all active:scale-90">
                     <span class="text-lg">⚡</span><span class="text-[10px] font-bold text-blue-300 mt-0.5">토르</span>
+                </button>
+                <button id="btnHeroICEBORN" onclick="selectHero('ICEBORN')"
+                        class="py-2 px-1 rounded-xl border-2 border-transparent bg-slate-800/60 flex flex-col items-center transition-all active:scale-90">
+                    <span class="text-lg">❄️</span><span class="text-[10px] font-bold text-sky-300 mt-0.5">이스버그</span>
+                </button>
+                <button id="btnHeroJOKER" onclick="selectHero('JOKER')"
+                        class="py-2 px-1 rounded-xl border-2 border-transparent bg-slate-800/60 flex flex-col items-center transition-all active:scale-90">
+                    <span class="text-lg">🃏</span><span class="text-[10px] font-bold text-purple-400 mt-0.5">조커블레이드</span>
+                </button>
+                <button id="btnHeroDARKPRIEST" onclick="selectHero('DARKPRIEST')"
+                        class="py-2 px-1 rounded-xl border-2 border-transparent bg-slate-800/60 flex flex-col items-center transition-all active:scale-90">
+                    <span class="text-lg">🔮</span><span class="text-[10px] font-bold text-indigo-400 mt-0.5">암흑사제</span>
                 </button>
             </div>
             <div class="mt-3 p-2.5 bg-slate-950/60 rounded-xl text-left min-h-[64px] border border-slate-800">
@@ -329,10 +341,10 @@
     </div>
 
     <!-- 킬 알림 배너 -->
-    <div id="systemKillBanner" class="absolute top-20 left-1/2 -translate-x-1/2 z-20 pointer-events-none" style="opacity:0;transform:translateX(-50%) scale(0.95);">
-        <div id="killBannerBox" class="bg-gradient-to-r from-emerald-900 to-slate-900 border border-emerald-500 px-8 py-2.5 rounded-full shadow-2xl flex items-center gap-3">
-            <span id="killBannerIcon" class="text-xl">⚔️</span>
-            <span id="killBannerText" class="font-black text-white text-sm tracking-widest"></span>
+    <div id="systemKillBanner" class="absolute top-12 left-1/2 -translate-x-1/2 z-20 pointer-events-none" style="opacity:0;transform:translateX(-50%) scale(0.95);">
+        <div id="killBannerBox" class="bg-gradient-to-r from-emerald-900 to-slate-900 border border-emerald-500 px-4 md:px-8 py-1.5 md:py-2.5 rounded-full shadow-2xl flex items-center gap-2 md:gap-3 whitespace-nowrap">
+            <span id="killBannerIcon" class="text-base md:text-xl">⚔️</span>
+            <span id="killBannerText" class="font-black text-white text-xs md:text-sm tracking-widest"></span>
         </div>
     </div>
 </div>
