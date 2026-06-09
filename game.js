@@ -1805,9 +1805,28 @@ window.selectFaction=f=>{ GS.faction=f; document.getElementById('btnFactionBlue'
 window.selectHero=h=>{ GS.hero=h; Object.keys(HERO_TMPL).forEach(hk=>{ document.getElementById('btnHero'+hk).className='py-2 px-1 rounded-xl border-2 '+(hk===h?'border-emerald-500 bg-slate-800/80':'border-transparent bg-slate-800/60')+' flex flex-col items-center transition-all'; });
     let t = HERO_TMPL[h];
     let d1 = t.skill1.desc || ''; let d2 = t.skill2.desc || '';
-    document.getElementById('heroDescription').innerHTML='<div class="text-amber-400 font-bold mb-0.5 text-sm">['+t.name+'] <span class="text-[10px] text-white bg-slate-700 px-1 py-0.5 rounded ml-1">'+ (t.role_desc||'') +'</span></div>' +
-        '<div class="text-white bg-slate-900 p-1.5 rounded mt-1 text-[11px] leading-tight">⚔️ <span class="text-emerald-300 font-bold">'+t.skill1.name+'</span> ('+t.skill1.cd+'초)<br/><span class="text-[10px] text-slate-300">'+d1+'</span><br/><br/>🔮 <span class="text-indigo-300 font-bold">'+t.skill2.name+'</span> ('+t.skill2.cd+'초)<br/><span class="text-[10px] text-slate-300">'+d2+'</span></div>' +
+    
+    let rangeTypeStr = "알수없음";
+    if (t.range <= 100) rangeTypeStr = "근거리";
+    else if (t.range <= 250) rangeTypeStr = "중거리";
+    else rangeTypeStr = "원거리";
+    
+    let aoeStr = (h === 'JOKER' || h === 'DARKPRIEST' || h === 'THOR') ? '범위(스플래시)' : '단일 타겟';
+
+    document.getElementById('heroDescription').innerHTML='<div class="flex flex-row gap-3 items-start"><div class="w-16 h-20 shrink-0 bg-slate-800 rounded flex items-center justify-center border border-slate-600 relative overflow-hidden"><canvas id="heroPreviewCanvas" width="64" height="80"></canvas></div>' +
+        '<div class="flex-1 text-left"><div class="text-amber-400 font-bold mb-0.5 text-sm">['+t.name+'] <span class="text-[10px] text-white bg-slate-700 px-1 py-0.5 rounded ml-1">'+ (t.role_desc||'') +'</span></div>' +
+        '<div class="text-[10px] text-slate-300 mb-1">▪ 공격 형태: <span class="text-emerald-300 font-bold">' + rangeTypeStr + '</span> (' + aoeStr + ')</div>' +
+        '<div class="text-white bg-slate-900 p-1.5 rounded mt-1 text-[11px] leading-tight">⚔️ <span class="text-emerald-300 font-bold">'+t.skill1.name+'</span> ('+t.skill1.cd+'초)<br/><span class="text-[10px] text-slate-300">'+d1+'</span><br/><br/>🔮 <span class="text-indigo-300 font-bold">'+t.skill2.name+'</span> ('+t.skill2.cd+'초)<br/><span class="text-[10px] text-slate-300">'+d2+'</span></div></div></div>' +
         '<div class="text-[10px] text-slate-400 mt-1.5 font-bold">※ 게임 내에서 로그라이크 방식으로 추가 패시브 12종을 획득합니다!</div>';
+
+    setTimeout(() => {
+        let cvs = document.getElementById('heroPreviewCanvas');
+        if(cvs) {
+            let ctx = cvs.getContext('2d');
+            ctx.clearRect(0,0,64,80);
+            if(t.draw) t.draw(ctx, 32, 55, 14, 1, 'BLUE', 0);
+        }
+    }, 10);
 };
 
 function autoDetectPlatform() {

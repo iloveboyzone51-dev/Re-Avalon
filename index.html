@@ -48,6 +48,8 @@
         .skill-card { animation: skillPopIn 0.4s ease-out backwards; }
         .skill-card:nth-child(2) { animation-delay: 0.1s; }
         .skill-card:nth-child(3) { animation-delay: 0.2s; }
+        summary { list-style: none; }
+        summary::-webkit-details-marker { display: none; }
     </style>
 </head>
 <body>
@@ -394,7 +396,7 @@ window.onerror = function(msg, url, line, col, error) {
     alert("자바스크립트 오류 발생: " + msg + "\n줄 번호: " + line);
 };
 </script>
-<script src="game.js?v=1004"></script>
+<script src="game.js?v=1005"></script>
 
     <!-- 명예의 전당 모달 -->
     <div id="hofScreen" class="hidden absolute inset-0 z-50 bg-black/80 flex items-center justify-center">
@@ -437,29 +439,52 @@ window.onerror = function(msg, url, line, col, error) {
     <div id="patchNotesModal" class="hidden absolute inset-0 z-[70] bg-black/80 flex items-center justify-center p-4">
         <div class="bg-slate-900 border border-slate-700 p-6 md:p-8 rounded-2xl max-w-2xl w-full max-h-[85vh] flex flex-col shadow-2xl relative">
             <button onclick="document.getElementById('patchNotesModal').classList.add('hidden')" class="absolute top-4 right-4 text-slate-400 hover:text-white text-3xl font-bold">&times;</button>
-            <h2 class="text-2xl md:text-3xl font-black text-amber-400 mb-6 border-b border-slate-700 pb-3 orbitron">📝 PATCH NOTES (v1004)</h2>
-            <div class="flex-1 overflow-y-auto pr-4 text-sm md:text-base text-slate-300 space-y-6 custom-scrollbar">
+            <h2 class="text-2xl md:text-3xl font-black text-amber-400 mb-6 border-b border-slate-700 pb-3 orbitron">📝 PATCH NOTES</h2>
+            <div class="flex-1 overflow-y-auto pr-4 text-sm md:text-base text-slate-300 space-y-4 custom-scrollbar">
                 
-                <div>
-                    <h3 class="text-white font-bold text-lg mb-2 text-emerald-400 flex items-center gap-2"><span class="text-xl">✨</span> v1004 주요 업데이트</h3>
-                    <ul class="list-disc pl-5 space-y-2">
-                        <li><strong class="text-white">미니맵 정상화:</strong> 맵이 까맣게 나오던 렌더링 오류를 수정하여, 아군/적군 영웅 및 타워/보스 마커가 다시 정상 표기됩니다.</li>
-                        <li><strong class="text-white">상태 이상 시각적 연출:</strong> 기절(💫), 둔화(🐢), 에어본(물리적 띄워짐), 빙결(🧊반투명 얼음 블록) 상태를 한눈에 알아볼 수 있도록 그래픽 효과를 대폭 추가했습니다.</li>
-                        <li><strong class="text-white">조커 & 암흑사제 상향:</strong> 기본 공격 투사체 적중 시 주변에 광역(스플래시) 피해를 입히도록 밸런스를 상향 조정했습니다.</li>
-                        <li><strong class="text-white">이스버그 그래픽:</strong> 평타 공격 시 날카로운 얼음 조각 모양의 투사체가 발사되도록 변경되었습니다.</li>
-                        <li><strong class="text-white">결과창 닉네임 입력 오류 수정:</strong> 게임 종료 후 명예의 전당 저장을 위한 닉네임 기재란을 추가하여 오류 없이 메뉴로 복귀할 수 있습니다.</li>
-                    </ul>
-                </div>
+                <details open class="group bg-slate-800/50 p-4 rounded-xl border border-slate-700">
+                    <summary class="font-bold text-lg text-emerald-400 flex items-center justify-between cursor-pointer list-none">
+                        <span class="flex items-center gap-2"><span class="text-xl">✨</span> v1005 패치노트 개선 및 영웅 썸네일</span>
+                        <span class="text-slate-500 group-open:rotate-180 transition-transform">▼</span>
+                    </summary>
+                    <div class="mt-4 border-t border-slate-700/50 pt-3">
+                        <ul class="list-disc pl-5 space-y-2">
+                            <li><strong class="text-white">패치노트 UI 개선:</strong> 최신 패치노트 2개만 기본으로 펼쳐져 있고, 이전 패치는 접힌 채로 제공되도록 변경했습니다.</li>
+                            <li><strong class="text-white">영웅 선택창 개편:</strong> 영웅 선택 시 해당 영웅의 기본 공격 범위(단일/광역) 및 공격 사거리(근/중/원)를 텍스트로 명확히 표시합니다.</li>
+                            <li><strong class="text-white">영웅 썸네일 미리보기:</strong> 영웅 선택 설명란 좌측에 캐릭터의 실제 인게임 외형(미리보기) 캔버스를 추가하여 생김새를 직관적으로 확인할 수 있습니다.</li>
+                        </ul>
+                    </div>
+                </details>
 
-                <div>
-                    <h3 class="text-white font-bold text-lg mb-2 text-blue-400 flex items-center gap-2"><span class="text-xl">✨</span> 이전 업데이트 내역 (v1003)</h3>
-                    <ul class="list-disc pl-5 space-y-2">
-                        <li><strong class="text-white">영웅 스킬 설명 추가:</strong> 영웅 선택 화면에서 각 영웅의 역할군(포지션)과 2종류 고유 스킬의 상세 효과를 표기했습니다.</li>
-                        <li><strong class="text-white">신규 영웅 공속 버프:</strong> 이스버그, 조커블레이드, 암흑사제의 평타 속도가 30% 증가했습니다.</li>
-                        <li><strong class="text-white">이스버그 중거리 전환:</strong> 이스버그가 근접 타격에서 사거리 220의 중거리 마법사 딜러로 포지션 변경되었습니다.</li>
-                        <li><strong class="text-white">네크로맨서 소환수 개편:</strong> 해골 미니언이 일반 미니언과 구별되도록 칠흑색 바디와 보라색 눈, 검은 연기 이펙트를 탑재했습니다.</li>
-                    </ul>
-                </div>
+                <details open class="group bg-slate-800/50 p-4 rounded-xl border border-slate-700">
+                    <summary class="font-bold text-lg text-emerald-400 flex items-center justify-between cursor-pointer list-none">
+                        <span class="flex items-center gap-2"><span class="text-xl">✨</span> v1004 주요 업데이트</span>
+                        <span class="text-slate-500 group-open:rotate-180 transition-transform">▼</span>
+                    </summary>
+                    <div class="mt-4 border-t border-slate-700/50 pt-3">
+                        <ul class="list-disc pl-5 space-y-2">
+                            <li><strong class="text-white">미니맵 정상화:</strong> 맵이 까맣게 나오던 렌더링 오류를 수정하여 정상 표기되도록 해결했습니다.</li>
+                            <li><strong class="text-white">상태 이상 시각적 연출:</strong> 기절(💫), 둔화(🐢), 에어본(띄워짐), 빙결(🧊) 상태의 그래픽 효과를 추가했습니다.</li>
+                            <li><strong class="text-white">조커 & 암흑사제 상향:</strong> 기본 공격 투사체 적중 시 주변에 광역(스플래시) 피해를 입히도록 상향 조정했습니다.</li>
+                            <li><strong class="text-white">결과창 닉네임 입력 수정:</strong> 게임 종료 후 명예의 전당 저장을 위한 닉네임 기재란을 추가했습니다.</li>
+                        </ul>
+                    </div>
+                </details>
+
+                <details class="group bg-slate-800/50 p-4 rounded-xl border border-slate-700">
+                    <summary class="font-bold text-lg text-blue-400 flex items-center justify-between cursor-pointer list-none">
+                        <span class="flex items-center gap-2"><span class="text-xl">✨</span> 이전 업데이트 (v1003)</span>
+                        <span class="text-slate-500 group-open:rotate-180 transition-transform">▼</span>
+                    </summary>
+                    <div class="mt-4 border-t border-slate-700/50 pt-3">
+                        <ul class="list-disc pl-5 space-y-2">
+                            <li><strong class="text-white">영웅 스킬 설명 추가:</strong> 영웅 선택 화면에서 각 영웅의 역할군(포지션)과 2종류 고유 스킬의 상세 효과를 표기했습니다.</li>
+                            <li><strong class="text-white">신규 영웅 공속 버프:</strong> 신규 영웅 3종의 평타 속도가 30% 증가했습니다.</li>
+                            <li><strong class="text-white">이스버그 중거리 전환:</strong> 이스버그가 사거리 220의 중거리 딜러로 포지션 변경되었습니다.</li>
+                            <li><strong class="text-white">네크로맨서 소환수 개편:</strong> 해골 미니언이 일반 미니언과 구별되도록 칠흑색 바디와 보라색 눈, 검은 연기 이펙트를 탑재했습니다.</li>
+                        </ul>
+                    </div>
+                </details>
 
             </div>
             <button onclick="document.getElementById('patchNotesModal').classList.add('hidden')" class="mt-6 w-full py-3 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl active:scale-95 transition">확인했습니다</button>
