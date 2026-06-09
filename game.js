@@ -520,6 +520,7 @@ class Entity {
         if(dist(this, home) < 400 && this.hp < this.maxHp) {
             this.hp = Math.min(this.maxHp, this.hp + this.maxHp * 0.03 * dt);
             if(Math.random()<0.05) { spawnParticles(this.x,this.y-10,'#22c55e',3,50,0.5); addText(this.x,this.y-this.radius-20,'\u2795','#22c55e',20); }
+            if(Math.random()<0.01 && !this.emote) { this.emote = ['🤤','👼','💖'][Math.floor(Math.random()*3)]; this.emoteTimer=2; }
         }
 
         let isMoving = this.vx!==0||this.vy!==0;
@@ -821,18 +822,6 @@ class Hero extends Entity {
     autoAttack(){
         if(this.attackTimer>0) return;
         let target=null, minD=this.range;
-        if(window.mapPings) {
-        let sx = mCanvas.width / MAP_SIZE, sy = mCanvas.height / MAP_SIZE;
-        window.mapPings.forEach(p => {
-            let col = p.faction === 'BLUE' ? '#3b82f6' : '#ef4444';
-            let r = 8 + Math.abs(Math.sin(p.life * 10)) * 6; // Blinking
-            mCtx.strokeStyle = col;
-            mCtx.lineWidth = 2;
-            mCtx.beginPath();
-            mCtx.arc(p.x * sx, p.y * sy, r, 0, Math.PI * 2);
-            mCtx.stroke();
-        });
-    }
     entities.forEach(e=>{
             if(e.faction!==this.faction&&!e.isDead){
                 let d=dist(this,e); if(d<=this.range&&d<minD){minD=d;target=e;}
@@ -985,13 +974,17 @@ class Hero extends Entity {
 
         playSFX('skill_burst');
         if(idx === 1 && k === 'grrr') {
-            this.grrrGiantTimer = 10;
+            this.grrrGiantTimer = cd * 0.66; // 2/3 of cooldown
+            this.emote = '🦍'; this.emoteTimer = 2.0;
             addText(this.x, this.y-50, '거대화! 체력+50% 공방+50% 이속+20%', '#fcd34d', 18);
+            return;
         } else if(idx === 2 && k === 'grrr') {
             spawnAOE(this.x, this.y, 180, '#f59e0b88', 0.5);
+            this.emote = '🤬'; this.emoteTimer = 2.0;
             let targets = entities.filter(e => e.faction !== this.faction && !e.isDead && dist(this, e) <= 180);
             targets.forEach(t => { t.applyRawDamage(this.atk*1.8, this); t.stunTimer = 2.0; });
             addText(this.x, this.y-50, '포효!', '#ef4444', 24);
+            return;
         }
         
         addText(this.x, this.y-50, idx===1 ? HERO_TMPL[k].skill1.name : HERO_TMPL[k].skill2.name, HERO_TMPL[k].color, 24);
@@ -1132,18 +1125,6 @@ class Hero extends Entity {
                 let c=this.shadowClones[i]; c.life-=dt; c.animPhase+=dt*4;
                 if(c.life<=0){this.shadowClones.splice(i,1);continue;}
                 let tgt=null,minD=200;
-                if(window.mapPings) {
-        let sx = mCanvas.width / MAP_SIZE, sy = mCanvas.height / MAP_SIZE;
-        window.mapPings.forEach(p => {
-            let col = p.faction === 'BLUE' ? '#3b82f6' : '#ef4444';
-            let r = 8 + Math.abs(Math.sin(p.life * 10)) * 6; // Blinking
-            mCtx.strokeStyle = col;
-            mCtx.lineWidth = 2;
-            mCtx.beginPath();
-            mCtx.arc(p.x * sx, p.y * sy, r, 0, Math.PI * 2);
-            mCtx.stroke();
-        });
-    }
     entities.forEach(e=>{if(e.faction!==this.faction&&!e.isDead){let d=dist(c,e);if(d<minD){minD=d;tgt=e;}}});
                 if(tgt){
                     if(minD>50){let a=Math.atan2(tgt.y-c.y,tgt.x-c.x);c.x+=Math.cos(a)*150*dt;c.y+=Math.sin(a)*150*dt;}
@@ -1163,18 +1144,7 @@ class Hero extends Entity {
                 let pz=this.poisonZones[i]; pz.life-=dt;
                 if(pz.life<=0){this.poisonZones.splice(i,1);continue;}
                 pz.tick+=dt;
-                if(pz.tick>=0.5) { pz.tick=0; if(window.mapPings) {
-        let sx = mCanvas.width / MAP_SIZE, sy = mCanvas.height / MAP_SIZE;
-        window.mapPings.forEach(p => {
-            let col = p.faction === 'BLUE' ? '#3b82f6' : '#ef4444';
-            let r = 8 + Math.abs(Math.sin(p.life * 10)) * 6; // Blinking
-            mCtx.strokeStyle = col;
-            mCtx.lineWidth = 2;
-            mCtx.beginPath();
-            mCtx.arc(p.x * sx, p.y * sy, r, 0, Math.PI * 2);
-            mCtx.stroke();
-        });
-    }
+                if(pz.tick>=0.5) { pz.tick=0;
     entities.forEach(e=>{if(e.faction!==this.faction&&!e.isDead&&dist(pz,e)<=pz.radius) e.applyRawDamage(pz.dmg*0.5,this);}); }
             }
         }
@@ -1195,18 +1165,6 @@ class Hero extends Entity {
             let dmg=this.atk*0.6, hit=[target], cur=target;
             for(let i=0;i<clLv;i++) {
                 let next=null,minD=300;
-                if(window.mapPings) {
-        let sx = mCanvas.width / MAP_SIZE, sy = mCanvas.height / MAP_SIZE;
-        window.mapPings.forEach(p => {
-            let col = p.faction === 'BLUE' ? '#3b82f6' : '#ef4444';
-            let r = 8 + Math.abs(Math.sin(p.life * 10)) * 6; // Blinking
-            mCtx.strokeStyle = col;
-            mCtx.lineWidth = 2;
-            mCtx.beginPath();
-            mCtx.arc(p.x * sx, p.y * sy, r, 0, Math.PI * 2);
-            mCtx.stroke();
-        });
-    }
     entities.forEach(e=>{if(e.faction!==this.faction&&!e.isDead&&!hit.includes(e)){let d=dist(cur,e);if(d<minD){minD=d;next=e;}}});
                 if(!next) break; hit.push(next);
                 let s=cur,tg=next,ii=i;
@@ -1333,18 +1291,6 @@ class Building extends Entity {
         if(this.atk > 0 && this.attackTimer<=0){
             let target=null, minD=this.range;
             for(let ptype of ['minion','hero','jungle']){
-                if(window.mapPings) {
-        let sx = mCanvas.width / MAP_SIZE, sy = mCanvas.height / MAP_SIZE;
-        window.mapPings.forEach(p => {
-            let col = p.faction === 'BLUE' ? '#3b82f6' : '#ef4444';
-            let r = 8 + Math.abs(Math.sin(p.life * 10)) * 6; // Blinking
-            mCtx.strokeStyle = col;
-            mCtx.lineWidth = 2;
-            mCtx.beginPath();
-            mCtx.arc(p.x * sx, p.y * sy, r, 0, Math.PI * 2);
-            mCtx.stroke();
-        });
-    }
     entities.forEach(e=>{if(e.faction!==this.faction&&!e.isDead){let d=dist(this,e);if(d<=this.range&&d<minD&&e.type===ptype){minD=d;target=e;}}});
                 if(target) break;
             }
@@ -2060,7 +2006,7 @@ selectHero('BERSERKER');
 
 // ====== AI Chat & Kill Feed Systems ======
 window.killStreaks = {};
-window.mapPings = [];
+
 window.chatBubbles = []; // For in-game speech bubbles
 
 function getHeroName(e) {
@@ -2115,7 +2061,7 @@ window.addKillFeed = function(attacker, victim) {
 };
 
 window.addPing = function(x, y, faction, type='danger') {
-    window.mapPings.push({x, y, faction, type, life: 2.0, maxLife: 2.0});
+    
     playSFX('button');
 };
 
@@ -2266,10 +2212,7 @@ window.AIChat = {
         });
 
         // Update pings
-        for(let i=window.mapPings.length-1; i>=0; i--) {
-            window.mapPings[i].life -= dt;
-            if(window.mapPings[i].life <= 0) window.mapPings.splice(i, 1);
-        }
+
         
         // Update bubbles
         for(let i=window.chatBubbles.length-1; i>=0; i--) {

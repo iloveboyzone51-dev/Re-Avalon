@@ -1,201 +1,90 @@
 import re
 
 with open('game.js', 'r', encoding='utf-8') as f:
-    content = f.read()
+    js = f.read()
 
-# 1. Screen Shake 완전 제거
-content = re.sub(r'let screenShake = \{ x:0, y:0, intensity:0, duration:0 \};\n?', '', content)
-content = re.sub(r'function shakeScreen\(intensity, duration\) \{\s*screenShake\.intensity = intensity;\s*screenShake\.duration = duration;\s*\}\n?', '', content)
-content = re.sub(r'if\(screenShake\.duration>0\) \{ screenShake\.duration-=dt; screenShake\.x=rand\(-screenShake\.intensity,screenShake\.intensity\); screenShake\.y=rand\(-screenShake\.intensity,screenShake\.intensity\); \} else \{ screenShake\.x=0; screenShake\.y=0; \}\n?', '', content)
-content = content.replace('ctx.translate(window.innerWidth/2 + screenShake.x * canvasDPR, window.innerHeight/2 + screenShake.y * canvasDPR);', 'ctx.translate(window.innerWidth/2, window.innerHeight/2);')
-content = re.sub(r'shakeScreen\([0-9\.]+,\s*[0-9\.]+\);\s*', '', content)
+# 1. Remove all window.mapPings logic (red donuts bug)
+ping_def = r"window\.mapPings\s*=\s*\[\];"
+js = re.sub(ping_def, "", js)
 
-# 2. 모든 타격 기절 -> 크리티컬 전용으로 제한
-target_knockback = '''if(!this.isBuilding && attacker && !attacker.isBuilding) {
-            let angle = Math.atan2(this.y - attacker.y, this.x - attacker.x);
-            let kbForce = isCrit ? 250 : 100;
-            this.x += Math.cos(angle) * kbForce * 0.1;
-            this.y += Math.sin(angle) * kbForce * 0.1;
-            this.stunTimer = Math.max(this.stunTimer || 0, isCrit ? 0.3 : 0.15);
-        }'''
-replacement_knockback = '''if(!this.isBuilding && attacker && !attacker.isBuilding) {
-            let angle = Math.atan2(this.y - attacker.y, this.x - attacker.x);
-            if(isCrit) {
-                this.x += Math.cos(angle) * 20;
-                this.y += Math.sin(angle) * 20;
-                this.stunTimer = Math.max(this.stunTimer || 0, 0.2);
-            }
-        }'''
-content = content.replace(target_knockback, replacement_knockback)
+ping_push = r"window\.mapPings\.push\(\{x, y, faction, type, life: 2\.0, maxLife: 2\.0\}\);"
+js = re.sub(ping_push, "", js)
 
-# 3. 원거리 영웅 딜량 누락
-target_dmg = '''this.target.applyRawDamage(this.dmg,this.attacker);
-            if(this.attacker && this.attacker.triggerOnHitPassives) this.attacker.triggerOnHitPassives(this.target);'''
-replacement_dmg = '''this.target.applyRawDamage(this.dmg,this.attacker);
-            if(this.attacker && this.attacker.type === 'hero') this.attacker.totalDmg += this.dmg;
-            if(this.attacker && this.attacker.triggerOnHitPassives) this.attacker.triggerOnHitPassives(this.target);'''
-content = content.replace(target_dmg, replacement_dmg)
+ping_loop = r"""        for\(let i=window\.mapPings\.length-1; i>=0; i--\) \{
+            window\.mapPings\[i\]\.life -= dt;
+            if\(window\.mapPings\[i\]\.life <= 0\) window\.mapPings\.splice\(i, 1\);
+        \}"""
+js = re.sub(ping_loop, "", js)
 
-# 4. 연속 레벨업 시 스킬 선택 화면 중복
-content = content.replace("this.pendingLevelUp = false;", "this.pendingLevelUp = false;\n        this.pendingSkillLevels = 0;")
-content = content.replace("this.heroSkill1Timer=0; this.heroSkill2Timer=0;", "this.heroSkill1Timer=0; this.heroSkill2Timer=0;\n        this.pendingSkillLevels = 0;")
+ping_draw = r"""\s*if\(window\.mapPings\)\s*\{\s*let sx = mCanvas\.width / MAP_SIZE, sy = mCanvas\.height / MAP_SIZE;\s*window\.mapPings\.forEach\(p => \{\s*let col = p\.faction === 'BLUE' \? '#3b82f6' : '#ef4444';\s*let r = 8 \+ Math\.abs\(Math\.sin\(p\.life \* 10\)\) \* 6;\s*// Blinking\s*mCtx\.strokeStyle = col;\s*mCtx\.lineWidth = 2;\s*mCtx\.beginPath\(\);\s*mCtx\.arc\(p\.x \* sx, p\.y \* sy, r, 0, Math\.PI \* 2\);\s*mCtx\.stroke\(\);\s*\}\);\s*\}"""
+js = re.sub(ping_draw, "", js)
 
-target_gainExp = '''    gainExp(amt){
-        this.exp+=amt;
-        while(this.exp>=this.maxExp){
-            this.exp-=this.maxExp; this.level++; this.maxExp=Math.floor(this.maxExp*1.15); // 레벨업 요구량 완화
-            let stats=['atk','hp','move','aspd']; let c=stats[Math.floor(Math.random()*stats.length)];
-            let statMsg = '';
-            if(c==='atk') { this.baseAtk+=6; statMsg = '공격력 +6'; }
-            if(c==='hp') { this.baseMaxHp+=60; this.hp+=60; statMsg = '체력 +60'; }
-            if(c==='move') { this.baseMoveSpd+=2.5; statMsg = '이동속도 증가'; }
-            if(c==='aspd') { this.baseAspd+=0.12; statMsg = '공격속도 증가'; }
-            this.applyStats();
-            if(this.isPlayer){
-                addText(this.x,this.y-60,'LEVEL UP!','#fcd34d',22);
-                setTimeout(()=>addText(this.x,this.y-80,'운빨 스탯: '+statMsg+'!', '#a78bfa', 16), 300);
-                playSFX('heal');
-                setTimeout(() => this.showSkillSelection(), 500);
-            } else {
-                this.aiSelectSkill();
-            }
-        }
-    }'''
-replacement_gainExp = '''    gainExp(amt){
-        this.exp+=amt;
-        while(this.exp>=this.maxExp){
-            this.exp-=this.maxExp; this.level++; this.maxExp=Math.floor(this.maxExp*1.15); // 레벨업 요구량 완화
-            let stats=['atk','hp','move','aspd']; let c=stats[Math.floor(Math.random()*stats.length)];
-            let statMsg = '';
-            if(c==='atk') { this.baseAtk+=6; statMsg = '공격력 +6'; }
-            if(c==='hp') { this.baseMaxHp+=60; this.hp+=60; statMsg = '체력 +60'; }
-            if(c==='move') { this.baseMoveSpd+=2.5; statMsg = '이동속도 증가'; }
-            if(c==='aspd') { this.baseAspd+=0.12; statMsg = '공격속도 증가'; }
-            this.applyStats();
-            if(this.isPlayer){
-                addText(this.x,this.y-60,'LEVEL UP!','#fcd34d',22);
-                setTimeout(()=>addText(this.x,this.y-80,'운빨 스탯: '+statMsg+'!', '#a78bfa', 16), 300);
-                playSFX('heal'); // Change to heal or level_up
-                this.pendingSkillLevels++;
-            } else {
-                this.aiSelectSkill();
-            }
-        }
-        if(this.isPlayer && this.pendingSkillLevels > 0 && !GS.paused) {
-            this.pendingSkillLevels--;
-            setTimeout(() => this.showSkillSelection(), 400);
-        }
-    }'''
-content = content.replace(target_gainExp, replacement_gainExp)
+ping_draw_mctx = r"""\s*let sx = mCanvas\.width / MAP_SIZE, sy = mCanvas\.height / MAP_SIZE;\s*window\.mapPings\.forEach\(p => \{\s*let col = p\.faction === 'BLUE' \? '#3b82f6' : '#ef4444';\s*let r = 8 \+ Math\.abs\(Math\.sin\(p\.life \* 10\)\) \* 6;\s*// Blinking\s*mCtx\.strokeStyle = col;\s*mCtx\.lineWidth = 2;\s*mCtx\.beginPath\(\);\s*mCtx\.arc\(p\.x \* sx, p\.y \* sy, r, 0, Math\.PI \* 2\);\s*mCtx\.stroke\(\);\s*\}\);"""
+js = re.sub(ping_draw_mctx, "", js)
 
-target_selSkill = '''    selectPassiveSkill(skillId) {
-        this.passiveSkills[skillId] = (this.passiveSkills[skillId]||0) + 1;
-        this.applyStats();
-        document.getElementById('skillSelectionOverlay').classList.add('hidden');
-        this.pendingLevelUp = false; GS.paused = false;
-        let sk = PASSIVE_SKILLS.find(s=>s.id===skillId);
-        addText(this.x,this.y-60, sk.icon+' '+sk.name+' Lv.'+this.passiveSkills[skillId]+'!', '#fcd34d', 18);
-        playSFX('heal');
-    }'''
-replacement_selSkill = '''    selectPassiveSkill(skillId) {
-        this.passiveSkills[skillId] = (this.passiveSkills[skillId]||0) + 1;
-        this.applyStats();
-        document.getElementById('skillSelectionOverlay').classList.add('hidden');
-        this.pendingLevelUp = false; GS.paused = false;
-        let sk = PASSIVE_SKILLS.find(s=>s.id===skillId);
-        addText(this.x,this.y-60, sk.icon+' '+sk.name+' Lv.'+this.passiveSkills[skillId]+'!', '#fcd34d', 18);
-        playSFX('heal');
-        
-        if(this.pendingSkillLevels > 0) {
-            this.pendingSkillLevels--;
-            setTimeout(() => this.showSkillSelection(), 300);
-        }
-    }'''
-content = content.replace(target_selSkill, replacement_selSkill)
+# 2. Fix Grrr skill blink and duration
+grrr_skill_old = """        if(idx === 1 && k === 'grrr') {
+            this.grrrGiantTimer = 10;
+            addText(this.x, this.y-50, '거대화! 체력+50% 공방+50% 이속+20%', '#fcd34d', 18);
+        } else if(idx === 2 && k === 'grrr') {
+            spawnAOE(this.x, this.y, 180, '#f59e0b88', 0.5);
+            let targets = entities.filter(e => e.faction !== this.faction && !e.isDead && dist(this, e) <= 180);
+            targets.forEach(t => { t.applyRawDamage(this.atk*1.8, this); t.stunTimer = 2.0; });
+            addText(this.x, this.y-50, '포효!', '#ef4444', 24);
+        }"""
+grrr_skill_new = """        if(idx === 1 && k === 'grrr') {
+            this.grrrGiantTimer = cd * 0.66; // 2/3 of cooldown
+            this.emote = '🦍'; this.emoteTimer = 2.0;
+            addText(this.x, this.y-50, '거대화! 체력+50% 공방+50% 이속+20%', '#fcd34d', 18);
+            return;
+        } else if(idx === 2 && k === 'grrr') {
+            spawnAOE(this.x, this.y, 180, '#f59e0b88', 0.5);
+            this.emote = '🤬'; this.emoteTimer = 2.0;
+            let targets = entities.filter(e => e.faction !== this.faction && !e.isDead && dist(this, e) <= 180);
+            targets.forEach(t => { t.applyRawDamage(this.atk*1.8, this); t.stunTimer = 2.0; });
+            addText(this.x, this.y-50, '포효!', '#ef4444', 24);
+            return;
+        }"""
+js = js.replace(grrr_skill_old, grrr_skill_new)
 
-# 5. 낙뢰 패시브 사운드 제한
-target_spawnLt = '''function spawnLightningEffect(x, y) {
-    for(let i=0;i<5;i++) particles.push({x:x+rand(-15,15),y:y-i*60,vx:rand(-20,20),vy:rand(-30,10),life:0.3,maxLife:0.3,color:'#fbbf24',size:rand(3,8),shape:'circle'});
-    spawnParticles(x, y, '#fde68a', 12, 100, 0.3);
-    playSFX('tower');
-}'''
-replacement_spawnLt = '''function spawnLightningEffect(x, y, isPlayerCaused=false) {
-    for(let i=0;i<5;i++) particles.push({x:x+rand(-15,15),y:y-i*60,vx:rand(-20,20),vy:rand(-30,10),life:0.3,maxLife:0.3,color:'#fbbf24',size:rand(3,8),shape:'circle'});
-    spawnParticles(x, y, '#fde68a', 12, 100, 0.3);
-    if(isPlayerCaused) playSFX('tower');
-}'''
-content = content.replace(target_spawnLt, replacement_spawnLt)
+# 3. Add dynamic emote states
+hero_update_ai_old = """          if(this.hp/this.maxHp < 0.25) this.aiState = 'RETREAT';
+          else if(this.hp/this.maxHp > 0.8) this.aiState = 'PUSH';"""
+hero_update_ai_new = """          if(this.hp/this.maxHp < 0.25) {
+              if(this.aiState !== 'RETREAT') { this.emote = ['😰','🤕','🥵','🚑'][Math.floor(Math.random()*4)]; this.emoteTimer=3; }
+              this.aiState = 'RETREAT';
+          }
+          else if(this.hp/this.maxHp > 0.8) {
+              if(this.aiState !== 'PUSH' && Math.random()<0.05) { this.emote = ['😎','👊','🔥','😈'][Math.floor(Math.random()*4)]; this.emoteTimer=2; }
+              this.aiState = 'PUSH';
+          }"""
+js = js.replace(hero_update_ai_old, hero_update_ai_new)
 
-target_triggerLt = "targets.forEach((t,idx)=>setTimeout(()=>{if(!t.isDead){t.applyRawDamage(this.atk*0.8,this);spawnLightningEffect(t.x,t.y);addText(t.x,t.y-30,'⚡','#fbbf24',22);}},idx*100));"
-replacement_triggerLt = "targets.forEach((t,idx)=>setTimeout(()=>{if(!t.isDead){t.applyRawDamage(this.atk*0.8,this);spawnLightningEffect(t.x,t.y,this===player);addText(t.x,t.y-30,'⚡','#fbbf24',22);}},idx*100));"
-content = content.replace(target_triggerLt, replacement_triggerLt)
+nexus_heal_old = """        if(dist(this, home) < 400 && this.hp < this.maxHp) {
+            this.hp = Math.min(this.maxHp, this.hp + this.maxHp * 0.03 * dt);
+            if(Math.random()<0.05) { spawnParticles(this.x,this.y-10,'#22c55e',3,50,0.5); addText(this.x,this.y-this.radius-20,'\\u2795','#22c55e',20); }
+        }"""
+nexus_heal_new = """        if(dist(this, home) < 400 && this.hp < this.maxHp) {
+            this.hp = Math.min(this.maxHp, this.hp + this.maxHp * 0.03 * dt);
+            if(Math.random()<0.05) { spawnParticles(this.x,this.y-10,'#22c55e',3,50,0.5); addText(this.x,this.y-this.radius-20,'\\u2795','#22c55e',20); }
+            if(Math.random()<0.01 && !this.emote) { this.emote = ['🤤','👼','💖'][Math.floor(Math.random()*3)]; this.emoteTimer=2; }
+        }"""
+js = js.replace(nexus_heal_old, nexus_heal_new)
 
-# 6. 좌향 공격 애니메이션 회전 반전 오류
-target_drawBlocky = "function drawBlockyHero(ctx, x, y, r, dir, faction, animPhase) {"
-replacement_drawBlocky = "function drawBlockyHero(ctx, x, y, r, dir, faction, animPhase) {\n    let rotDir = dir < 0 ? -1 : 1;"
-content = content.replace(target_drawBlocky, replacement_drawBlocky)
-
-content = content.replace("ctx.translate(x, y); ctx.rotate(Math.PI/4); ctx.translate(-x, -y);", "ctx.translate(x, y); ctx.rotate((Math.PI/4) * rotDir); ctx.translate(-x, -y);")
-content = content.replace("ctx.rotate(Math.PI * 0.7);", "ctx.rotate(Math.PI * 0.7 * rotDir);")
-content = content.replace("ctx.rotate(Math.PI * 0.8);", "ctx.rotate(Math.PI * 0.8 * rotDir);")
-content = content.replace("ctx.rotate(Math.PI/2);", "ctx.rotate((Math.PI/2) * rotDir);")
-content = content.replace("ctx.rotate(-Math.PI * 0.1);", "ctx.rotate(-Math.PI * 0.1 * rotDir);")
-
-# 7. 미니언 타겟 우선순위
-target_minion = '''        let target=null, minD=150;
-        entities.forEach(e=>{
-            if(e.faction!==this.faction && !e.isDead){
-                let d=dist(this,e);
-                if(d<minD){ minD=d; target=e; }
-            }
-        });'''
-replacement_minion = '''        let closestBuilding = null, closestMinion = null, closestHero = null;
-        let dB = 120, dM = 100, dH = 120;
-        entities.forEach(e => {
-            if(e.faction === this.faction || e.isDead) return;
-            const d = dist(this, e);
-            if((e.type==='tower' || e.type==='nexus_turret' || e.type==='nexus') && d < dB) {
-                dB = d; closestBuilding = e;
-            } else if(e.type === 'minion' && d < dM) {
-                dM = d; closestMinion = e;
-            } else if(e.type === 'hero' && d < dH) {
-                dH = d; closestHero = e;
-            }
-        });
-        let target = closestBuilding || closestMinion || closestHero;'''
-content = content.replace(target_minion, replacement_minion)
-
-# 8. renderInventory 삭제
-content = re.sub(r'function renderInventory\(\).*?\}\n(?=function renderMinimap|function renderShop|function autoDetect)', '', content, flags=re.DOTALL)
-
-# 9. 궁수 스킬 개편 및 무적 프레임 추가
-# 무적 상태 처리 (Entity 클래스의 applyRawDamage)
-target_applyDamage = "applyRawDamage(amount, attacker, triggerEffects=true){\n        if(this.isDead) return 0;"
-replacement_applyDamage = "applyRawDamage(amount, attacker, triggerEffects=true){\n        if(this.isDead || this.invincibleTimer > 0) return 0;"
-content = content.replace(target_applyDamage, replacement_applyDamage)
-
-# update() 내 invincibleTimer 감소
-content = content.replace("if(this.attackAnimTimer > 0) this.attackAnimTimer -= dt;", "if(this.attackAnimTimer > 0) this.attackAnimTimer -= dt;\n        if(this.invincibleTimer > 0) this.invincibleTimer -= dt;")
-
-# 궁수 템플릿 이름 변경
-content = content.replace('skill2:{name:"백스텝",  cd:10}', 'skill2:{name:"블링크",  cd:10}')
-
-# 궁수 useSkill 로직 수정
-target_archer_skill2 = '''            } else {
-                let a = t ? Math.atan2(this.y-t.y, this.x-t.x) : Math.random()*Math.PI*2;
-                this.x += Math.cos(a)*200; this.y += Math.sin(a)*200;
-                spawnParticles(this.x, this.y, '#6ee7b7', 20, 150, 0.4);
-                this.atkSpdBuffTimer = 3; this.atkSpdBuffRate = 1.5;
-            }'''
-replacement_archer_skill2 = '''            } else {
-                let dx = this.vx || 0; let dy = this.vy || 0;
-                let a = (dx !== 0 || dy !== 0) ? Math.atan2(dy, dx) : (this.facingDir > 0 ? 0 : Math.PI);
-                this.x += Math.cos(a)*200; this.y += Math.sin(a)*200;
-                this.invincibleTimer = 0.3; // 무적
-                spawnParticles(this.x, this.y, '#6ee7b7', 20, 150, 0.4);
-                this.atkSpdBuffTimer = 3; this.atkSpdBuffRate = 1.5;
-            }'''
-content = content.replace(target_archer_skill2, replacement_archer_skill2)
+# Improve chat emoji logic slightly
+chat_emote_old = """            if (event === 'kill' || event === 'streak') {
+                if (Math.random() < 0.5) character.emote = ['🤣','😎','🤪','🔥'][Math.floor(Math.random()*4)];
+            } else if (event === 'death') {
+                character.emote = ['😭','🤬','💀','💢'][Math.floor(Math.random()*4)];
+            }"""
+chat_emote_new = """            if (event === 'kill' || event === 'streak') {
+                character.emote = ['🤣','😎','🤪','🔥','👽','👻','🤑'][Math.floor(Math.random()*7)];
+            } else if (event === 'death') {
+                character.emote = ['😭','🤬','💀','💢','😱','💩'][Math.floor(Math.random()*6)];
+            }"""
+js = js.replace(chat_emote_old, chat_emote_new)
 
 with open('game.js', 'w', encoding='utf-8') as f:
-    f.write(content)
+    f.write(js)
+
+print("Applied fixes to game.js")
