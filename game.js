@@ -960,7 +960,7 @@ class Hero extends Entity {
         this.heroKey=heroKey; this.isPlayer=isPlayer; this.laneRole = laneRole;
         let t=HERO_TMPL[heroKey];
         this.baseMaxHp=t.hp; this.maxHp=t.hp; this.hp=t.hp; this.baseAtk=t.atk; this.atk=t.atk;
-        this.baseAspd=t.aspd; this.aspd=t.aspd; this.baseMoveSpd=t.move; this.moveSpd=t.move;
+        this.baseAspd=t.aspd; this.aspd=t.aspd; this.baseMoveSpd=t.move*0.7; this.moveSpd=t.move*0.7;
         this.range=t.range; this.radius=22;
         this.level=1; this.exp=0; this.maxExp=100; this.gold=300;
         this.deaths = 0;
@@ -1468,18 +1468,18 @@ class Hero extends Entity {
             this.grrrGiantTimer = cd * 0.66;
             this.emote = '🦍'; this.emoteTimer = 2.0;
             addText(this.x, this.y-50, '거대화! 포효하라!', '#fcd34d', 24);
-            spawnRing(this.x, this.y, '#f59e0b', 300, 0.8);
-            for(let i=0; i<3; i++) setTimeout(() => spawnParticles(this.x, this.y, '#b45309', 15, 200, 0.6), i*200);
+            spawnRing(this.x, this.y, '#f59e0b', 150, 0.8);
+            for(let i=0; i<3; i++) setTimeout(() => spawnParticles(this.x, this.y, '#b45309', 15, 100, 0.6), i*200);
             return;
         } else if(idx === 2 && k === 'grrr') {
-            spawnAOE(this.x, this.y, 250, '#f59e0b88', 0.5);
+            spawnAOE(this.x, this.y, 125, '#f59e0b88', 0.5);
             this.emote = '🤬'; this.emoteTimer = 2.0;
-            let tgts = nearEnemies(this.x, this.y, 250);
+            let tgts = nearEnemies(this.x, this.y, 125);
             tgts.forEach(e => { e.applyRawDamage(this.atk*2.0, this); e.stunTimer = 2.0; });
             addText(this.x, this.y-50, '대지 분쇄!', '#ef4444', 28);
             // 바닥 갈라짐 + 흙먼지 이펙트
-            for(let i=0; i<5; i++) spawnSlash(this.x, this.y, Math.random()*Math.PI*2, '#78350f', 250);
-            spawnParticles(this.x, this.y, '#d97706', 40, 250, 0.8);
+            for(let i=0; i<5; i++) spawnSlash(this.x, this.y, Math.random()*Math.PI*2, '#78350f', 125);
+            spawnParticles(this.x, this.y, '#d97706', 40, 125, 0.8);
             return;
         }
         
@@ -1487,23 +1487,23 @@ class Hero extends Entity {
 
         if(k==='BERSERKER') {
             if(idx===1) { // 소용돌이
-                spawnRing(this.x, this.y, '#ef4444', 300, 0.4);
-                nearEnemies(this.x,this.y,300).forEach(e=>{
+                spawnRing(this.x, this.y, '#ef4444', 150, 0.4);
+                nearEnemies(this.x,this.y,150).forEach(e=>{
                     e.applyRawDamage(skillDmg*1.8,this); 
                     e.stunTimer=1.0; e.airborneTimer=0.7;
                     let ea = Math.atan2(e.y - this.y, e.x - this.x);
                     e.vx+=Math.cos(ea)*600; e.vy+=Math.sin(ea)*600;
                 });
-                for(let i=0;i<8;i++) spawnSlash(this.x, this.y, (Math.PI/4)*i, '#dc2626', 300);
-                spawnParticles(this.x, this.y, '#f87171', 30, 300, 0.6);
+                for(let i=0;i<8;i++) spawnSlash(this.x, this.y, (Math.PI/4)*i, '#dc2626', 150);
+                spawnParticles(this.x, this.y, '#f87171', 30, 150, 0.6);
             } else { // 도약 강타
                 if(t) { this.x=t.x; this.y=t.y; }
-                spawnAOE(this.x, this.y, 350, '#b91c1c99', 0.5);
-                spawnRing(this.x, this.y, '#7f1d1d', 350, 0.5);
-                spawnSpecial(this.x, this.y, '#fca5a5', 'plus', 24, 300, 0.5);
-                nearEnemies(this.x,this.y,350).forEach(e=>{e.applyRawDamage(skillDmg*2.0,this); e.stunTimer=2.0;});
+                spawnAOE(this.x, this.y, 175, '#b91c1c99', 0.5);
+                spawnRing(this.x, this.y, '#7f1d1d', 175, 0.5);
+                spawnSpecial(this.x, this.y, '#fca5a5', 'plus', 24, 150, 0.5);
+                nearEnemies(this.x,this.y,175).forEach(e=>{e.applyRawDamage(skillDmg*2.0,this); e.stunTimer=2.0;});
                 // 피분수 이펙트
-                for(let i=0; i<3; i++) setTimeout(()=>spawnParticles(this.x, this.y, '#9f1239', 20, 250, 0.6), i*100);
+                for(let i=0; i<3; i++) setTimeout(()=>spawnParticles(this.x, this.y, '#9f1239', 20, 125, 0.6), i*100);
             }
         } else if(k==='ARCHER') {
             if(idx===1 && t) { // 폭풍 화살
@@ -1523,8 +1523,8 @@ class Hero extends Entity {
                 let a = (dx !== 0 || dy !== 0) ? Math.atan2(dy, dx) : (this.facingDir > 0 ? 0 : Math.PI);
                 this.x += Math.cos(a)*250; this.y += Math.sin(a)*250;
                 this.invincibleTimer = 0.5;
-                spawnParticles(this.x, this.y, '#6ee7b7', 30, 200, 0.5);
-                spawnRing(this.x, this.y, '#10b981', 150, 0.3);
+                spawnParticles(this.x, this.y, '#6ee7b7', 30, 100, 0.5);
+                spawnRing(this.x, this.y, '#10b981', 75, 0.3);
                 this.atkSpdBuffTimer = 4; this.atkSpdBuffRate = 2.0;
                 addText(this.x, this.y-30, '질풍!', '#4ade80', 20);
             }
@@ -1541,13 +1541,13 @@ class Hero extends Entity {
                 playSFX('skill_magic');
             } else { // 죽음의 늪
                 let tg = t || this;
-                nearEnemies(tg.x, tg.y, 500).forEach(e => {
+                nearEnemies(tg.x, tg.y, 250).forEach(e => {
                     e.applyRawDamage(skillDmg*1.5,this); e.slowTimer=4; e.slowRate=0.2;
-                    spawnAOE(e.x, e.y, 80, '#7e22ce88', 1.0);
+                    spawnAOE(e.x, e.y, 40, '#7e22ce88', 1.0);
                     spawnBeam(tg.x, tg.y, e.x, e.y, '#a855f7', 0.5); // 영혼 흡수선
                 });
-                spawnAOE(tg.x, tg.y, 500, '#4c1d9566', 1.0);
-                for(let i=0;i<10;i++) spawnParticles(tg.x+rand(-200,200), tg.y+rand(-200,200), '#c084fc', 5, 50, 1.0);
+                spawnAOE(tg.x, tg.y, 250, '#4c1d9566', 1.0);
+                for(let i=0;i<10;i++) spawnParticles(tg.x+rand(-100,100), tg.y+rand(-100,100), '#c084fc', 5, 50, 1.0);
             }
         } else if(k==='MECHANIC') {
             if(idx===1) { // 자동 포탑
@@ -1562,67 +1562,67 @@ class Hero extends Entity {
                 spawnRing(tw.x, tw.y, '#f59e0b', 200, 0.4);
                 spawnSpecial(tw.x, tw.y, '#fbbf24', 'plus', 16, 150, 0.6);
             } else { // 광역 회복 및 보호막
-                let allies = entities.filter(e=>e.faction===this.faction&&!e.isDead&&dist(this,e)<=500);
-                spawnRing(this.x, this.y, '#10b981', 500, 0.6);
+                let allies = entities.filter(e=>e.faction===this.faction&&!e.isDead&&dist(this,e)<=250);
+                spawnRing(this.x, this.y, '#10b981', 250, 0.6);
                 allies.forEach(a => {
                     a.hp = Math.min(a.maxHp, a.hp + skillDmg*3);
                     a.defBuffTimer = 4.0; a.defBuffAmount = a.maxHp*0.2;
-                    spawnSpecial(a.x, a.y, '#34d399', 'plus', 10, 120, 0.6);
+                    spawnSpecial(a.x, a.y, '#34d399', 'plus', 10, 60, 0.6);
                     spawnBeam(this.x, this.y, a.x, a.y, '#6ee7b7', 0.3);
                 });
                 playSFX('heal');
             }
         } else if(k==='VAMPIRE') {
             if(idx===1) { // 피의 축제 (흡혈)
-                spawnRing(this.x, this.y, '#e11d48', 350, 0.6);
+                spawnRing(this.x, this.y, '#e11d48', 175, 0.6);
                 let dmgTotal = 0;
-                nearEnemies(this.x, this.y, 350).forEach(e => {
+                nearEnemies(this.x, this.y, 175).forEach(e => {
                     e.applyRawDamage(skillDmg*1.5,this); dmgTotal+=skillDmg*1.5;
                     for(let i=0; i<3; i++) setTimeout(()=>spawnBeam(e.x, e.y, this.x, this.y, '#fda4af', 0.2), i*100);
-                    spawnParticles(e.x, e.y, '#be123c', 10, 150, 0.5);
+                    spawnParticles(e.x, e.y, '#be123c', 10, 75, 0.5);
                 });
                 this.hp = Math.min(this.maxHp, this.hp + dmgTotal*0.4);
             } else { // 핏빛 강림
                 if(t) { this.x=t.x; this.y=t.y; }
-                spawnAOE(this.x, this.y, 250, '#881337AA', 0.6);
-                nearEnemies(this.x, this.y, 250).forEach(e => {
+                spawnAOE(this.x, this.y, 125, '#881337AA', 0.6);
+                nearEnemies(this.x, this.y, 125).forEach(e => {
                     e.applyRawDamage(skillDmg*2.5,this);
                     e.stunTimer = 1.5;
                 });
-                spawnSpecial(this.x, this.y, '#fca5a5', 'star', 20, 250, 0.6);
-                for(let i=0; i<5; i++) spawnSlash(this.x, this.y, Math.random()*Math.PI*2, '#f43f5e', 200);
+                spawnSpecial(this.x, this.y, '#fca5a5', 'star', 20, 125, 0.6);
+                for(let i=0; i<5; i++) spawnSlash(this.x, this.y, Math.random()*Math.PI*2, '#f43f5e', 100);
             }
         } else if(k==='THOR') {
             if(idx===1) { // 뇌전 폭발 (Lightning Strike)
                 let tg = t || this;
-                spawnAOE(tg.x, tg.y, 300, '#3b82f6CC', 0.5);
+                spawnAOE(tg.x, tg.y, 150, '#3b82f6CC', 0.5);
                 for(let i=0; i<5; i++) {
                     setTimeout(() => {
-                        spawnBeam(tg.x+rand(-100,100), tg.y-800, tg.x+rand(-100,100), tg.y+rand(-50,50), '#fde047', 0.3);
-                        spawnRing(tg.x, tg.y, '#fef08a', 300, 0.3);
+                        spawnBeam(tg.x+rand(-50,50), tg.y-800, tg.x+rand(-50,50), tg.y+rand(-25,25), '#fde047', 0.3);
+                        spawnRing(tg.x, tg.y, '#fef08a', 150, 0.3);
                     }, i*100);
                 }
-                nearEnemies(tg.x, tg.y, 300).forEach(e=>{e.applyRawDamage(skillDmg*2.2,this); e.stunTimer=1.5;});
-                spawnParticles(tg.x, tg.y, '#60a5fa', 40, 300, 0.7);
+                nearEnemies(tg.x, tg.y, 150).forEach(e=>{e.applyRawDamage(skillDmg*2.2,this); e.stunTimer=1.5;});
+                spawnParticles(tg.x, tg.y, '#60a5fa', 40, 150, 0.7);
             } else { // 천둥신의 분노
-                spawnRing(this.x, this.y, '#93c5fd', 450, 0.8);
-                spawnAOE(this.x, this.y, 450, '#1e3a8a66', 0.8);
-                for(let i=0; i<10; i++) spawnBeam(this.x, this.y, this.x+Math.cos(i*Math.PI/5)*450, this.y+Math.sin(i*Math.PI/5)*450, '#fde047', 0.5);
-                nearEnemies(this.x, this.y, 450).forEach(e=>{
+                spawnRing(this.x, this.y, '#93c5fd', 225, 0.8);
+                spawnAOE(this.x, this.y, 225, '#1e3a8a66', 0.8);
+                for(let i=0; i<10; i++) spawnBeam(this.x, this.y, this.x+Math.cos(i*Math.PI/5)*225, this.y+Math.sin(i*Math.PI/5)*225, '#fde047', 0.5);
+                nearEnemies(this.x, this.y, 225).forEach(e=>{
                     e.applyRawDamage(skillDmg*1.5,this); 
                     e.slowTimer=3; e.slowRate=0.1; 
                     e.stunTimer=1.2; e.airborneTimer=1.0;
-                    spawnParticles(e.x, e.y, '#fef08a', 10, 100, 0.5);
+                    spawnParticles(e.x, e.y, '#fef08a', 10, 50, 0.5);
                 });
             }
         } else if(k==='ICEBORN') {
             if(idx===1) { // 눈보라 (Blizzard)
                 let a = this.facingDir > 0 ? 0 : Math.PI;
                 if(t) a = Math.atan2(t.y - this.y, t.x - this.x);
-                spawnAOE(this.x + Math.cos(a)*150, this.y + Math.sin(a)*150, 200, '#38bdf8AA', 0.8);
-                for(let i=0; i<15; i++) setTimeout(()=>spawnParticles(this.x + Math.cos(a)*150, this.y + Math.sin(a)*150, '#e0f2fe', 5, 200, 0.5), i*50);
+                spawnAOE(this.x + Math.cos(a)*75, this.y + Math.sin(a)*75, 100, '#38bdf8AA', 0.8);
+                for(let i=0; i<15; i++) setTimeout(()=>spawnParticles(this.x + Math.cos(a)*75, this.y + Math.sin(a)*75, '#e0f2fe', 5, 100, 0.5), i*50);
                 
-                nearEnemies(this.x, this.y, 400).forEach(e => {
+                nearEnemies(this.x, this.y, 200).forEach(e => {
                     let ea = Math.atan2(e.y - this.y, e.x - this.x);
                     let diff = ea - a;
                     while(diff > Math.PI)  diff -= Math.PI*2;
@@ -1635,11 +1635,11 @@ class Hero extends Entity {
                 });
             } else { // 빙결 폭발 (Frost Nova)
                 let tg = t || this;
-                spawnAOE(tg.x, tg.y, 250, '#bae6fdCC', 0.8);
-                spawnRing(tg.x, tg.y, '#0284c7', 250, 0.8);
-                for(let i=0; i<8; i++) spawnSlash(tg.x, tg.y, (Math.PI/4)*i, '#7dd3fc', 250);
-                nearEnemies(tg.x, tg.y, 250).forEach(e => { e.applyRawDamage(skillDmg*1.8, this); e.stunTimer = 2.5; e.isFrozen = true; });
-                spawnSpecial(tg.x, tg.y, '#e0f2fe', 'star', 24, 250, 0.8);
+                spawnAOE(tg.x, tg.y, 125, '#bae6fdCC', 0.8);
+                spawnRing(tg.x, tg.y, '#0284c7', 125, 0.8);
+                for(let i=0; i<8; i++) spawnSlash(tg.x, tg.y, (Math.PI/4)*i, '#7dd3fc', 125);
+                nearEnemies(tg.x, tg.y, 125).forEach(e => { e.applyRawDamage(skillDmg*1.8, this); e.stunTimer = 2.5; e.isFrozen = true; });
+                spawnSpecial(tg.x, tg.y, '#e0f2fe', 'star', 24, 125, 0.8);
             }
         } else if(k==='JOKER') {
             if(idx===1) { // 트릭 쇼
@@ -1647,19 +1647,19 @@ class Hero extends Entity {
                     setTimeout(() => {
                         let eff = Math.random();
                         if(eff < 0.33) {
-                            nearEnemies(this.x, this.y, 400).forEach(e => {
+                            nearEnemies(this.x, this.y, 200).forEach(e => {
                                 e.applyRawDamage(skillDmg*1.5, this);
-                                spawnParticles(e.x, e.y, '#ef4444', 5, 100, 0.4);
+                                spawnParticles(e.x, e.y, '#ef4444', 5, 50, 0.4);
                             });
-                            spawnRing(this.x, this.y, '#ef4444', 400, 0.5);
+                            spawnRing(this.x, this.y, '#ef4444', 200, 0.5);
                             addText(this.x, this.y-30, '♥️ 데미지!', '#ef4444', 18);
                         } else if(eff < 0.66) {
                             this.defBuffTimer = 4.0; this.defBuffAmount = this.maxHp * 0.2;
-                            spawnRing(this.x, this.y, '#3b82f6', 200, 0.5);
+                            spawnRing(this.x, this.y, '#3b82f6', 100, 0.5);
                             addText(this.x, this.y-30, '♠️ 방어!', '#3b82f6', 18);
                         } else {
                             this.atkSpdBuffTimer = 4.0; this.atkSpdBuffRate = 1.8;
-                            spawnRing(this.x, this.y, '#10b981', 200, 0.5);
+                            spawnRing(this.x, this.y, '#10b981', 100, 0.5);
                             addText(this.x, this.y-30, '♣️ 가속!', '#10b981', 18);
                         }
                     }, i*250);
@@ -1670,17 +1670,17 @@ class Hero extends Entity {
                 if(Math.random() < 0.6) { // 60% 확률 당첨!
                     this.gold += bet * 2;
                     addText(this.x, this.y-70, '🃏 잭팟!! +'+bet+'G', '#fbbf24', 32);
-                    spawnRing(this.x, this.y, '#fbbf24', 500, 0.8);
-                    spawnAOE(this.x, this.y, 500, '#fcd34d66', 0.8);
-                    for(let i=0; i<20; i++) setTimeout(()=>spawnParticles(this.x+rand(-300,300), this.y+rand(-300,300), '#ffffff', 5, 150, 0.5), i*50);
-                    nearEnemies(this.x, this.y, 500).forEach(e => {
+                    spawnRing(this.x, this.y, '#fbbf24', 250, 0.8);
+                    spawnAOE(this.x, this.y, 250, '#fcd34d66', 0.8);
+                    for(let i=0; i<20; i++) setTimeout(()=>spawnParticles(this.x+rand(-150,150), this.y+rand(-150,150), '#ffffff', 5, 75, 0.5), i*50);
+                    nearEnemies(this.x, this.y, 250).forEach(e => {
                         e.applyRawDamage(skillDmg * 3.5 + bet * 2.5, this);
                         e.stunTimer = 1.5; e.airborneTimer = 0.5;
                     });
                 } else {
                     addText(this.x, this.y-70, '꽝... ' + bet + 'G 증발', '#9ca3af', 20);
-                    spawnRing(this.x, this.y, '#6b7280', 300, 0.4);
-                    nearEnemies(this.x, this.y, 300).forEach(e => {
+                    spawnRing(this.x, this.y, '#6b7280', 150, 0.4);
+                    nearEnemies(this.x, this.y, 150).forEach(e => {
                         e.applyRawDamage(skillDmg * 1.0, this);
                     });
                 }
@@ -1709,10 +1709,10 @@ class Hero extends Entity {
             } else { // 파멸의 낙인
                 if(t) {
                     t.curseTimer = 15.0; // 저주 15초
-                    spawnAOE(t.x, t.y, 150, '#4c1d9599', 1.5);
-                    spawnRing(t.x, t.y, '#a855f7', 150, 1.0);
+                    spawnAOE(t.x, t.y, 75, '#4c1d9599', 1.5);
+                    spawnRing(t.x, t.y, '#a855f7', 75, 1.0);
                     addText(t.x, t.y-50, '파멸의 낙인!', '#c084fc', 28);
-                    for(let i=0; i<8; i++) spawnSlash(t.x, t.y, (Math.PI/4)*i, '#581c87', 150);
+                    for(let i=0; i<8; i++) spawnSlash(t.x, t.y, (Math.PI/4)*i, '#581c87', 75);
                 }
             }
         } else {
