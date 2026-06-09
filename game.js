@@ -141,6 +141,11 @@ function playSFX(type) {
     } else if (type === 'ui') {
         master.gain.setValueAtTime(0.2, now);
         play('osc', 800, 1200, 'sine', 0.3, 0.005, 0.08);
+    } else if (type === 'skill_cast') {
+        master.gain.setValueAtTime(0.5, now);
+        play('osc', 220, 440, 'sine',     0.6, 0.02, 0.4);
+        play('osc', 440, 880, 'sine',     0.3, 0.03, 0.5, 1200);
+        play('osc', 660, 990, 'triangle', 0.2, 0.04, 0.6);
     }
 }
 
@@ -164,12 +169,12 @@ const HERO_TMPL = {
     ARCHER:    { name:"궁수",    color:"#10b981", hp:1300, atk:35, aspd:1.3, move:165, range:420, type:"ranged", role_desc:"[원거리 / 지속 딜러 / 순간 회피]",
         skill1:{name:"화살 폭우",cd:6, desc:"단일 대상에게 연속으로 화살을 발사하여 큰 데미지를 줍니다."}, 
         skill2:{name:"블링크",  cd:10, desc:"전방으로 순간이동하며 5초간 공격속도가 50% 증가합니다."}, 
-        critChance:0.15, draw:(ctx,x,y,r,dir,f,anim)=>drawBlockyHero(ctx,x,y,r,dir,f,'archer',anim) },
+        critChance:0.12, draw:(ctx,x,y,r,dir,f,anim)=>drawBlockyHero(ctx,x,y,r,dir,f,'archer',anim) },
     NECROMANCER:{ name:"네크로맨서",color:"#a855f7",hp:1400, atk:38, aspd:1.0, move:150, range:360, type:"ranged", role_desc:"[원거리 / 마법사 / 소환]",
         skill1:{name:"해골 소환",cd:7, desc:"적의 어그로를 끄는 근접 해골 미니언을 소환합니다."}, 
         skill2:{name:"저주 역병",cd:11, desc:"넓은 범위에 도트 데미지를 주며 이동속도를 크게 감소시킵니다."}, 
         draw:(ctx,x,y,r,dir,f,anim)=>drawBlockyHero(ctx,x,y,r,dir,f,'necromancer',anim) },
-    grrr: { name:'그르르', color:"#f59e0b", hp:1600, atk:70, aspd:0.9, move:150, range:60, type:"melee", role_desc:"[근접 / 탱커 / 폭주]",
+    grrr: { name:'그르르', color:"#f59e0b", hp:1600, atk:70, aspd:0.9, move:165, range:80, type:"melee", role_desc:"[근접 / 탱커 / 폭주]",
         skill1:{name:'거대화', type:'self_buff', cd:18, desc:'일정 시간 동안 크기가 커지며 최대 체력/방어/공속/이속이 폭증합니다.'},
         skill2:{name:'포효', type:'aoe_stun', cd:12, desc:'크게 포효하여 주변의 모든 적을 2초간 강력하게 기절시킵니다.'},
         draw:(ctx,x,y,r,dir,f,anim)=>drawBlockyHero(ctx,x,y,r,dir,f,'grrr',anim) },
@@ -177,7 +182,7 @@ const HERO_TMPL = {
         skill1:{name:"흡혈 파동",cd:7, desc:"전방 부채꼴 범위의 적들에게 데미지를 주고 데미지 비례 체력을 회복합니다."}, 
         skill2:{name:"박쥐 강습",cd:9, desc:"적의 배후로 순간이동하며 데미지를 주고 1.5초간 기절시킵니다."},  
         lifeSteal:0.20, draw:(ctx,x,y,r,dir,f,anim)=>drawBlockyHero(ctx,x,y,r,dir,f,'vampire',anim) },
-    THOR:      { name:"토르",    color:"#60a5fa", hp:2300, atk:65, aspd:0.85,move:175, range:100, type:"melee", role_desc:"[근접 / 마법사 / 광역 폭딜]",
+    THOR:      { name:"토르",    color:"#60a5fa", hp:2000, atk:58, aspd:0.9, move:175, range:100, type:"melee", role_desc:"[근접 / 마법사 / 광역 폭딜]",
         skill1:{name:"번개 강타",cd:9, desc:"목표물에 번개를 떨어뜨려 주변에 큰 데미지와 스턴을 부여합니다."}, 
         skill2:{name:"충격파",  cd:11, desc:"주변 넓은 범위에 매우 큰 데미지를 주고 적들을 밀어내며 에어본시킵니다."}, 
         draw:(ctx,x,y,r,dir,f,anim)=>drawBlockyHero(ctx,x,y,r,dir,f,'thor',anim) },
@@ -190,7 +195,7 @@ const HERO_TMPL = {
     },
     JOKER: {
         name:"조커블레이드", color:"#a855f7",
-        hp:1400, atk:42, aspd:1.82, move:175, range:360, type:"ranged", role_desc:"[원거리 / 딜러 / 도박]",
+        hp:1400, atk:42, aspd:1.45, move:175, range:360, type:"ranged", role_desc:"[원거리 / 딜러 / 도박]",
         critChance:0.12,
         skill1: { name:"왕의 패", cd:8, desc:"카드 3장을 무작위로 뽑음. 각각 공격/방어/공속 버프 등 무작위 효과 발동" },
         skill2: { name:"전체 배팅", cd:16, desc:"현재 소지 골드에 비례한 막대한 피해량 폭발. (모 아니면 도)" },
@@ -312,6 +317,23 @@ function spawnBeam(x1, y1, x2, y2, color, life=0.2) {
         }))
     });
 }
+window.spawnMeteor = function(tx, ty, dmg, attacker) {
+    spawnAOE(tx, ty, 55, '#f97316aa', 0.8);
+    addText(tx, ty - 30, '☄️', '#f97316', 22);
+    
+    setTimeout(() => {
+        if(attacker && !attacker.isDead) {
+            let tgts = entities.filter(e => e.faction !== attacker.faction && !e.isDead && dist({x:tx,y:ty}, e) <= 55);
+            tgts.forEach(e => {
+                e.applyRawDamage(dmg, attacker);
+                spawnParticles(e.x, e.y, '#f97316', 10, 150, 0.5);
+            });
+            spawnRing(tx, ty, '#f97316', 55, 0.4);
+            spawnParticles(tx, ty, '#fbbf24', 20, 180, 0.6);
+        }
+    }, 800);
+};
+
 function spawnSpecial(x, y, color, shape='star', n=12, spd=150, life=0.6) {
     for(let i=0;i<n;i++) {
         let a = (Math.PI*2/n)*i;
@@ -478,24 +500,51 @@ function drawBlockyHero(ctx, x, y, r, dir, faction, type, attackAnimTimer = 0) {
         }
         
         } else if(type === 'grrr') {
-        drawBody('#d97706', '#92400e', '#78350f');
-        // 사자 갈기 (더 풍성하게)
-        ctx.fillStyle = '#b45309'; ctx.beginPath(); ctx.arc(0, -r*0.6, r*0.9, 0, Math.PI*2); ctx.fill();
-        // 머리 
-        ctx.fillStyle = '#f59e0b'; ctx.beginPath(); ctx.arc(0, -r*0.6, r*0.6, 0, Math.PI*2); ctx.fill();
-        // 귀 
-        ctx.fillStyle = '#d97706'; ctx.beginPath(); ctx.arc(-r*0.5, -r*1.1, r*0.25, 0, Math.PI*2); ctx.fill();
-        ctx.beginPath(); ctx.arc(r*0.5, -r*1.1, r*0.25, 0, Math.PI*2); ctx.fill();
-        // 눈 (야성적인 붉은 눈)
-        ctx.fillStyle = '#dc2626';
-        ctx.fillRect(-r*0.3, -r*0.7, r*0.15, r*0.1); 
-        ctx.fillRect(r*0.15, -r*0.7, r*0.15, r*0.1);
-        
-        ctx.save();
-        if(isAttacking) {
-            ctx.translate(x+r*1.2*rotDir, y);
-            // 앞발 공격
-            ctx.fillStyle = '#f59e0b'; ctx.beginPath(); ctx.arc(0, 0, r*0.5, 0, Math.PI*2); ctx.fill();
+            drawBody('#d97706', '#92400e', '#78350f');
+            
+            // 사자 갈기 (풍성한 외곽)
+            ctx.fillStyle = '#b45309';
+            ctx.beginPath();
+            ctx.arc(x, y - r*0.6, r*0.9, 0, Math.PI*2);
+            ctx.fill();
+            
+            // 얼굴
+            ctx.fillStyle = '#f59e0b';
+            ctx.beginPath();
+            ctx.arc(x, y - r*0.6, r*0.6, 0, Math.PI*2);
+            ctx.fill();
+            
+            // 귀 (좌우)
+            ctx.fillStyle = '#d97706';
+            ctx.beginPath();
+            ctx.arc(x - r*0.5, y - r*1.1, r*0.25, 0, Math.PI*2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(x + r*0.5, y - r*1.1, r*0.25, 0, Math.PI*2);
+            ctx.fill();
+            
+            // 눈 (야성적인 붉은 눈)
+            ctx.fillStyle = '#dc2626';
+            ctx.fillRect(x - r*0.3, y - r*0.7, r*0.15, r*0.1);
+            ctx.fillRect(x + r*0.15, y - r*0.7, r*0.15, r*0.1);
+            
+            // 앞발 공격 애니메이션
+            if(isAttacking) {
+                ctx.save();
+                ctx.translate(x + r*1.2*rotDir, y);
+                ctx.fillStyle = '#f59e0b';
+                ctx.beginPath();
+                ctx.arc(0, 0, r*0.5, 0, Math.PI*2);
+                ctx.fill();
+                // 발톱
+                ctx.fillStyle = '#fef3c7';
+                for(let ci = -1; ci <= 1; ci++) {
+                    ctx.beginPath();
+                    ctx.arc(ci*r*0.2, r*0.35, r*0.1, 0, Math.PI*2);
+                    ctx.fill();
+                }
+                ctx.restore();
+            }
         }
         ctx.restore();
     } else if(type === 'thor') {
@@ -628,11 +677,14 @@ class Entity {
         this.invincibleTimer=0;
         this.defense=0;
         this.damageContributors=[];
+        this.airborneTimer=0;
+        this.isFrozen=false;
     }
     update(dt){
         if(this.isDead) return;
         if(this.invincibleTimer>0) {
             this.invincibleTimer-=dt;
+            if(this.stunTimer > 0) this.stunTimer-=dt;
             this.vx=0; this.vy=0;
             return;
         }
@@ -788,7 +840,6 @@ class Hero extends Entity {
     }
     update(dt){
         if(this.attackAnimTimer > 0) this.attackAnimTimer -= dt;
-        if(this.invincibleTimer > 0) this.invincibleTimer -= dt;
         if(this.zhonyaTimer > 0) this.zhonyaTimer -= dt;
         // 자연 골드 및 EXP 획득 (패시브)
         if(!this.isDead) {
@@ -1068,10 +1119,16 @@ class Hero extends Entity {
         let oracleAlly = entities.find(e => e.type==='hero' && e.faction===this.faction && e!==this && !e.isDead && dist(this, e) <= 400 && e.inventory.some(i=>i.id==='oracle_glory'));
         if(oracleAlly && !this.hasUsedOracleRevive) {
             this.hasUsedOracleRevive = true;
+            this.isDead = false;
             this.hp = this.maxHp * 0.3;
+            this.respawnTimer = 0;
             spawnParticles(this.x, this.y, '#fbbf24', 30, 150, 1.0);
-            addText(this.x, this.y-50, '오라클 부활!', '#fbbf24', 24);
+            spawnRing(this.x, this.y, '#fbbf24', 120, 0.8);
+            addText(this.x, this.y-50, '✨ 오라클 부활!', '#fbbf24', 24);
             playSFX('heal');
+            if(this.isPlayer) {
+                document.getElementById('respawnOverlay').classList.add('hidden');
+            }
             return;
         }
 
@@ -1149,8 +1206,16 @@ class Hero extends Entity {
             if(i.stat==='vampiric') this.lifeSteal+=i.val*m;
             if(i.stat==='phantom') this.critChance+=i.val*m;
             if(i.stat==='demonfire') this.burnDmg+=i.val*m;
-            if(i.stat==='berserker') this.aspd+=i.val*m;
+            if(i.stat==='berserker') { this.aspd+=i.val*m; this.lifeSteal+=0.10*m; }
+            if(i.stat==='oracle_glory') { this.defense+=i.val*m; }
         });
+        
+        this.critChance  = Math.min(this.critChance,  0.65);
+        this.stunChance  = Math.min(this.stunChance,  0.40);
+        this.lifeSteal   = Math.min(this.lifeSteal,   0.45);
+        this.reflectRate = Math.min(this.reflectRate, 0.40);
+        this.cdr         = Math.min(this.cdr,         0.55);
+
         // 패시브 스킬 스탯
         let ihLv = this.passiveSkills['ironHealth'] || 0;
         if(ihLv > 0) this.maxHp += t.hp * ihLv * 0.15;
@@ -1186,6 +1251,15 @@ class Hero extends Entity {
         
         if(this.underdogBuffTimer > 0) {
             effAtk *= 1.15; effMove *= 1.15; effAspd *= 1.15;
+        }
+        
+        if(this.atkSpdBuffTimer > 0) {
+            this.atkSpdBuffTimer -= dt;
+            effAspd *= (this.atkSpdBuffRate || 1.5);
+            if(this.atkSpdBuffTimer <= 0) {
+                this.atkSpdBuffTimer = 0;
+                this.atkSpdBuffRate = 1.0;
+            }
         }
         
         if(this.warAnthemTimer > 0) {
@@ -1236,7 +1310,12 @@ class Hero extends Entity {
         if(k==='BERSERKER') {
             if(idx===1) {
                 spawnRing(this.x, this.y, '#ef4444', 250, 0.4);
-                nearEnemies(this.x,this.y,250).forEach(e=>{e.applyRawDamage(skillDmg,this); e.stunTimer=0.5;});
+                nearEnemies(this.x,this.y,250).forEach(e=>{
+                    e.applyRawDamage(skillDmg*1.8,this); 
+                    e.stunTimer=1.0; e.airborneTimer=0.7;
+                    let ea = Math.atan2(e.y - this.y, e.x - this.x);
+                    e.vx+=Math.cos(ea)*600; e.vy+=Math.sin(ea)*600;
+                });
                 for(let i=0;i<4;i++) spawnSlash(this.x, this.y, Math.PI/2*i, '#f87171', 200);
             } else {
                 if(t) { this.x=t.x; this.y=t.y; }
@@ -1334,7 +1413,14 @@ class Hero extends Entity {
                 spawnAOE(this.x + Math.cos(a)*100, this.y + Math.sin(a)*100, 150, '#38bdf888', 0.5);
                 nearEnemies(this.x, this.y, 300).forEach(e => {
                     let ea = Math.atan2(e.y - this.y, e.x - this.x);
-                    if(Math.abs(ea - a) < Math.PI/3) { e.applyRawDamage(skillDmg*1.2, this); e.slowTimer = 2.5; e.slowRate = 0.4; }
+                    let diff = ea - a;
+                    while(diff > Math.PI)  diff -= Math.PI*2;
+                    while(diff < -Math.PI) diff += Math.PI*2;
+                    if(Math.abs(diff) < Math.PI/3) {
+                        e.applyRawDamage(skillDmg*1.2, this);
+                        e.slowTimer = 2.5; e.slowRate = 0.4;
+                        spawnParticles(e.x, e.y, '#7dd3fc', 8, 80, 0.4);
+                    }
                 });
             } else {
                 let tg = t || this;
@@ -1360,27 +1446,45 @@ class Hero extends Entity {
                     }, i*200);
                 }
             } else {
-                let bet = Math.floor(this.gold * 0.2);
+                let bet = Math.max(50, Math.floor(this.gold * 0.2));
                 this.gold -= bet;
                 if(Math.random() < 0.5) {
                     this.gold += bet * 2;
-                    addText(this.x, this.y-70, '잭팟!', '#fbbf24', 28);
+                    addText(this.x, this.y-70, '🃏 잭팟! +'+bet+'G', '#fbbf24', 28);
                     spawnRing(this.x, this.y, '#fbbf24', 400, 0.6);
-                    nearEnemies(this.x, this.y, 400).forEach(e => { e.applyRawDamage(skillDmg*3, this); e.stunTimer = 1.0; });
+                    nearEnemies(this.x, this.y, 400).forEach(e => {
+                        e.applyRawDamage(skillDmg * 3, this);
+                        e.stunTimer = 1.0;
+                    });
                 } else {
-                    addText(this.x, this.y-70, '꽝...', '#9ca3af', 20);
+                    addText(this.x, this.y-70, '꽝... ' + bet + 'G 손실', '#9ca3af', 20);
+                    spawnRing(this.x, this.y, '#6b7280', 250, 0.4);
+                    nearEnemies(this.x, this.y, 250).forEach(e => {
+                        e.applyRawDamage(skillDmg * 0.8, this);
+                    });
                 }
+                playSFX('skill_burst');
             }
         } else if(k==='DARKPRIEST') {
             if(idx===1) {
                 let allies = entities.filter(e => e.faction === this.faction && !e.isDead && e.type === 'hero' && e !== this);
-                if(allies.length > 0) {
-                    let sacrifice = allies[Math.floor(Math.random() * allies.length)];
-                    let drain = sacrifice.maxHp * 0.15;
-                    sacrifice.hp = Math.max(1, sacrifice.hp - drain);
-                    spawnBeam(sacrifice.x, sacrifice.y, this.x, this.y, '#7c3aed', 0.3);
+                
+                if(t) {
+                    let boostedDmg = skillDmg * 2.5;
                     
-                    if(t) projectiles.push(new Projectile(this.x, this.y, t, skillDmg*2.5, this, false));
+                    if(allies.length > 0) {
+                        let sacrifice = allies.sort((a,b) => dist(this,a)-dist(this,b))[0];
+                        let drain = sacrifice.maxHp * 0.12;
+                        sacrifice.hp = Math.max(1, sacrifice.hp - drain);
+                        spawnBeam(sacrifice.x, sacrifice.y, this.x, this.y, '#7c3aed', 0.3);
+                        addText(sacrifice.x, sacrifice.y-40, '💜 착취!', '#7c3aed', 13);
+                        boostedDmg *= 1.5;
+                    }
+                    
+                    projectiles.push(new Projectile(this.x, this.y, t, boostedDmg, this, false));
+                    addText(this.x, this.y-50, '💀 영혼 착취!', '#7c3aed', 20);
+                } else {
+                    addText(this.x, this.y-40, '대상 없음', '#64748b', 12);
                 }
             } else {
                 if(t) {
@@ -1403,7 +1507,7 @@ class Hero extends Entity {
         let frLv = this.passiveSkills['fireRing'] || 0;
         if(frLv > 0) {
             this.passiveTimers.fireRing += dt;
-            if(this.passiveTimers.fireRing >= 0.5) {
+            if(this.passiveTimers.fireRing >= 0.65) {
                 this.passiveTimers.fireRing = 0;
                 let radius = 80 + (frLv-1)*20;
                 let dmg = this.atk * (0.15 + frLv*0.08);
@@ -1450,17 +1554,26 @@ class Hero extends Entity {
         // 신규 패시브 지속 효과
         let pVamp = this.passiveSkills['vampireAura'] || 0;
         if(pVamp > 0) {
-            let drain = pVamp * 5 * dt;
-            entities.forEach(e => {
-                if(e.faction !== this.faction && !e.isDead && dist(this, e) <= 150) {
-                    e.hp -= drain; this.hp = Math.min(this.maxHp, this.hp + drain);
-                    spawnParticles(e.x, e.y, '#f43f5e', 1, 30, 0.2);
+            this._vampireAuraTimer = (this._vampireAuraTimer || 0) + dt;
+            if(this._vampireAuraTimer >= 0.3) {
+                this._vampireAuraTimer = 0;
+                let tickDrain = pVamp * 5 * 0.3;
+                let totalHeal = 0;
+                entities.forEach(e => {
+                    if(e.faction !== this.faction && !e.isDead && dist(this, e) <= 150) {
+                        let dealt = e.applyRawDamage(tickDrain, this);
+                        totalHeal += dealt;
+                        spawnParticles(e.x, e.y, '#f43f5e', 2, 40, 0.25);
+                    }
+                });
+                if(totalHeal > 0) {
+                    this.hp = Math.min(this.maxHp, this.hp + totalHeal * 0.5);
                 }
-            });
+            }
         }
         let pBomb = this.passiveSkills['bombTrail'] || 0;
         if(pBomb > 0 && Math.hypot(this.vx, this.vy) > 10) {
-            this.passiveTimers.bombTrail = (this.passiveTimers.bombTrail || 0) - dt;
+            this.passiveTimers.bombTrail = (this.passiveTimers.bombTrail === undefined) ? 1.5 : this.passiveTimers.bombTrail - dt;
             if(this.passiveTimers.bombTrail <= 0) {
                 spawnAOE(this.x, this.y, 60, '#ef444455', 1.0);
                 entities.forEach(e => {
@@ -1471,7 +1584,7 @@ class Hero extends Entity {
         }
         let pStorm = this.passiveSkills['stormWalker'] || 0;
         if(pStorm > 0) {
-            this.passiveTimers.stormWalker = (this.passiveTimers.stormWalker || 0) - dt;
+            this.passiveTimers.stormWalker = (this.passiveTimers.stormWalker === undefined) ? 2.0 : this.passiveTimers.stormWalker - dt;
             if(this.passiveTimers.stormWalker <= 0) {
                 entities.forEach(e => {
                     if(e.faction !== this.faction && !e.isDead && dist(this, e) <= 200) {
@@ -1484,7 +1597,7 @@ class Hero extends Entity {
         }
         let pHeal = this.passiveSkills['healing_spring'] || 0;
         if(pHeal > 0) {
-            this.passiveTimers.healingSpring = (this.passiveTimers.healingSpring || 0) - dt;
+            this.passiveTimers.healingSpring = (this.passiveTimers.healingSpring === undefined) ? 4.0 : this.passiveTimers.healingSpring - dt;
             if(this.passiveTimers.healingSpring <= 0) {
                 let allies = entities.filter(e => e.type === 'hero' && e.faction === this.faction && !e.isDead && dist(this, e) <= 600);
                 let weakestAlly = allies.sort((a,b) => (a.hp/a.maxHp) - (b.hp/b.maxHp))[0];
@@ -1497,6 +1610,20 @@ class Hero extends Entity {
                 this.passiveTimers.healingSpring = 4.0;
             }
         }
+        
+        if(this.inventory.some(i => i.id === 'oracle_glory')) {
+            this._oracleAuraTimer = (this._oracleAuraTimer || 0) - dt;
+            if(this._oracleAuraTimer <= 0) {
+                this._oracleAuraTimer = 1.0;
+                entities.forEach(e => {
+                    if(e.type === 'hero' && e.faction === this.faction && !e.isDead && e !== this && dist(this, e) <= 600) {
+                        e._oracleDefBuff = 1.5;
+                        spawnParticles(e.x, e.y, '#fbbf24', 2, 30, 0.3);
+                    }
+                });
+            }
+        }
+        
         if(this.fateMeteorTimer > 0) {
             this.fateMeteorTimer -= dt;
             this.passiveTimers.fateMeteorTick = (this.passiveTimers.fateMeteorTick || 0) - dt;
@@ -1615,7 +1742,7 @@ class Hero extends Entity {
     checkEvolution() {
         EVOLUTION_ITEMS.forEach(evo => {
             if(this.inventory.some(i => i.id === evo.id)) return; // 이미 진화함
-            let reqItemIdx = this.inventory.findIndex(i => i.id === evo.reqItem && i.upgrade >= 9);
+            let reqItemIdx = this.inventory.findIndex(i => i.id === evo.reqItem && i.upgrade >= 7);
             if(reqItemIdx !== -1) {
                 let reqPassive = PASSIVE_SKILLS.find(p => p.id === evo.reqPassive);
                 if(reqPassive && (this.passiveSkills[evo.reqPassive] || 0) >= reqPassive.maxLv) {
@@ -1625,6 +1752,8 @@ class Hero extends Entity {
                         if(window.showEvolutionPopup) window.showEvolutionPopup(evo.name, evo.icon, evo.desc);
                     } else {
                         spawnParticles(this.x, this.y, '#fcd34d', 30, 200, 1.0);
+                        let heroName = HERO_TMPL[this.heroKey].name;
+                        showBanner(`${heroName} 진화! [${evo.name}]`, evo.icon, this.faction==='BLUE');
                     }
                     playSFX('skill_burst');
                 }
@@ -1637,6 +1766,21 @@ class Hero extends Entity {
         if(this.stunTimer>0){ ctx.strokeStyle='#fbbf24'; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(this.x, this.y-this.radius, this.radius*1.4, 0, Math.PI*2); ctx.stroke(); }
         
         t.draw(ctx, this.x, this.y, this.radius, this.facingDir, this.faction, this.attackAnimTimer);
+        
+        if(this.heroKey === 'grrr' && this.isGiant) {
+            let pulse = 0.5 + Math.sin(performance.now()/200) * 0.35;
+            ctx.globalAlpha = pulse;
+            ctx.strokeStyle = '#fcd34d';
+            ctx.lineWidth = 5;
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.radius + 8, 0, Math.PI*2);
+            ctx.stroke();
+            ctx.globalAlpha = 1;
+            ctx.fillStyle = '#fcd34d';
+            ctx.font = 'bold 10px monospace';
+            ctx.textAlign = 'center';
+            ctx.fillText('🦍 ' + (this.grrrGiantTimer||0).toFixed(1) + 's', this.x, this.y - this.radius - 20);
+        }
         
         if (this.hitFlashTimer > 0) {
             ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
@@ -1718,10 +1862,14 @@ class Building extends Entity {
             let oppFaction = this.faction === 'BLUE' ? 'RED' : 'BLUE';
             entities.forEach(e => {
                 if(e.type === 'hero' && e.faction === oppFaction) {
-                    e.gold += 500;
-                    if(e === player) addText(e.x, e.y-40, '타워 파괴 +500G!', '#fbbf24', 18);
+                    e.gold += 300;
+                    if(e === player) addText(e.x, e.y-40, '타워 파괴 +300G!', '#fbbf24', 18);
                 }
             });
+            if(attacker && attacker.type === 'hero') {
+                attacker.gold += 200;
+                addText(attacker.x, attacker.y-60, '최종타 +200G!', '#f59e0b', 16);
+            }
             showBanner('타워 파괴!', '💥', this.faction !== 'BLUE');
         }
         spawnParticles(this.x,this.y,'#f59e0b',30,300,1.5);
@@ -1757,7 +1905,7 @@ class Minion extends Entity {
         let scale=Math.min(1+GS.time/400, 3.5); this.maxHp=Math.floor(400*scale); this.hp=this.maxHp; this.atk=Math.floor(15*scale); this.aspd=1.0; this.moveSpd=120; this.range=30; this.radius=10;
         
         let bTop=[{x:300,y:2700},{x:300,y:300},{x:2700,y:300}], bMid=[{x:300,y:2700},{x:1500,y:1500},{x:2700,y:300}], bBot=[{x:300,y:2700},{x:300,y:2400},{x:2400,y:2400},{x:2400,y:300},{x:2700,y:300}];
-        let rTop=[{x:2700,y:300},{x:2700,y:300},{x:300,y:300},{x:300,y:2700}], rMid=[{x:2700,y:300},{x:1500,y:1500},{x:300,y:2700}], rBot=[{x:2700,y:300},{x:2400,y:300},{x:2400,y:2400},{x:300,y:2400},{x:300,y:2700}];
+        let rTop=[{x:2700,y:300},{x:300,y:300},{x:300,y:2700}], rMid=[{x:2700,y:300},{x:1500,y:1500},{x:300,y:2700}], rBot=[{x:2700,y:300},{x:2400,y:300},{x:2400,y:2400},{x:300,y:2400},{x:300,y:2700}];
         this.waypoints = faction==='BLUE' ? (lane==='top'?bTop:lane==='mid'?bMid:bBot) : (lane==='top'?rTop:lane==='mid'?rMid:rBot);
         this.wpIdx=1; this.animPhase=Math.random()*Math.PI*2;
     }
@@ -1922,8 +2070,8 @@ class Projectile {
             let hitTargets = this.isSplash ? entities.filter(e => e.faction!==this.attacker.faction && !e.isDead && dist(e, this.target) <= 120) : [this.target];
             if(this.isSplash) spawnAOE(this.target.x, this.target.y, 120, '#a855f7aa', 0.5);
             hitTargets.forEach(tgt => {
-                tgt.applyRawDamage(this.dmg,this.attacker);
-                if(this.attacker && this.attacker.type === 'hero') this.attacker.totalDmg += this.dmg;
+                let dealt = tgt.applyRawDamage(this.dmg,this.attacker);
+                if(this.attacker && this.attacker.type === 'hero') this.attacker.totalDmg += (dealt || this.dmg);
                 if(this.attacker && this.attacker.triggerOnHitPassives) this.attacker.triggerOnHitPassives(tgt);
                 if(this.attacker.lifeSteal>0&&this.attacker.type==='hero') { this.attacker.hp=Math.min(this.attacker.maxHp,this.attacker.hp+this.dmg*this.attacker.lifeSteal); playSFX('heal'); }
                 if(this.attacker.burnDmg>0&&!tgt.isBuilding) tgt.burnTicks.push({dmg:this.attacker.burnDmg,ticks:3,timer:1.0,src:this.attacker});
@@ -1995,6 +2143,13 @@ window.addEventListener('touchcancel',e=>{ joy.active=false; joy.dx=0; joy.dy=0;
 // ============ UI ============
 window.selectPlatform=p=>{ GS.platform=p; document.getElementById('btnPlatPC').className=p==='PC'?"px-4 py-2.5 rounded-xl font-bold bg-indigo-600 border text-white w-1/2 text-sm":"px-4 py-2.5 rounded-xl font-bold bg-slate-800 border text-slate-400 w-1/2 text-sm"; document.getElementById('btnPlatMobile').className=p==='MOBILE'?"px-4 py-2.5 rounded-xl font-bold bg-emerald-600 border text-white w-1/2 text-sm":"px-4 py-2.5 rounded-xl font-bold bg-slate-800 border text-slate-400 w-1/2 text-sm"; };
 window.selectFaction=f=>{ GS.faction=f; document.getElementById('btnFactionBlue').className=f==='BLUE'?"py-3 px-3 rounded-xl border-2 border-emerald-500 bg-emerald-950/40 flex flex-col items-center gap-0.5":"py-3 px-3 rounded-xl border-2 border-transparent bg-slate-800/50 flex flex-col items-center gap-0.5"; document.getElementById('btnFactionRed').className=f==='RED'?"py-3 px-3 rounded-xl border-2 border-fuchsia-500 bg-fuchsia-950/40 flex flex-col items-center gap-0.5":"py-3 px-3 rounded-xl border-2 border-transparent bg-slate-800/50 flex flex-col items-center gap-0.5"; };
+
+window.trackHeroSelect = function(heroKey) {
+    let stats = JSON.parse(localStorage.getItem('avalon_hero_stats') || '{}');
+    stats[heroKey] = (stats[heroKey] || 0) + 1;
+    localStorage.setItem('avalon_hero_stats', JSON.stringify(stats));
+};
+
 window.selectHero=h=>{ GS.hero=h; Object.keys(HERO_TMPL).forEach(hk=>{ document.getElementById('btnHero'+hk).className='py-2 px-1 rounded-xl border-2 '+(hk===h?'border-emerald-500 bg-slate-800/80':'border-transparent bg-slate-800/60')+' flex flex-col items-center transition-all'; });
     let t = HERO_TMPL[h];
     let d1 = t.skill1.desc || ''; let d2 = t.skill2.desc || '';
@@ -2039,6 +2194,7 @@ function getDefaultZoom() {
 }
 
 window.startGame=()=>{
+    if(window.trackHeroSelect) window.trackHeroSelect(GS.hero);
     autoDetectPlatform();
     initAudio();
     document.getElementById('titleScreen').classList.add('hidden'); document.getElementById('gameHUD').classList.remove('hidden'); document.getElementById('gameHUD').classList.add('flex');
@@ -2186,10 +2342,10 @@ window.triggerActiveItem=()=>{
         let isEvolved = player.inventory.some(i => i.id === 'hourglass_fate');
         player.invincibleTimer = 2.5;
         player.zhonyaTimer = isEvolved ? 60 : 90;
-        player.stunTimer = 2.5; // 경직
+        player.vx = 0; player.vy = 0;
         playSFX('skill_cast');
         spawnParticles(player.x, player.y, '#fef08a', 20, 100, 2.5);
-        addText(player.x, player.y-40, isEvolved ? '운명의 시간!' : '경직!', '#fef08a', 24);
+        addText(player.x, player.y-40, isEvolved ? '운명의 시간!' : '⏳ 무적!', '#fef08a', 24);
         
         if (isEvolved) {
             player.fateMeteorTimer = 2.5;
@@ -2292,6 +2448,59 @@ function gameLoop(now){
         }
 
         GS.time+=dt;
+
+        // 골드 고블린 스폰 (8분 1회)
+        if(typeof goblinSpawned === 'undefined') window.goblinSpawned = false;
+        if(!window.goblinSpawned && GS.time >= 8 * 60) {
+            window.goblinSpawned = true;
+            let gx = 1500 + rand(-300, 300);
+            let gy = 1500 + rand(-300, 300);
+            let goblin = new Monster(gx, gy, 'goblin');
+            goblin.maxHp = 1200; goblin.hp = goblin.maxHp;
+            goblin.atk = 10; goblin.moveSpd = 220;  // 매우 빠름
+            goblin.radius = 14;
+            // 처치 시 거대 골드 보상
+            goblin.onDeath = function(attacker) {
+                if(attacker && attacker.type === 'hero') {
+                    attacker.gold += 1500;
+                    addText(attacker.x, attacker.y-60, '💰 황금 고블린 +1500G!', '#fbbf24', 22);
+                    spawnSpecial(this.x, this.y, '#fbbf24', 'star', 20, 250, 1.0);
+                }
+                showBanner('황금 고블린 처치!', '💰', attacker?.faction==='BLUE');
+            };
+            entities.push(goblin);
+            showBanner('황금 고블린 출현! 잡아라!', '💰', true);
+        }
+
+        // 서든데스 트리거
+        if(typeof suddenDeathTriggered === 'undefined') window.suddenDeathTriggered = false;
+        if(!window.suddenDeathTriggered && GS.time >= 18 * 60) {
+            window.suddenDeathTriggered = true;
+            let sdWarn = document.getElementById('suddenDeathWarn');
+            if(sdWarn) sdWarn.classList.remove('hidden');
+            showBanner('⚠️ 서든데스 발동! 넥서스 HP가 빠르게 감소합니다!', '💀', true);
+            
+            // 서든데스 크리쳐: 양측 본진에서 동시 스폰
+            let sdBlue = new Monster(300, 2700, 'boss_dragon');
+            sdBlue.faction = 'RED';  // 블루 본진으로 어그로
+            sdBlue.maxHp = 15000; sdBlue.hp = sdBlue.maxHp;
+            sdBlue.atk = 300; sdBlue.radius = 50;
+            entities.push(sdBlue);
+            
+            let sdRed = new Monster(2700, 300, 'boss_dragon');
+            sdRed.faction = 'BLUE';  // 레드 본진으로 어그로
+            sdRed.maxHp = 15000; sdRed.hp = sdRed.maxHp;
+            sdRed.atk = 300; sdRed.radius = 50;
+            entities.push(sdRed);
+        }
+        // 서든데스 중: 매 초마다 넥서스 HP 감소
+        if(window.suddenDeathTriggered) {
+            entities.forEach(e => {
+                if(e.type === 'nexus' && !e.isDead) {
+                    e.hp = Math.max(1, e.hp - e.maxHp * 0.005 * dt);  // 초당 0.5% 감소
+                }
+            });
+        }
 
         minionTimer+=dt;
         if(minionTimer>=MINION_INTERVAL){
@@ -2553,13 +2762,11 @@ function drawMinimap() {
                 mc.fillStyle = e.faction === 'BLUE' ? '#3b82f6' : '#ef4444';
                 mc.beginPath(); mc.arc(ex, ey, 3, 0, Math.PI*2); mc.fill();
             }
-        } else if(e.type === 'jungle' || e.mtype?.startsWith('boss_')) {
-            if(e.mtype?.startsWith('boss_')) {
-                mc.fillStyle = '#dc2626'; // 빨간색 (에픽 보스)
-                mc.fillRect(ex-3, ey-3, 6, 6);
-            } else if(e.mtype === 'jungle_boss') {
-                mc.fillStyle = '#f59e0b'; // 주황색 (중간 보스)
-                mc.fillRect(ex-2, ey-2, 4, 4);
+        } else if(e.type === 'jungle') {
+            if(e.mtype && e.mtype.includes('boss')) {
+                mc.fillStyle = '#dc2626';
+                mc.fillRect(ex - 3, ey - 3, 6, 6);
+                mc.globalAlpha = 0.85;
             }
         }
     });
@@ -2675,10 +2882,37 @@ function buildScoreboard() {
         ${renderTeam(blueTeam, '#34d399', '🔵 BLUE TEAM')}
         ${renderTeam(redTeam, '#f87171', '🔴 RED TEAM')}
     `;
+    if(player) {
+        const totalDmg = entities.filter(e=>e.type==='hero').reduce((s,h)=>s+(h.totalDmg||0),0);
+        const domPct = totalDmg > 0 ? Math.round((player.totalDmg / totalDmg) * 100) : 0;
+        const kda = `${player.kills}/${player.deaths}/${player.assists||0}`;
+        
+        const kdaEl  = document.getElementById('kdaResult');
+        const domEl  = document.getElementById('dominanceResult');
+        if(kdaEl)  kdaEl.innerText  = kda;
+        if(domEl)  domEl.innerText  = domPct + '%';
+    }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
     autoDetectPlatform();
+    
+    let stats = JSON.parse(localStorage.getItem('avalon_hero_stats') || '{}');
+    let maxHero = null;
+    let maxCount = 0;
+    for(let hk in stats) {
+        if(stats[hk] > maxCount) {
+            maxCount = stats[hk];
+            maxHero = hk;
+        }
+    }
+    if(maxHero && maxCount > 0) {
+        let btn = document.getElementById('btnHero' + maxHero);
+        if(btn) {
+            btn.classList.add('relative');
+            btn.innerHTML += '<div class="absolute -top-2 -right-2 bg-amber-500 text-[8px] font-bold text-white px-1 py-0.5 rounded shadow z-10 whitespace-nowrap animate-bounce">Pick!</div>';
+        }
+    }
 });
 
 selectHero('BERSERKER');
@@ -2708,8 +2942,8 @@ window.addKillFeed = function(attacker, victim) {
     let vName = getHeroName(victim);
     
     if(attacker.heroKey) {
-        window.killStreaks[attacker.heroKey] = (window.killStreaks[attacker.heroKey] || 0) + 1;
-        let streakCount = window.killStreaks[attacker.heroKey];
+        let attackerHero = entities.find(e => e.type === 'hero' && e.heroKey === attacker.heroKey);
+        let streakCount = attackerHero ? (attackerHero.killStreak || 0) : 0;
         let streakText = '';
         if (streakCount >= 2) {
             streakText = `<span class="text-amber-400 animate-pulse font-black"> [${streakCount}연속 킬!]</span>`;
@@ -2734,15 +2968,10 @@ window.addKillFeed = function(attacker, victim) {
             setTimeout(() => el.remove(), 500);
         }, 5000);
     }
-    
-    if(victim.heroKey) {
-        window.killStreaks[victim.heroKey] = 0;
-    }
 };
 
 window.addPing = function(x, y, faction, type='danger') {
-    
-    playSFX('button');
+    playSFX('ui');
 };
 
 window.AIChat = {
@@ -2885,7 +3114,7 @@ window.AIChat = {
         // Multi-kill Hostile Emoji Meeting
         let currentHeroes = entities.filter(e => e.type === 'hero');
         currentHeroes.forEach(h => {
-            if(window.killStreaks && window.killStreaks[h.heroKey] >= 3) {
+            if((h.killStreak || 0) >= 3) {
                 if(Math.random() < 0.1) {
                     let nearEnemies = currentHeroes.filter(e => e.faction !== h.faction && dist(e, h) < 300);
                     if(nearEnemies.length > 0) {
