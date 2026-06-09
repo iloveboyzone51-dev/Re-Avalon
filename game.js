@@ -767,6 +767,70 @@ function drawBlockyHero(ctx, x, y, r, dir, faction, type, attackAnimTimer = 0, e
             ctx.shadowBlur = 0;
         }
         ctx.restore();
+    } else if (type === 'archon') {
+        // 아칸 (스타크래프트 아칸 모티브) - 형체가 불분명한 에너지 덩어리
+        ctx.shadowColor = '#3b82f6'; ctx.shadowBlur = 20;
+        
+        // 중심 코어 에너지
+        ctx.fillStyle = '#eff6ff';
+        ctx.beginPath(); ctx.arc(x, y-r*0.6-breath, r*0.8, 0, Math.PI*2); ctx.fill();
+        
+        // 외부 푸른 플라즈마 (일렁거림)
+        ctx.fillStyle = 'rgba(59, 130, 246, 0.6)';
+        for(let i=0; i<5; i++) {
+            let pAngle = t/200 + i*(Math.PI*2/5);
+            ctx.beginPath(); ctx.arc(x + Math.cos(pAngle)*r*0.3, y-r*0.6-breath + Math.sin(pAngle)*r*0.3, r*0.9, 0, Math.PI*2); ctx.fill();
+        }
+        
+        // 양팔 에너지
+        ctx.save();
+        if(isAttacking) {
+            ctx.translate(x, y-r*0.6); ctx.rotate(Math.PI * 0.1 * rotDir); // 양손을 앞으로 뻗음
+            ctx.fillStyle = '#60a5fa'; ctx.beginPath(); ctx.ellipse(r*1.2, 0, r*0.8, r*0.4, 0, 0, Math.PI*2); ctx.fill(); // 앞쪽 팔
+            ctx.beginPath(); ctx.ellipse(r*1.0, -r*0.5, r*0.6, r*0.3, 0, 0, Math.PI*2); ctx.fill(); // 위쪽 팔
+        } else {
+            ctx.translate(x, y-r*0.6);
+            ctx.fillStyle = '#60a5fa'; ctx.beginPath(); ctx.ellipse(r*0.8, r*0.2, r*0.5, r*0.3, 0, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.ellipse(-r*0.8, r*0.2, r*0.5, r*0.3, 0, 0, Math.PI*2); ctx.fill();
+        }
+        ctx.restore();
+        ctx.shadowBlur = 0;
+        
+    } else if (type === 'barbarian') {
+        // 바바리안 (디아블로 바바리안 모티브)
+        drawBody('#d97706', '#d97706', '#78350f', '#000000'); // 웃통 벗은 근육질, 가죽 바지
+        
+        // 워페인트 (얼굴에 붉은 칠)
+        ctx.fillStyle = '#dc2626'; ctx.fillRect(x-r*0.4, y-r*0.7-breath, r*0.8, r*0.1);
+        
+        // 쌍도끼 (Dual Axes)
+        ctx.save();
+        if(isAttacking) {
+            ctx.translate(x+r*0.8, y-r*0.2); ctx.rotate(Math.PI * 0.4 * rotDir); // 도끼를 크게 휘두름
+            ctx.shadowColor = '#f97316'; ctx.shadowBlur = 10;
+        } else {
+            ctx.translate(x+r*0.6, y-r*0.1); ctx.rotate(-Math.PI * 0.2 * rotDir);
+        }
+        
+        // 오른손 도끼
+        ctx.fillStyle = '#451a03'; ctx.fillRect(-r*0.1, -r*1.2, r*0.2, r*2.0); // 자루
+        ctx.fillStyle = '#94a3b8'; ctx.beginPath(); ctx.arc(r*0.2, -r*1.0, r*0.5, -Math.PI/2, Math.PI/2); ctx.fill(); // 날
+        
+        ctx.restore();
+        ctx.shadowBlur = 0;
+        
+        ctx.save();
+        if(isAttacking) {
+            ctx.translate(x-r*0.8, y-r*0.2); ctx.rotate(-Math.PI * 0.4 * rotDir); // 왼손 도끼 교차 휘두르기
+        } else {
+            ctx.translate(x-r*0.6, y-r*0.1); ctx.rotate(Math.PI * 0.2 * rotDir);
+        }
+        
+        // 왼손 도끼
+        ctx.fillStyle = '#451a03'; ctx.fillRect(-r*0.1, -r*1.2, r*0.2, r*2.0); // 자루
+        ctx.fillStyle = '#94a3b8'; ctx.beginPath(); ctx.arc(-r*0.2, -r*1.0, r*0.5, Math.PI/2, Math.PI*1.5); ctx.fill(); // 날 반대편
+        
+        ctx.restore();
     }
     
     ctx.restore();
