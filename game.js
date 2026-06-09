@@ -696,8 +696,12 @@ class Entity {
             return; 
         }
         let spdMult = (this.slowTimer > 0) ? (1 - this.slowRate) : 1;
-        this.x=clamp(this.x+this.vx*dt*spdMult, 10, MAP_SIZE-10);
-        this.y=clamp(this.y+this.vy*dt*spdMult, 10, MAP_SIZE-10);
+        if (!this.isBuilding) {
+            this.x=clamp(this.x+this.vx*dt*spdMult, 10, MAP_SIZE-10);
+            this.y=clamp(this.y+this.vy*dt*spdMult, 10, MAP_SIZE-10);
+        } else {
+            this.vx = 0; this.vy = 0;
+        }
         this.attackTimer-=dt;
         this.lastAttackedTimer=Math.max(0, this.lastAttackedTimer-dt);
         this.animPhase+=dt*3; if(this.emoteTimer>0){this.emoteTimer-=dt; if(this.emoteTimer<=0)this.emote=null;}
@@ -1967,7 +1971,7 @@ class Monster extends Entity {
         this.respawnTimer=0;
     }
     update(dt){
-        if(this.isDead){ if(!this.mtype.includes('boss') && this.mtype !== 'summon') { this.respawnTimer-=dt; if(this.respawnTimer<=0){ this.isDead=false; this.hp=this.maxHp; this.x=this.home.x; this.y=this.home.y; this.aggroTarget=null; } } return; }
+        if(this.isDead){ if(!this.mtype.includes('boss') && this.mtype !== 'summon' && this.mtype !== 'goblin') { this.respawnTimer-=dt; if(this.respawnTimer<=0){ this.isDead=false; this.hp=this.maxHp; this.x=this.home.x; this.y=this.home.y; this.aggroTarget=null; } } return; }
         super.update(dt);
         let target = this.aggroTarget;
         
@@ -2103,7 +2107,10 @@ function spawnChainEffect(x1,y1,x2,y2) {
 }
 
 // ============ 입력 이벤트 & 줌 ============
-window.addEventListener('keydown',e=>{ let k=e.key.toLowerCase(); if(keys.hasOwnProperty(k)) keys[k]=true; if(k==='o'&&player&&!GS.autoSkill) player.useSkill(1); if(k==='p'&&player&&!GS.autoSkill) player.useSkill(2); });
+window.addEventListener('keydown',e=>{ 
+    if(e.code === 'Tab') { e.preventDefault(); if(window.toggleStatusWindow) window.toggleStatusWindow(); return; }
+    let k=e.key.toLowerCase(); if(keys.hasOwnProperty(k)) keys[k]=true; if(k==='o'&&player&&!GS.autoSkill) player.useSkill(1); if(k==='p'&&player&&!GS.autoSkill) player.useSkill(2); 
+});
 window.addEventListener('keyup',e=>{ let k=e.key.toLowerCase(); if(keys.hasOwnProperty(k)) keys[k]=false; });
 window.addEventListener('wheel', e => { 
     if(e.target.closest('.overflow-y-auto') || e.target.closest('#titleScreen')) return;
@@ -2245,6 +2252,44 @@ window.startGame=()=>{
     renderShop(); requestAnimationFrame(gameLoop);
 };
 window.toggleShop=()=>{ document.getElementById('shopUI').classList.toggle('hidden'); renderShop(); };
+
+window.updateStatusWindow = () => {
+    let bl=document.getElementById('statusBlueList'); let rl=document.getElementById('statusRedList');
+    if(!bl || !rl) return;
+    bl.innerHTML=''; rl.innerHTML='';
+    let blueHeroes = entities.filter(e=>e.type==='hero'&&e.faction==='BLUE').sort((a,b)=>b.kills-a.kills);
+    let redHeroes = entities.filter(e=>e.type==='hero'&&e.faction==='RED').sort((a,b)=>b.kills-a.kills);
+    
+    let makeItem = (h) => {
+        let t = HERO_TMPL[h.heroKey];
+        return `<div class="flex items-center gap-3 bg-slate-950/50 p-2 rounded border border-slate-800">
+            <div class="w-10 h-10 rounded-lg flex items-center justify-center text-xl bg-slate-800 shadow-inner">${t.icon}</div>
+            <div class="flex-1 flex flex-col">
+                <span class="font-bold text-slate-200" style="color:${t.color}">${t.name}</span>
+                <span class="text-[10px] text-slate-400">Lv.${h.level} | ${h.heroKey==='JOKER'?'도박사':t.role_desc.split(' ')[1]}</span>
+            </div>
+            <div class="flex flex-col items-end">
+                <span class="text-xs font-bold text-emerald-400">${h.kills} / ${h.deaths} / ${h.assists||0}</span>
+                <span class="text-[10px] text-amber-400">${Math.floor(h.gold)}G</span>
+            </div>
+        </div>`;
+    };
+    blueHeroes.forEach(h => bl.innerHTML += makeItem(h));
+    redHeroes.forEach(h => rl.innerHTML += makeItem(h));
+};
+
+let statusUpdateInterval = null;
+window.toggleStatusWindow = () => {
+    let el = document.getElementById('statusWindowOverlay');
+    if(el.classList.contains('hidden')) {
+        el.classList.remove('hidden');
+        window.updateStatusWindow();
+        statusUpdateInterval = setInterval(window.updateStatusWindow, 500);
+    } else {
+        el.classList.add('hidden');
+        if(statusUpdateInterval) clearInterval(statusUpdateInterval);
+    }
+};
 
 window.toggleEvolutionGuide = () => {
     const modal = document.getElementById('evolutionGuideModal');
@@ -2460,8 +2505,8 @@ function gameLoop(now){
             // 처치 시 거대 골드 보상
             goblin.onDeath = function(attacker) {
                 if(attacker && attacker.type === 'hero') {
-                    attacker.gold += 1500;
-                    addText(attacker.x, attacker.y-60, '💰 황금 고블린 +1500G!', '#fbbf24', 22);
+                    attacker.gold += 20000;
+                    addText(attacker.x, attacker.y-60, '💰 황금 고블린 +20000G!', '#fbbf24', 26);
                     spawnSpecial(this.x, this.y, '#fbbf24', 'star', 20, 250, 1.0);
                 }
                 showBanner('황금 고블린 처치!', '💰', attacker?.faction==='BLUE');

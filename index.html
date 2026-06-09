@@ -262,6 +262,10 @@
                     <span id="hudGoldText" class="text-amber-300 font-black font-mono text-sm">0G</span>
                 </div>
                 <div class="flex gap-1.5 mt-1">
+                    <button onclick="toggleStatusWindow()"
+                            class="bg-gradient-to-r from-indigo-500 to-blue-500 text-white font-black text-[11px] px-3 py-1.5 rounded-xl shadow-lg flex items-center gap-1 border border-blue-300 active:scale-95 transition-transform">
+                        📊 현황
+                    </button>
                     <button onclick="toggleEvolutionGuide()"
                             class="bg-gradient-to-r from-amber-600 to-yellow-500 text-slate-950 font-black text-[11px] px-3 py-1.5 rounded-xl shadow-lg flex items-center gap-1 border border-amber-300 active:scale-95 transition-transform">
                         🌟 도감
@@ -355,6 +359,32 @@
     <!-- Kill Feed -->
     <div id="killFeed" class="absolute top-16 right-4 w-64 pointer-events-none z-20 flex flex-col items-end gap-1 overflow-hidden" style="max-height: 200px;"></div>
     
+    <!-- 현황창 오버레이 (Scoreboard) -->
+    <div id="statusWindowOverlay" class="fixed inset-0 bg-black/80 hidden z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-slate-900 border border-indigo-500/50 p-4 md:p-6 rounded-2xl max-w-4xl w-full max-h-[85vh] flex flex-col shadow-2xl relative">
+            <button onclick="toggleStatusWindow()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-3xl font-bold">&times;</button>
+            <h2 class="text-2xl md:text-3xl font-black text-white mb-2 text-center orbitron tracking-wider">GAME STATUS</h2>
+            <div class="text-center text-xs md:text-sm text-slate-400 mb-6">현재 게임에 참여 중인 모든 영웅들의 현황입니다. (단축키: Tab)</div>
+            
+            <div class="flex-1 overflow-y-auto custom-scrollbar flex flex-col md:flex-row gap-4">
+                <!-- BLUE TEAM -->
+                <div class="flex-1 bg-blue-950/30 border border-blue-900/50 rounded-xl p-3 md:p-4">
+                    <h3 class="text-xl font-bold text-blue-400 border-b border-blue-800 pb-2 mb-3 text-center">BLUE TEAM</h3>
+                    <div id="statusBlueList" class="flex flex-col gap-2">
+                        <!-- JS Rendering -->
+                    </div>
+                </div>
+                <!-- RED TEAM -->
+                <div class="flex-1 bg-red-950/30 border border-red-900/50 rounded-xl p-3 md:p-4">
+                    <h3 class="text-xl font-bold text-red-400 border-b border-red-800 pb-2 mb-3 text-center">RED TEAM</h3>
+                    <div id="statusRedList" class="flex flex-col gap-2">
+                        <!-- JS Rendering -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- 부활 오버레이 -->
     <div id="respawnOverlay" class="hidden absolute inset-0 z-30 bg-transparent flex-col items-center justify-center pointer-events-none">
         <h2 class="text-6xl md:text-8xl font-black text-rose-500 tracking-widest mb-6 orbitron"
@@ -410,7 +440,7 @@
     <div class="bg-slate-900 border border-amber-500/50 p-4 md:p-6 rounded-2xl max-w-3xl w-full max-h-[85vh] flex flex-col shadow-2xl relative">
         <button onclick="toggleEvolutionGuide()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-3xl font-bold">&times;</button>
         <h2 class="text-2xl md:text-3xl font-black text-amber-400 mb-4 border-b border-slate-700 pb-3 orbitron">🌟 진화 조합 도감</h2>
-        <div class="text-xs md:text-sm text-slate-300 mb-4">장비를 9강까지 강화하고 해당 패시브 스킬을 마스터(Max Lv)하면 자동으로 진화합니다.</div>
+        <div class="text-xs md:text-sm text-slate-300 mb-4">장비를 7강까지 강화하고 해당 패시브 스킬을 마스터(Max Lv)하면 자동으로 진화합니다.</div>
         <div id="evolutionGuideList" class="flex-1 overflow-y-auto pr-2 grid grid-cols-1 md:grid-cols-2 gap-3 custom-scrollbar">
             <!-- JS로 렌더링 -->
         </div>
