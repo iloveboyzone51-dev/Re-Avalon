@@ -157,35 +157,50 @@ const WARMOG_REGEN      = 0.10;    // 워모그 초당 10%
 
 // ============ 영웅 템플릿 (근접/원거리 밸런스 전면 수정) ============
 const HERO_TMPL = {
-    BERSERKER: { name:"광전사", color:"#ef4444", hp:1900, atk:52, aspd:1.3, move:185, range:90,  type:"melee",  skill1:{name:"회전 참격",cd:5}, skill2:{name:"도약 강타",cd:8},  draw:(ctx,x,y,r,dir,f,anim)=>drawBlockyHero(ctx,x,y,r,dir,f,'berserker',anim) },
-    ARCHER:    { name:"궁수",    color:"#10b981", hp:1300, atk:35, aspd:1.3, move:165, range:420, type:"ranged", skill1:{name:"화살 폭우",cd:6}, skill2:{name:"블링크",  cd:10}, critChance:0.15, draw:(ctx,x,y,r,dir,f,anim)=>drawBlockyHero(ctx,x,y,r,dir,f,'archer',anim) },
-    NECROMANCER:{ name:"네크로맨서",color:"#a855f7",hp:1400, atk:38, aspd:1.0, move:150, range:360, type:"ranged", skill1:{name:"해골 소환",cd:7}, skill2:{name:"저주 역병",cd:11}, draw:(ctx,x,y,r,dir,f,anim)=>drawBlockyHero(ctx,x,y,r,dir,f,'necromancer',anim) },
-    grrr: { name:'그르르', color:"#f59e0b", hp:1600, atk:70, aspd:0.9, move:150, range:60, type:"melee",
-        skill1:{name:'거대화', type:'self_buff', cd:18, desc:'몸집이 커지고 능력치 증가'},
-        skill2:{name:'포효', type:'aoe_stun', cd:12, desc:'주변 적을 스턴시킴'},
+    BERSERKER: { name:"광전사", color:"#ef4444", hp:1900, atk:52, aspd:1.3, move:185, range:90,  type:"melee", role_desc:"[근접 / 브루저 / 광역 제어]",
+        skill1:{name:"회전 참격",cd:5, desc:"주변 반경 내 적들에게 광역 데미지를 주고 0.5초 기절시킵니다."}, 
+        skill2:{name:"도약 강타",cd:8, desc:"대상에게 도약하여 주변에 큰 데미지를 주고 1.5초 기절시킵니다."},  
+        draw:(ctx,x,y,r,dir,f,anim)=>drawBlockyHero(ctx,x,y,r,dir,f,'berserker',anim) },
+    ARCHER:    { name:"궁수",    color:"#10b981", hp:1300, atk:35, aspd:1.3, move:165, range:420, type:"ranged", role_desc:"[원거리 / 지속 딜러 / 순간 회피]",
+        skill1:{name:"화살 폭우",cd:6, desc:"단일 대상에게 연속으로 화살을 발사하여 큰 데미지를 줍니다."}, 
+        skill2:{name:"블링크",  cd:10, desc:"전방으로 순간이동하며 5초간 공격속도가 50% 증가합니다."}, 
+        critChance:0.15, draw:(ctx,x,y,r,dir,f,anim)=>drawBlockyHero(ctx,x,y,r,dir,f,'archer',anim) },
+    NECROMANCER:{ name:"네크로맨서",color:"#a855f7",hp:1400, atk:38, aspd:1.0, move:150, range:360, type:"ranged", role_desc:"[원거리 / 마법사 / 소환]",
+        skill1:{name:"해골 소환",cd:7, desc:"적의 어그로를 끄는 근접 해골 미니언을 소환합니다."}, 
+        skill2:{name:"저주 역병",cd:11, desc:"넓은 범위에 도트 데미지를 주며 이동속도를 크게 감소시킵니다."}, 
+        draw:(ctx,x,y,r,dir,f,anim)=>drawBlockyHero(ctx,x,y,r,dir,f,'necromancer',anim) },
+    grrr: { name:'그르르', color:"#f59e0b", hp:1600, atk:70, aspd:0.9, move:150, range:60, type:"melee", role_desc:"[근접 / 탱커 / 폭주]",
+        skill1:{name:'거대화', type:'self_buff', cd:18, desc:'일정 시간 동안 크기가 커지며 최대 체력/방어/공속/이속이 폭증합니다.'},
+        skill2:{name:'포효', type:'aoe_stun', cd:12, desc:'크게 포효하여 주변의 모든 적을 2초간 강력하게 기절시킵니다.'},
         draw:(ctx,x,y,r,dir,f,anim)=>drawBlockyHero(ctx,x,y,r,dir,f,'grrr',anim) },
-    VAMPIRE:   { name:"뱀파이어",color:"#f43f5e", hp:1700, atk:45, aspd:1.2, move:175, range:110, type:"melee",  skill1:{name:"흡혈 파동",cd:7}, skill2:{name:"박쥐 강습",cd:9},  lifeSteal:0.20, draw:(ctx,x,y,r,dir,f,anim)=>drawBlockyHero(ctx,x,y,r,dir,f,'vampire',anim) },
-    THOR:      { name:"토르",    color:"#60a5fa", hp:2300, atk:65, aspd:0.85,move:175, range:100, type:"melee",  skill1:{name:"번개 강타",cd:9}, skill2:{name:"충격파",  cd:11}, draw:(ctx,x,y,r,dir,f,anim)=>drawBlockyHero(ctx,x,y,r,dir,f,'thor',anim) },
+    VAMPIRE:   { name:"뱀파이어",color:"#f43f5e", hp:1700, atk:45, aspd:1.2, move:175, range:110, type:"melee", role_desc:"[근접 / 암살자 / 피흡]",
+        skill1:{name:"흡혈 파동",cd:7, desc:"전방 부채꼴 범위의 적들에게 데미지를 주고 데미지 비례 체력을 회복합니다."}, 
+        skill2:{name:"박쥐 강습",cd:9, desc:"적의 배후로 순간이동하며 데미지를 주고 1.5초간 기절시킵니다."},  
+        lifeSteal:0.20, draw:(ctx,x,y,r,dir,f,anim)=>drawBlockyHero(ctx,x,y,r,dir,f,'vampire',anim) },
+    THOR:      { name:"토르",    color:"#60a5fa", hp:2300, atk:65, aspd:0.85,move:175, range:100, type:"melee", role_desc:"[근접 / 마법사 / 광역 폭딜]",
+        skill1:{name:"번개 강타",cd:9, desc:"목표물에 번개를 떨어뜨려 주변에 큰 데미지와 스턴을 부여합니다."}, 
+        skill2:{name:"충격파",  cd:11, desc:"주변 넓은 범위에 매우 큰 데미지를 주고 적들을 밀어내며 에어본시킵니다."}, 
+        draw:(ctx,x,y,r,dir,f,anim)=>drawBlockyHero(ctx,x,y,r,dir,f,'thor',anim) },
     ICEBORN: {
         name:"이스버그", color:"#38bdf8",
-        hp:2200, atk:48, aspd:0.95, move:160, range:85, type:"melee",
-        skill1: { name:"빙결 창격", cd:7, desc:"전방 원뿔형 범위에 얼음 창을 투척. 적 이동속도 60% 감소 2.5초" },
+        hp:2200, atk:48, aspd:1.24, move:160, range:220, type:"ranged", role_desc:"[중거리 / 마법사 / 빙결 제어]",
+        skill1: { name:"빙결 창격", cd:7, desc:"전방 원뿔형 범위에 얼음 창을 투척하여 데미지를 주고 적 이동속도 60% 감소 2.5초" },
         skill2: { name:"얼음 감옥", cd:14, desc:"대상 위치에 얼음 기둥 소환. 반경 100 내 적 2초 완전 빙결(스턴)" },
         draw:(ctx,x,y,r,dir,f,anim) => drawBlockyHero(ctx,x,y,r,dir,f,'iceborn',anim)
     },
     JOKER: {
         name:"조커블레이드", color:"#a855f7",
-        hp:1400, atk:42, aspd:1.4, move:175, range:360, type:"ranged",
+        hp:1400, atk:42, aspd:1.82, move:175, range:360, type:"ranged", role_desc:"[원거리 / 딜러 / 도박]",
         critChance:0.12,
-        skill1: { name:"왕의 패", cd:8, desc:"카드 3장을 무작위로 뽑음. 각각 공격/방어/특수 효과 중 랜덤 발동" },
-        skill2: { name:"전체 배팅", cd:16, desc:"현재 골드의 20%를 베팅. 50% 확률로 2배 환급. 실패 시 0. 그리고 강력한 카드 폭풍 발동" },
+        skill1: { name:"왕의 패", cd:8, desc:"카드 3장을 무작위로 뽑음. 각각 공격/방어/공속 버프 등 무작위 효과 발동" },
+        skill2: { name:"전체 배팅", cd:16, desc:"현재 소지 골드에 비례한 막대한 피해량 폭발. (모 아니면 도)" },
         draw:(ctx,x,y,r,dir,f,anim) => drawBlockyHero(ctx,x,y,r,dir,f,'joker',anim)
     },
     DARKPRIEST: {
         name:"암흑사제", color:"#7c3aed",
-        hp:1500, atk:35, aspd:1.0, move:155, range:380, type:"ranged",
-        skill1: { name:"영혼 착취", cd:10, desc:"아군 영웅 한 명의 HP 15%를 흡수해 강화 투사체 발사. 아군 동의 없음." },
-        skill2: { name:"저주의 낙인", cd:14, desc:"대상 적에게 저주 낙인. 10초간 아군 모든 공격이 대상에게 30% 추가 피해" },
+        hp:1500, atk:35, aspd:1.3, move:155, range:380, type:"ranged", role_desc:"[원거리 / 서포터 / 디버퍼]",
+        skill1: { name:"영혼 착취", cd:10, desc:"주변 아군 한 명의 체력을 일부 깎는 대신, 적에게 2.5배 강력한 레이저 공격을 뿜어냅니다." },
+        skill2: { name:"저주의 낙인", cd:14, desc:"대상 적에게 10초간 낙인 부여. 아군의 모든 공격이 대상에게 30% 추가 피해" },
         draw:(ctx,x,y,r,dir,f,anim) => drawBlockyHero(ctx,x,y,r,dir,f,'darkpriest',anim)
     }
 };
@@ -1129,7 +1144,7 @@ class Hero extends Entity {
             if(idx===1) {
                 for(let i=0;i<2+sl;i++) {
                     let m = new Minion(this.x+rand(-50,50), this.y+rand(-50,50), this.faction, 'mid');
-                    m.maxHp*=1.5; m.hp=m.maxHp; m.atk*=1.5; m.color='#a855f7'; m.size*=1.2;
+                    m.maxHp*=1.5; m.hp=m.maxHp; m.atk*=1.5; m.color='#a855f7'; m.size*=1.2; m.isSummon=true;
                     entities.push(m);
                     spawnSpecial(m.x, m.y, '#d8b4fe', 'star', 8, 100, 0.4);
                 }
@@ -1598,12 +1613,22 @@ class Minion extends Entity {
     draw(ctx){
         if(this.isDead) return;
         ctx.fillStyle='rgba(0,0,0,0.3)'; ctx.beginPath(); ctx.ellipse(this.x,this.y+this.radius*0.8,this.radius,this.radius*0.4,0,0,Math.PI*2); ctx.fill();
-        ctx.fillStyle=this.faction==='BLUE'?'#3b82f6':'#ef4444';
         let ly = Math.sin(this.animPhase)*this.radius*0.3;
-        ctx.fillRect(this.x-this.radius*0.6, this.y-this.radius+ly, this.radius*1.2, this.radius*1.5);
-        ctx.fillStyle='#fca5a5'; ctx.fillRect(this.x-this.radius*0.4, this.y-this.radius*0.8+ly, this.radius*0.8, this.radius*0.5);
-        ctx.fillStyle='#1e293b'; ctx.fillRect(this.x-this.radius*0.2, this.y-this.radius*0.6+ly, 2, 2); ctx.fillRect(this.x+this.radius*0.1, this.y-this.radius*0.6+ly, 2, 2);
-                let bw=24,bh=4,bx=this.x-bw/2,by=this.y-this.radius-10; ctx.fillStyle='#374151'; ctx.fillRect(bx,by,bw,bh); ctx.fillStyle=this.faction==='BLUE'?'#3b82f6':'#ef4444'; ctx.fillRect(bx,by,bw*(this.hp/this.maxHp),bh);
+        
+        if(this.isSummon) {
+            ctx.fillStyle='#111827';
+            ctx.fillRect(this.x-this.radius*0.6, this.y-this.radius+ly, this.radius*1.2, this.radius*1.5);
+            ctx.fillStyle='#6b7280'; ctx.fillRect(this.x-this.radius*0.4, this.y-this.radius*0.8+ly, this.radius*0.8, this.radius*0.5);
+            ctx.fillStyle='#a855f7'; ctx.fillRect(this.x-this.radius*0.2, this.y-this.radius*0.6+ly, 2, 2); ctx.fillRect(this.x+this.radius*0.1, this.y-this.radius*0.6+ly, 2, 2);
+            if(Math.random()<0.4) spawnParticles(this.x, this.y-this.radius, '#1f2937', 2, 50, 0.4); // 검은 연기
+        } else {
+            ctx.fillStyle=this.faction==='BLUE'?'#3b82f6':'#ef4444';
+            ctx.fillRect(this.x-this.radius*0.6, this.y-this.radius+ly, this.radius*1.2, this.radius*1.5);
+            ctx.fillStyle='#fca5a5'; ctx.fillRect(this.x-this.radius*0.4, this.y-this.radius*0.8+ly, this.radius*0.8, this.radius*0.5);
+            ctx.fillStyle='#1e293b'; ctx.fillRect(this.x-this.radius*0.2, this.y-this.radius*0.6+ly, 2, 2); ctx.fillRect(this.x+this.radius*0.1, this.y-this.radius*0.6+ly, 2, 2);
+        }
+        
+        let bw=24,bh=4,bx=this.x-bw/2,by=this.y-this.radius-10; ctx.fillStyle='#374151'; ctx.fillRect(bx,by,bw,bh); ctx.fillStyle=this.faction==='BLUE'?'#3b82f6':'#ef4444'; ctx.fillRect(bx,by,bw*(this.hp/this.maxHp),bh);
         if(this.emote) { ctx.font = '28px sans-serif'; ctx.fillText(this.emote, this.x - 14, this.y - this.radius*1.5 - 20); }
     }
 }
@@ -1760,9 +1785,11 @@ window.addEventListener('touchcancel',e=>{ joy.active=false; joy.dx=0; joy.dy=0;
 window.selectPlatform=p=>{ GS.platform=p; document.getElementById('btnPlatPC').className=p==='PC'?"px-4 py-2.5 rounded-xl font-bold bg-indigo-600 border text-white w-1/2 text-sm":"px-4 py-2.5 rounded-xl font-bold bg-slate-800 border text-slate-400 w-1/2 text-sm"; document.getElementById('btnPlatMobile').className=p==='MOBILE'?"px-4 py-2.5 rounded-xl font-bold bg-emerald-600 border text-white w-1/2 text-sm":"px-4 py-2.5 rounded-xl font-bold bg-slate-800 border text-slate-400 w-1/2 text-sm"; };
 window.selectFaction=f=>{ GS.faction=f; document.getElementById('btnFactionBlue').className=f==='BLUE'?"py-3 px-3 rounded-xl border-2 border-emerald-500 bg-emerald-950/40 flex flex-col items-center gap-0.5":"py-3 px-3 rounded-xl border-2 border-transparent bg-slate-800/50 flex flex-col items-center gap-0.5"; document.getElementById('btnFactionRed').className=f==='RED'?"py-3 px-3 rounded-xl border-2 border-fuchsia-500 bg-fuchsia-950/40 flex flex-col items-center gap-0.5":"py-3 px-3 rounded-xl border-2 border-transparent bg-slate-800/50 flex flex-col items-center gap-0.5"; };
 window.selectHero=h=>{ GS.hero=h; Object.keys(HERO_TMPL).forEach(hk=>{ document.getElementById('btnHero'+hk).className='py-2 px-1 rounded-xl border-2 '+(hk===h?'border-emerald-500 bg-slate-800/80':'border-transparent bg-slate-800/60')+' flex flex-col items-center transition-all'; });
-    document.getElementById('heroDescription').innerHTML='<div class="text-amber-400 font-bold mb-0.5">['+HERO_TMPL[h].name+'] <span class="text-[10px] text-emerald-400 font-bold ml-1">\uACE0\uC720 \uD328\uC2DC\uBE0C \uC2A4\uD0AC</span></div>' +
-        '<div class="text-white bg-slate-900 p-1 rounded mt-1 text-[10px]">\uD83D\uDD04\uD328\uC2DC\uBE0C1: <span class="text-emerald-300 font-bold">'+HERO_TMPL[h].skill1.name+'</span> (\uC790\uB3D9\uBC1C\uB3D9 '+HERO_TMPL[h].skill1.cd+'\uCD08)<br/> \uD83D\uDD04\uD328\uC2DC\uBE0C2: <span class="text-indigo-300 font-bold">'+HERO_TMPL[h].skill2.name+'</span> (\uC790\uB3D9\uBC1C\uB3D9 '+HERO_TMPL[h].skill2.cd+'\uCD08)</div>' +
-        '<div class="text-[9px] text-slate-400 mt-1">\u203B \uB808\uBCA8\uC5C5\uB9C8\uB2E4 \uBB40\uC11C\uB77C\uC774\uD06C \uC2A4\uD0AC \uC120\uD0DD! 12\uC885 \uC911 \uD0DD1</div>';
+    let t = HERO_TMPL[h];
+    let d1 = t.skill1.desc || ''; let d2 = t.skill2.desc || '';
+    document.getElementById('heroDescription').innerHTML='<div class="text-amber-400 font-bold mb-0.5 text-sm">['+t.name+'] <span class="text-[10px] text-white bg-slate-700 px-1 py-0.5 rounded ml-1">'+ (t.role_desc||'') +'</span></div>' +
+        '<div class="text-white bg-slate-900 p-1.5 rounded mt-1 text-[11px] leading-tight">⚔️ <span class="text-emerald-300 font-bold">'+t.skill1.name+'</span> ('+t.skill1.cd+'초)<br/><span class="text-[10px] text-slate-300">'+d1+'</span><br/><br/>🔮 <span class="text-indigo-300 font-bold">'+t.skill2.name+'</span> ('+t.skill2.cd+'초)<br/><span class="text-[10px] text-slate-300">'+d2+'</span></div>' +
+        '<div class="text-[10px] text-slate-400 mt-1.5 font-bold">※ 게임 내에서 로그라이크 방식으로 추가 패시브 12종을 획득합니다!</div>';
 };
 
 function autoDetectPlatform() {
@@ -2143,53 +2170,44 @@ function drawMinimap() {
     mc.fillRect(-W*0.58, -H*0.035, W*1.16, H*0.07);
     mc.restore();
 
-    // ────────────────────────────────────────
     // [2] 타워(라인 상태) 표시 — 잔존 여부로 라인 장악 가시화
-    // ────────────────────────────────────────
+    // [3] 영웅 및 보스 위치 표시 (핵심)
     entities.forEach(e => {
         if(e.isDead) return;
-        if(e.type !== 'tower') return; // nexus_turret, nexus 제외
-
-        let col = e.faction === 'BLUE' ? '#3b82f6' : '#ef4444';
-        mc.fillStyle = col;
-        mc.globalAlpha = 0.6;
-        mc.fillRect(tx(e.x) - 2.5, ty(e.y) - 2.5, 5, 5); // 작은 사각형
-        mc.globalAlpha = 1;
-    });
-
-    // ────────────────────────────────────────
-    // [3] 영웅 위치 표시 (핵심)
-    // ────────────────────────────────────────
-    entities.forEach(e => {
-        if(e.type !== 'hero' || e.isDead) return;
-
+        
         let ex = tx(e.x);
         let ey = ty(e.y);
 
-        if(e === player) {
-            // 플레이어: 크고 흰 테두리 + 팀 색
-            mc.strokeStyle = '#ffffff';
-            mc.lineWidth   = 1.5;
-            mc.fillStyle   = e.faction === 'BLUE' ? '#60a5fa' : '#f87171';
-            mc.beginPath();
-            mc.arc(ex, ey, 4.5, 0, Math.PI*2);
-            mc.fill();
-            mc.stroke();
-
-            // 플레이어 위에 삼각형 화살표
-            mc.fillStyle = '#ffffff';
-            mc.beginPath();
-            mc.moveTo(ex, ey - 7);
-            mc.lineTo(ex - 3, ey - 13);
-            mc.lineTo(ex + 3, ey - 13);
-            mc.closePath();
-            mc.fill();
-        } else {
-            // AI 영웅: 팀 색 원
-            mc.fillStyle = e.faction === 'BLUE' ? '#3b82f6' : '#ef4444';
-            mc.beginPath();
-            mc.arc(ex, ey, 3, 0, Math.PI*2);
-            mc.fill();
+        if(e.type === 'tower' || e.type === 'nexus_turret' || e.type === 'nexus') {
+            let col = e.faction === 'BLUE' ? '#3b82f6' : '#ef4444';
+            mc.fillStyle = col;
+            mc.globalAlpha = 0.6;
+            if(e.type === 'nexus') mc.fillRect(ex - 4, ey - 4, 8, 8);
+            else mc.fillRect(ex - 2.5, ey - 2.5, 5, 5);
+            mc.globalAlpha = 1;
+        } else if(e.type === 'hero') {
+            if(e === player) {
+                // 플레이어: 크고 흰 테두리 + 팀 색
+                mc.strokeStyle = '#ffffff';
+                mc.lineWidth   = 1.5;
+                mc.fillStyle   = e.faction === 'BLUE' ? '#60a5fa' : '#f87171';
+                mc.beginPath(); mc.arc(ex, ey, 4.5, 0, Math.PI*2); mc.fill(); mc.stroke();
+                // 플레이어 위에 삼각형 화살표
+                mc.fillStyle = '#ffffff';
+                mc.beginPath(); mc.moveTo(ex, ey - 7); mc.lineTo(ex - 3, ey - 13); mc.lineTo(ex + 3, ey - 13); mc.closePath(); mc.fill();
+            } else {
+                // AI 영웅: 팀 색 원
+                mc.fillStyle = e.faction === 'BLUE' ? '#3b82f6' : '#ef4444';
+                mc.beginPath(); mc.arc(ex, ey, 3, 0, Math.PI*2); mc.fill();
+            }
+        } else if(e.type === 'jungle' || e.mtype?.startsWith('boss_')) {
+            if(e.mtype?.startsWith('boss_')) {
+                mc.fillStyle = '#dc2626'; // 빨간색 (에픽 보스)
+                mc.fillRect(ex-3, ey-3, 6, 6);
+            } else if(e.mtype === 'jungle_boss') {
+                mc.fillStyle = '#f59e0b'; // 주황색 (중간 보스)
+                mc.fillRect(ex-2, ey-2, 4, 4);
+            }
         }
     });
 
