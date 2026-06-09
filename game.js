@@ -784,6 +784,7 @@ class Hero extends Entity {
         this.borkActive=false; this.hasWarmog=false;
         this.isRetreating=false; this.aiShopTimer=rand(5,15);
         this.facingDir=1;
+        this.updateItems();
     }
     update(dt){
         if(this.attackAnimTimer > 0) this.attackAnimTimer -= dt;
@@ -1812,15 +1813,24 @@ class Monster extends Entity {
         this.respawnTimer=0;
     }
     update(dt){
-        if(this.isDead){ if(!this.mtype.includes('boss')) { this.respawnTimer-=dt; if(this.respawnTimer<=0){ this.isDead=false; this.hp=this.maxHp; this.x=this.home.x; this.y=this.home.y; this.aggroTarget=null; } } return; }
+        if(this.isDead){ if(!this.mtype.includes('boss') && this.mtype !== 'summon') { this.respawnTimer-=dt; if(this.respawnTimer<=0){ this.isDead=false; this.hp=this.maxHp; this.x=this.home.x; this.y=this.home.y; this.aggroTarget=null; } } return; }
         super.update(dt);
         let target = this.aggroTarget;
         
+        if(this.mtype === 'summon') {
+            this.lifeTimer = (this.lifeTimer || 15) - dt;
+            if(this.lifeTimer <= 0) { this.hp=0; this.isDead=true; return; }
+            if(!target || target.isDead) {
+                let ne = entities.filter(e=>e.faction!==this.faction && !e.isDead);
+                if(ne.length>0) target = ne.sort((a,b)=>dist(this,a)-dist(this,b))[0];
+            }
+        }
+
         // 어그로 대상이 죽었거나 자기 집에서 너무 멀어지면 어그로 해제
-        if(target && (target.isDead || dist(this.home, this) > 600)) {
+        if(target && (target.isDead || (this.mtype !== 'summon' && dist(this.home, this) > 600))) {
             this.aggroTarget = null;
             target = null;
-            this.hp = this.maxHp; // 어그로 풀리면 체력 초기화
+            if(this.mtype !== 'summon') this.hp = this.maxHp; // 어그로 풀리면 체력 초기화
         }
 
         if(target){
@@ -2195,14 +2205,14 @@ function renderShop(){
         let slot=player.inventory.find(inv=>inv.id===i.id); let lv=slot?'<span class="text-rose-400 font-bold">+'+slot.upgrade+'</span>':'';
         let canBuy=player.gold>=i.cost&&(slot||player.inventory.length<8);
         cont.innerHTML+=`
-        <div class="bg-slate-800/80 hover:bg-slate-700/80 transition-colors border border-slate-700 rounded-xl p-2 flex flex-col items-center justify-between gap-1 w-full relative group shadow-sm">
-            <div class="text-3xl mb-1 mt-1">${i.icon}</div>
+        <div class="bg-slate-800/80 hover:bg-slate-700/80 transition-colors border border-slate-700 rounded-lg p-1 md:p-2 flex flex-col items-center justify-between gap-0.5 md:gap-1 w-full relative group shadow-sm">
+            <div class="text-2xl md:text-3xl mb-0.5 md:mb-1 mt-0.5 md:mt-1">${i.icon}</div>
             <div class="text-center w-full">
-                <div class="text-xs font-bold text-slate-100 truncate w-full px-1">${i.name} ${lv}</div>
-                <div class="text-[10px] text-amber-400 font-bold">${i.cost}G</div>
+                <div class="text-[9px] md:text-xs font-bold text-slate-100 truncate w-full px-0.5">${i.name} ${lv}</div>
+                <div class="text-[8px] md:text-[10px] text-amber-400 font-bold">${i.cost}G</div>
             </div>
-            ${i.desc ? '<div class="text-[9px] text-slate-400 text-center leading-tight line-clamp-2 min-h-[1.5rem] mt-0.5 px-1">'+i.desc+'</div>' : ''}
-            <button onclick="buyItemUI('${i.id}')" class="${canBuy?'bg-amber-500 hover:bg-amber-400 text-slate-950 active:scale-95 shadow-[0_0_10px_rgba(245,158,11,0.2)]':'bg-slate-700 text-slate-500'} text-[11px] w-full py-1.5 rounded-lg font-bold mt-1 transition-all">${slot?'강화 (+'+(slot.upgrade+1)+')':'구매'}</button>
+            ${i.desc ? '<div class="text-[7.5px] md:text-[9px] text-slate-400 text-center leading-tight line-clamp-2 min-h-[1.5rem] mt-0.5 px-0.5">'+i.desc+'</div>' : ''}
+            <button onclick="buyItemUI('${i.id}')" class="${canBuy?'bg-amber-500 hover:bg-amber-400 text-slate-950 active:scale-95 shadow-[0_0_10px_rgba(245,158,11,0.2)]':'bg-slate-700 text-slate-500'} text-[8px] md:text-[11px] w-full py-1 md:py-1.5 rounded font-bold mt-0.5 transition-all">${slot?'강화 (+'+(slot.upgrade+1)+')':'구매'}</button>
         </div>`;
     });
 }
