@@ -918,14 +918,14 @@ class Hero extends Entity {
 
         let hpRatio = this.hp/this.maxHp;
         
-        let nearEnemies = entities.filter(e=>e.faction!==this.faction && !e.isDead && dist(this,e)<600);
-        
-        
-        // Recalculate stats handled in calculateDynamicStats
-        let t = HERO_TMPL[this.heroKey];
-        if(t) {
-            // Stats are now centrally managed in calculateDynamicStats.
+        if (!this.aiUpdateTimer) this.aiUpdateTimer = 0;
+        this.aiUpdateTimer -= dt;
+        if (this.aiUpdateTimer <= 0) {
+            this.aiUpdateTimer = 0.2 + Math.random()*0.1;
+            this.nearEnemiesCache = entities.filter(e=>e.faction!==this.faction && !e.isDead && dist(this,e)<600);
         }
+        let nearEnemies = (this.nearEnemiesCache || []).filter(e => !e.isDead);
+        
         let oldState = this.aiState;
 
 
@@ -1075,11 +1075,11 @@ class Hero extends Entity {
             this.lastKillTime = now;
             
             let hName = HERO_TMPL[this.heroKey].name;
-            if(this.multiKill === 2) showBanner(hName + ' 더블 킬!', '✌️', this.faction==='BLUE');
-            else if(this.multiKill === 3) showBanner(hName + ' 트리플 킬!!', '🔥', this.faction==='BLUE');
-            else if(this.multiKill >= 4) showBanner(hName + ' 쿼드라 킬!!!', '💥', this.faction==='BLUE');
-            else if(this.killStreak >= 3) showBanner(hName + '가 미쳐 날뛰고 있습니다!', '👹', this.faction==='BLUE');
-            else showBanner(hName + ' 처치!', '⚔️', this.faction==='BLUE');
+            if(this.multiKill === 2) showBanner(hName + ' 더블 킬!', '✌️', this.faction===player?.faction);
+            else if(this.multiKill === 3) showBanner(hName + ' 트리플 킬!!', '🔥', this.faction===player?.faction);
+            else if(this.multiKill >= 4) showBanner(hName + ' 쿼드라 킬!!!', '💥', this.faction===player?.faction);
+            else if(this.killStreak >= 3) showBanner(hName + '가 미쳐 날뛰고 있습니다!', '👹', this.faction===player?.faction);
+            else showBanner(hName + ' 처치!', '⚔️', this.faction===player?.faction);
 
             this.gold+=250; this.gainExp(80);
             if(target.faction!=='BLUE') GS.scoreBlue++; else GS.scoreRed++;
@@ -1092,7 +1092,7 @@ class Hero extends Entity {
             this.gold+=100; this.gainExp(60);
             if(this.isPlayer) addText(this.x, this.y-40, '+100G / 60XP', '#fbbf24', 18);
         } else if(target.type.startsWith('boss')){ 
-            this.gold+=400; this.gainExp(150); showBanner('보스 처치!', '👑', this.faction==='BLUE'); 
+            this.gold+=400; this.gainExp(150); showBanner('보스 처치!', '👑', this.faction===player?.faction);
             if(this.isPlayer) addText(this.x, this.y-40, '+400G / 150XP', '#fbbf24', 18);
         }
     }
@@ -1755,7 +1755,7 @@ class Hero extends Entity {
                     } else {
                         spawnParticles(this.x, this.y, '#fcd34d', 30, 200, 1.0);
                         let heroName = HERO_TMPL[this.heroKey].name;
-                        showBanner(`${heroName} 진화! [${evo.name}]`, evo.icon, this.faction==='BLUE');
+                        showBanner(`${heroName} 진화! [${evo.name}]`, evo.icon, this.faction===player?.faction);
                     }
                     playSFX('skill_burst');
                 }
@@ -1856,7 +1856,7 @@ class Building extends Entity {
     onDeath(attacker){
         if(this.type==='nexus'){
             GS.status='GAMEOVER'; document.getElementById('gameOverScreen').classList.remove('hidden');
-            let win=this.faction!=='BLUE'; 
+            let win = player ? (this.faction !== player.faction) : (this.faction !== 'BLUE');
             document.getElementById('txtGameResult').textContent=win?'🏆 VICTORY':'💀 DEFEAT';
             document.getElementById('txtGameResult').style.color=win?'#34d399':'#f87171';
             buildScoreboard();
@@ -1872,7 +1872,7 @@ class Building extends Entity {
                 attacker.gold += 200;
                 addText(attacker.x, attacker.y-60, '최종타 +200G!', '#f59e0b', 16);
             }
-            showBanner('타워 파괴!', '💥', this.faction !== 'BLUE');
+            showBanner('타워 파괴!', '💥', player ? (this.faction !== player.faction) : (this.faction !== 'BLUE'));
         }
         spawnParticles(this.x,this.y,'#f59e0b',30,300,1.5);
     }
@@ -2016,7 +2016,7 @@ class Monster extends Entity {
         } else if(dist(this,this.home)>50){ let a=Math.atan2(this.home.y-this.y,this.home.x-this.x); this.vx=Math.cos(a)*this.moveSpd; this.vy=Math.sin(a)*this.moveSpd; }
         else { this.vx=0; this.vy=0; }
     }
-    onDeath(attacker){ this.respawnTimer=15; if(this.mtype==='boss_dragon'){ showBanner('드래곤 처치!','🐲', attacker.faction==='BLUE'); } }
+    onDeath(attacker){ this.respawnTimer=15; if(this.mtype==='boss_dragon'){ showBanner('드래곤 처치!','🐲', attacker?.faction===player?.faction); } }
     draw(ctx){
         if(this.isDead) return;
         ctx.fillStyle='rgba(0,0,0,0.3)'; ctx.beginPath(); ctx.ellipse(this.x,this.y+this.radius*0.8,this.radius,this.radius*0.4,0,0,Math.PI*2); ctx.fill();
@@ -2317,7 +2317,7 @@ window.renderEvolutionGuide = () => {
         if (player) {
             alreadyEvolved = player.inventory.some(i => i.id === evo.id);
             let invItem = player.inventory.find(i => i.id === evo.reqItem);
-            if(invItem) { hasItem = true; itemLv = invItem.upgrade; if(itemLv >= 9) itemMax = true; }
+            if(invItem) { hasItem = true; itemLv = invItem.upgrade; if(itemLv >= 7) itemMax = true; }
             if(player.passiveSkills[evo.reqPassive]) {
                 hasPass = true; passLv = player.passiveSkills[evo.reqPassive];
                 if(passLv >= reqPass.maxLv) passMax = true;
@@ -2347,7 +2347,7 @@ window.renderEvolutionGuide = () => {
                 <div class="flex items-center gap-2 mt-1">
                     <div class="flex-1 flex flex-col items-center bg-slate-900 rounded p-1 border ${itemMax?'border-emerald-500/50':'border-slate-700'}">
                         <span class="text-xs">${reqItem?reqItem.icon:'?'} ${reqItem?reqItem.name:'?'}</span>
-                        <span class="text-[10px] ${itemMax?'text-emerald-400 font-bold':'text-slate-400'}">강화: ${itemLv}/9</span>
+                        <span class="text-[10px] ${itemMax?'text-emerald-400 font-bold':'text-slate-400'}">강화: ${itemLv}/7</span>
                     </div>
                     <div class="text-slate-500">+</div>
                     <div class="flex-1 flex flex-col items-center bg-slate-900 rounded p-1 border ${passMax?'border-emerald-500/50':'border-slate-700'}">
@@ -2509,7 +2509,7 @@ function gameLoop(now){
                     addText(attacker.x, attacker.y-60, '💰 황금 고블린 +20000G!', '#fbbf24', 26);
                     spawnSpecial(this.x, this.y, '#fbbf24', 'star', 20, 250, 1.0);
                 }
-                showBanner('황금 고블린 처치!', '💰', attacker?.faction==='BLUE');
+                showBanner('황금 고블린 처치!', '💰', attacker?.faction===player?.faction);
             };
             entities.push(goblin);
             showBanner('황금 고블린 출현! 잡아라!', '💰', true);
