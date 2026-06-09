@@ -2732,7 +2732,7 @@ window.trackHeroSelect = function(heroKey) {
     localStorage.setItem('avalon_hero_stats', JSON.stringify(stats));
 };
 
-window.selectHero=h=>{ GS.hero=h; Object.keys(HERO_TMPL).forEach(hk=>{ document.getElementById('btnHero'+hk).className='py-2 px-1 rounded-xl border-2 '+(hk===h?'border-emerald-500 bg-slate-800/80':'border-transparent bg-slate-800/60')+' flex flex-col items-center transition-all'; });
+window.selectHero=h=>{ GS.hero=h; Object.keys(HERO_TMPL).forEach(hk=>{ let btn=document.getElementById('btnHero'+hk); if(btn) btn.className='py-2 px-1 rounded-xl border-2 '+(hk===h?'border-emerald-500 bg-slate-800/80':'border-transparent bg-slate-800/60')+' flex flex-col items-center transition-all'; });
     let t = HERO_TMPL[h];
     let d1 = t.skill1.desc || ''; let d2 = t.skill2.desc || '';
     

@@ -149,6 +149,14 @@
                         class="py-2 px-1 rounded-xl border-2 border-transparent bg-slate-800/60 flex flex-col items-center transition-all active:scale-90">
                     <span class="text-lg">🔮</span><span class="text-[10px] font-bold text-indigo-400 mt-0.5">암흑사제</span>
                 </button>
+                <button id="btnHeroARCHON" onclick="selectHero('ARCHON')"
+                        class="py-2 px-1 rounded-xl border-2 border-transparent bg-slate-800/60 flex flex-col items-center transition-all active:scale-90">
+                    <span class="text-lg">🌀</span><span class="text-[10px] font-bold text-blue-500 mt-0.5">아칸</span>
+                </button>
+                <button id="btnHeroBARBARIAN" onclick="selectHero('BARBARIAN')"
+                        class="py-2 px-1 rounded-xl border-2 border-transparent bg-slate-800/60 flex flex-col items-center transition-all active:scale-90">
+                    <span class="text-lg">🪓</span><span class="text-[10px] font-bold text-orange-400 mt-0.5">바바리안</span>
+                </button>
             </div>
             <div class="mt-3 p-2.5 bg-slate-950/60 rounded-xl text-left border border-slate-800 h-28 overflow-y-auto custom-scrollbar">
                 <div id="heroDescription" class="text-[11px] text-slate-300 leading-relaxed"></div>
@@ -465,10 +473,10 @@
 
 <script>
 window.onerror = function(msg, url, line, col, error) {
-    alert("자바스크립트 오류 발생: " + msg + "\n줄 번호: " + line);
+    alert("자바스크립트 오류 발생: " + msg + "\n줄 번호: " + line + "\n컬럼: " + col + "\n에러 객체: " + (error ? error.stack : 'none'));
 };
 </script>
-<script src="game.js?v=1008"></script>
+<script src="game.js?v=1008" crossorigin="anonymous"></script>
 
     <!-- 명예의 전당 모달 -->
     <div id="hofScreen" class="hidden absolute inset-0 z-50 bg-black/80 flex items-center justify-center">
