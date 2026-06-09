@@ -996,6 +996,22 @@ class Hero extends Entity {
         this.applyStats();
     }
     update(dt){
+        if(this.whirlwindTimer > 0) {
+            this.whirlwindTimer -= dt;
+            this.attackTimer = 0.5; 
+            if(!this.wwTick) this.wwTick = 0;
+            this.wwTick -= dt;
+            if(this.wwTick <= 0) {
+                this.wwTick = 0.3;
+                spawnSlash(this.x, this.y-this.radius, Math.random()*Math.PI*2, '#cbd5e1', 120);
+                entities.forEach(e => {
+                    if(e.faction !== this.faction && !e.isDead && dist(this, e) <= 120) {
+                        e.applyRawDamage(this.whirlwindDmg || 50, this);
+                        if(Math.random() < 0.2) e.airborneTimer = 0.5; 
+                    }
+                });
+            }
+        }
         if(this.attackAnimTimer > 0) this.attackAnimTimer -= dt;
         if(this.zhonyaTimer > 0) this.zhonyaTimer -= dt;
         // 자연 골드 및 EXP 획득 (패시브)
@@ -1248,23 +1264,6 @@ class Hero extends Entity {
                 if(this.burnDmg>0&&!target.isBuilding) target.burnTicks.push({dmg:this.burnDmg,ticks:3,timer:1.0,src:this});
                 if(this.stunChance>0&&Math.random()<this.stunChance&&!target.isBuilding) target.stunTimer=1.0;
                 spawnSlash(this.x+Math.cos(a)*this.range*0.5, this.y+Math.sin(a)*this.range*0.5, a, isCrit?'#fbbf24':HERO_TMPL[this.heroKey].color);
-            }
-        }
-    }
-        if(this.whirlwindTimer > 0) {
-            this.whirlwindTimer -= dt;
-            this.attackTimer = 0.5; 
-            if(!this.wwTick) this.wwTick = 0;
-            this.wwTick -= dt;
-            if(this.wwTick <= 0) {
-                this.wwTick = 0.3;
-                spawnSlash(this.x, this.y-this.radius, Math.random()*Math.PI*2, '#cbd5e1', 120);
-                entities.forEach(e => {
-                    if(e.faction !== this.faction && !e.isDead && dist(this, e) <= 120) {
-                        e.applyRawDamage(this.whirlwindDmg || 50, this);
-                        if(Math.random() < 0.2) e.airborneTimer = 0.5; 
-                    }
-                });
             }
         }
     }
