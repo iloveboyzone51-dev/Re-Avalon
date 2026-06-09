@@ -692,7 +692,10 @@ class Entity {
         if(this.slowTimer > 0) this.slowTimer -= dt;
         if(this.defBuffTimer > 0) this.defBuffTimer -= dt;
         if(this.stunTimer>0){ 
-            this.stunTimer-=dt;
+            this.stunTimer-=dt; 
+            if(this.stunTimer<=0) this.isFrozen=false;
+            return; 
+        }
         let spdMult = (this.slowTimer > 0) ? (1 - this.slowRate) : 1;
         if (!this.isBuilding) {
             this.x=clamp(this.x+this.vx*dt*spdMult, 10, MAP_SIZE-10);
