@@ -408,6 +408,23 @@ function drawBlockyHero(ctx, x, y, r, dir, faction, type, attackAnimTimer = 0) {
             ctx.beginPath(); ctx.arc(x-dir*r*0.8, y, r, 0, Math.PI*2); ctx.fill();
         }
         
+        } else if(type === 'grrr') {
+        drawBody('#d97706', '#92400e', '#78350f');
+        // 사자 갈기
+        ctx.fillStyle = '#b45309'; ctx.beginPath(); ctx.arc(0, -r*0.6, r*0.85, 0, Math.PI*2); ctx.fill();
+        // 머리 (약간 둥글게)
+        ctx.fillStyle = '#f59e0b'; ctx.beginPath(); ctx.arc(0, -r*0.6, r*0.5, 0, Math.PI*2); ctx.fill();
+        // 귀
+        ctx.fillStyle = '#d97706'; ctx.beginPath(); ctx.arc(-r*0.4, -r*1.0, r*0.2, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(r*0.4, -r*1.0, r*0.2, 0, Math.PI*2); ctx.fill();
+        
+        ctx.save();
+        if(isAttacking) {
+            ctx.translate(x+r*1.2*rotDir, y);
+            // 앞발 공격
+            ctx.fillStyle = '#f59e0b'; ctx.beginPath(); ctx.arc(0, 0, r*0.5, 0, Math.PI*2); ctx.fill();
+        }
+        ctx.restore();
     } else if(type === 'thor') {
         drawBody('#bfdbfe', '#2563eb', '#1e3a8a');
         // 헬멧 (날개)
@@ -1608,7 +1625,7 @@ window.startGame=()=>{
     // 탑
     entities.push(new Building(300,1500,'BLUE','tower')); entities.push(new Building(300,800,'BLUE','tower')); entities.push(new Building(1500,300,'RED','tower')); entities.push(new Building(800,300,'RED','tower'));
     // 바텀
-    entities.push(new Building(1500,2700,'BLUE','tower')); entities.push(new Building(2200,2700,'BLUE','tower')); entities.push(new Building(2700,1500,'RED','tower')); entities.push(new Building(2700,2200,'RED','tower'));
+    entities.push(new Building(1500,2400,'BLUE','tower')); entities.push(new Building(2200,2400,'BLUE','tower')); entities.push(new Building(2400,1500,'RED','tower')); entities.push(new Building(2400,2200,'RED','tower'));
     // 미드
     entities.push(new Building(1000,2000,'BLUE','tower')); entities.push(new Building(1300,1700,'BLUE','tower')); entities.push(new Building(2000,1000,'RED','tower')); entities.push(new Building(1700,1300,'RED','tower'));
 
@@ -1719,7 +1736,8 @@ function gameLoop(now){
             else if(redScore + 3 < blueScore) buffFaction = 'RED';
             
             if(buffFaction && window.showBuffAnnouncer) {
-                window.showBuffAnnouncer(buffFaction + ' 진영 언더독 버프 발동!');
+                let fName = buffFaction === 'BLUE' ? '블루' : '레드';
+                window.showBuffAnnouncer(`지금부터 30초간 ${fName}진영 언더독 버프 (이속/공속 20% 증가) 적용됩니다!`);
                 entities.forEach(e => {
                     if(e.type === 'hero' && e.faction === buffFaction) {
                         e.underdogBuffTimer = 30.0;
@@ -2064,7 +2082,7 @@ window.addKillFeed = function(attacker, victim) {
         let streakText = '';
         if (streakCount >= 2) {
             streakText = `<span class="text-amber-400 animate-pulse font-black"> [${streakCount}연속 킬!]</span>`;
-            if(window.showMultiKillAnnouncer) window.showMultiKillAnnouncer(streakCount);
+            if(window.showMultiKillAnnouncer) window.showMultiKillAnnouncer(streakCount, getHeroName(attacker));
             if (window.AIChat && streakCount >= 3) window.AIChat.triggerEvent('streak', attacker, streakCount);
         }
         
@@ -2329,13 +2347,13 @@ window.AIChat = {
 
 
 
-window.showMultiKillAnnouncer = function(count) {
+window.showMultiKillAnnouncer = function(count, heroName) {
     const texts = { 2:'DOUBLE KILL!', 3:'TRIPLE KILL!', 4:'QUADRA KILL!', 5:'PENTA KILL!', 6:'LEGENDARY KILL!', 7:'HEPTA KILL!', 8:'OCTA KILL!', 9:'NONA KILL!', 10:'DECA KILL!' };
     let t = count <= 10 ? texts[count] : 'GODLIKE!';
     let el = document.getElementById('multiKillAnnouncer');
     let textEl = document.getElementById('multiKillText');
     if(!el || !textEl) return;
-    textEl.innerText = t;
+    textEl.innerHTML = `<div class="text-2xl md:text-4xl text-white mb-2 drop-shadow-md font-sans">[${heroName||'알수없음'}]이(가) 날뛰고 있습니다!</div><div>${t}</div>`;
     el.classList.remove('hidden');
     textEl.style.opacity = '1';
     textEl.style.transform = 'scale(1)';
