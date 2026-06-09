@@ -796,6 +796,29 @@ class Hero extends Entity {
             this.gainExp(dt * 0.5);
         }
         
+        if(this.shadowClones) {
+            for(let i=this.shadowClones.length-1;i>=0;i--) {
+                let c=this.shadowClones[i]; c.life-=dt; c.animPhase+=dt*4;
+                if(c.life<=0){this.shadowClones.splice(i,1);continue;}
+                let tgt=null,minD=200;
+                entities.forEach(e=>{if(e.faction!==this.faction&&!e.isDead){let d=dist(c,e);if(d<minD){minD=d;tgt=e;}}});
+                if(tgt){
+                    if(minD>50){let a=Math.atan2(tgt.y-c.y,tgt.x-c.x);c.x+=Math.cos(a)*150*dt;c.y+=Math.sin(a)*150*dt;}
+                    else if(Math.sin(c.animPhase*3)>0.8) tgt.applyRawDamage(c.atk,this);
+                } else { let a=Math.atan2(this.y-c.y,this.x-c.x); if(dist(c,this)>80){c.x+=Math.cos(a)*120*dt;c.y+=Math.sin(a)*120*dt;} }
+            }
+        }
+        
+        if(this.poisonZones) {
+            for(let i=this.poisonZones.length-1;i>=0;i--) {
+                let pz=this.poisonZones[i]; pz.life-=dt;
+                if(pz.life<=0){this.poisonZones.splice(i,1);continue;}
+                pz.tick+=dt;
+                if(pz.tick>=0.5) { pz.tick=0;
+                entities.forEach(e=>{if(e.faction!==this.faction&&!e.isDead&&dist(pz,e)<=pz.radius) e.applyRawDamage(pz.dmg*0.5,this);}); }
+            }
+        }
+
         if(this.isDead){
             this.respawnTimer-=dt;
             if(this.respawnTimer<=0){
@@ -1409,17 +1432,8 @@ class Hero extends Entity {
                 for(let i=0;i<scLv;i++) this.shadowClones.push({x:this.x+rand(-50,50),y:this.y+rand(-50,50),life:5+(scLv-1)*2,atk:this.atk*0.3,animPhase:Math.random()*Math.PI*2});
                 addText(this.x,this.y-50,'분신 소환!','#a78bfa',16);
             }
-            for(let i=this.shadowClones.length-1;i>=0;i--) {
-                let c=this.shadowClones[i]; c.life-=dt; c.animPhase+=dt*4;
-                if(c.life<=0){this.shadowClones.splice(i,1);continue;}
-                let tgt=null,minD=200;
-                entities.forEach(e=>{if(e.faction!==this.faction&&!e.isDead){let d=dist(c,e);if(d<minD){minD=d;tgt=e;}}});
-                if(tgt){
-                    if(minD>50){let a=Math.atan2(tgt.y-c.y,tgt.x-c.x);c.x+=Math.cos(a)*150*dt;c.y+=Math.sin(a)*150*dt;}
-                    else if(Math.sin(c.animPhase*3)>0.8) tgt.applyRawDamage(c.atk,this);
-                } else { let a=Math.atan2(this.y-c.y,this.x-c.x); if(dist(c,this)>80){c.x+=Math.cos(a)*120*dt;c.y+=Math.sin(a)*120*dt;} }
-            }
         }
+
         // 독안개
         let pcLv = this.passiveSkills['poisonCloud'] || 0;
         if(pcLv > 0) {
@@ -1428,14 +1442,8 @@ class Hero extends Entity {
                 this.passiveTimers.poisonCloud = 0;
                 this.poisonZones.push({x:this.x,y:this.y,radius:100+(pcLv-1)*30,life:3+(pcLv-1),maxLife:3+(pcLv-1),dmg:this.atk*(0.15+pcLv*0.08),tick:0});
             }
-            for(let i=this.poisonZones.length-1;i>=0;i--) {
-                let pz=this.poisonZones[i]; pz.life-=dt;
-                if(pz.life<=0){this.poisonZones.splice(i,1);continue;}
-                pz.tick+=dt;
-                if(pz.tick>=0.5) { pz.tick=0;
-                entities.forEach(e=>{if(e.faction!==this.faction&&!e.isDead&&dist(pz,e)<=pz.radius) e.applyRawDamage(pz.dmg*0.5,this);}); }
-            }
         }
+
         // 영혼 수확 버프
         if(this.soulBuffTimer>0){this.soulBuffTimer-=dt; if(this.soulBuffTimer<=0) this.soulAtkBonus=0;}
 
