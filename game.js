@@ -2243,7 +2243,8 @@ class Hero extends Entity {
                 '<div class="text-[10px] font-bold ' + lvClass + '">' + lvText + '</div>' +
                 evoText;
             card.setAttribute('data-skill-id', skill.id);
-            card.onclick = function() { player.selectPassiveSkill(skill.id); };
+            card.onmousedown = function(e) { e.stopPropagation(); player.selectPassiveSkill(skill.id); };
+            card.ontouchstart = function(e) { e.preventDefault(); e.stopPropagation(); player.selectPassiveSkill(skill.id); };
             container.appendChild(card);
         }
     }
@@ -3233,19 +3234,24 @@ window.triggerSkill=idx=>{ if(player&&!player.isDead) player.useSkill(idx); };
 
 // Active items removed
 window.toggleAutoSkill = (num) => {
+    let badge;
     if (num === 1) {
         GS.autoSkill1 = !GS.autoSkill1;
-        let badge = document.getElementById('badgeAutoSkill1');
-        if (badge) {
-            badge.textContent = GS.autoSkill1 ? 'A' : 'M';
-            badge.className = GS.autoSkill1 ? 'absolute -top-1 -right-1 w-5 h-5 bg-amber-500 border border-amber-300 text-slate-900 text-[10px] rounded-full flex items-center justify-center font-black z-20 cursor-pointer hover:bg-amber-400 transition-colors pointer-events-auto' : 'absolute -top-1 -right-1 w-5 h-5 bg-slate-700 border border-slate-500 text-slate-300 text-[10px] rounded-full flex items-center justify-center font-black z-20 cursor-pointer hover:bg-slate-600 transition-colors pointer-events-auto';
-        }
+        badge = document.getElementById('badgeAutoSkill1');
+        if (badge) badge.textContent = GS.autoSkill1 ? 'A' : 'M';
     } else if (num === 2) {
         GS.autoSkill2 = !GS.autoSkill2;
-        let badge = document.getElementById('badgeAutoSkill2');
-        if (badge) {
-            badge.textContent = GS.autoSkill2 ? 'A' : 'M';
-            badge.className = GS.autoSkill2 ? 'absolute -top-1 -right-1 w-5 h-5 bg-amber-500 border border-amber-300 text-slate-900 text-[10px] rounded-full flex items-center justify-center font-black z-20 cursor-pointer hover:bg-amber-400 transition-colors pointer-events-auto' : 'absolute -top-1 -right-1 w-5 h-5 bg-slate-700 border border-slate-500 text-slate-300 text-[10px] rounded-full flex items-center justify-center font-black z-20 cursor-pointer hover:bg-slate-600 transition-colors pointer-events-auto';
+        badge = document.getElementById('badgeAutoSkill2');
+        if (badge) badge.textContent = GS.autoSkill2 ? 'A' : 'M';
+    }
+    if (badge) {
+        let state = num === 1 ? GS.autoSkill1 : GS.autoSkill2;
+        if (state) {
+            badge.classList.remove('bg-slate-700', 'border-slate-500', 'text-slate-300', 'hover:bg-slate-600');
+            badge.classList.add('bg-amber-500', 'border-amber-300', 'text-slate-900', 'hover:bg-amber-400');
+        } else {
+            badge.classList.remove('bg-amber-500', 'border-amber-300', 'text-slate-900', 'hover:bg-amber-400');
+            badge.classList.add('bg-slate-700', 'border-slate-500', 'text-slate-300', 'hover:bg-slate-600');
         }
     }
 };
