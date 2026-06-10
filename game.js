@@ -1863,7 +1863,7 @@ class Hero extends Entity {
 
 
         
-        } else if(k === 'CRAG') {
+        if(k === 'CRAG') {
             if(idx === 1) { // 대지 강타
                 spawnAOE(this.x, this.y, 150, '#facc1588', 0.5); // 노란/녹색 충격파
                 this.emote = '💥'; this.emoteTimer = 1.0;
@@ -1882,7 +1882,6 @@ class Hero extends Entity {
                 this.emote = '🛡️'; this.emoteTimer = 1.0;
                 spawnRing(this.x, this.y, '#4ade80', 120, 1.0);
             }
-        } else 
         } else if(k === 'ARIEL') {
             if(idx === 1) { // 치유의 파동
                 this.emote = '💖'; this.emoteTimer = 1.0;
