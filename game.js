@@ -2018,24 +2018,52 @@ class Hero extends Entity {
 
 
         
-        if(k === 'CRAG') {
+                if(k === 'CRAG') {
             if(idx === 1) { // 대지 강타
-                spawnAOE(this.x, this.y, 150, '#facc1588', 0.5); // 노란/녹색 충격파
+                this.attackAnimTimer = 0.8; // 더 묵직한 모션
                 this.emote = '💥'; this.emoteTimer = 1.0;
-                let tgts = nearEnemies(this.x, this.y, 150);
-                tgts.forEach(e => {
-                    e.applyRawDamage(skillDmg * 1.5, this);
-                    e.applyStun && e.applyStun(1.5);
-                });
-                for(let i=0; i<8; i++) spawnSlash(this.x, this.y, (Math.PI/4)*i, '#4ade80', 150); // 녹색 균열
-                spawnParticles(this.x, this.y, '#22c55e', 40, 150, 0.8);
+                GS.shakeTimer = (GS.shakeTimer||0) + 0.8; // 매우 강한 화면 흔들림 효과
+                
+                // 쩌적 갈라지는 거대한 지진 균열 효과
+                if (typeof spawnEarthCrack !== 'undefined') {
+                    spawnEarthCrack(this.x, this.y, 250, '#facc15'); // 바깥쪽 노란 균열
+                    spawnEarthCrack(this.x, this.y, 150, '#f97316'); // 안쪽 붉은 균열
+                }
+                spawnAOE(this.x, this.y, 200, '#facc1588', 0.8); // 번쩍이는 빛
+                
+                // 파편과 흙먼지가 연속으로 터짐
+                for(let i=0; i<6; i++) {
+                    setTimeout(() => {
+                        if(GS.status !== 'PLAYING') return;
+                        spawnParticles(this.x, this.y, '#44403c', 40, 300, 1.2);
+                        spawnParticles(this.x, this.y, '#facc15', 10, 200, 0.8);
+                        if(typeof playSFX !== 'undefined') playSFX('skill_burst');
+                    }, i * 50);
+                }
+
+                // 강력한 데미지와 스턴 적용
+                setTimeout(() => {
+                    if(GS.status !== 'PLAYING' || this.isDead) return;
+                    let tgts = nearEnemies(this.x, this.y, 220); // 범위도 넓어짐
+                    tgts.forEach(e => {
+                        e.applyRawDamage((this.atk * 2.0 || 50) * 2.0, this);
+                        if(e.applyStun) e.applyStun(2.0);
+                    });
+                }, 300);
+
             } else { // 바위 갑옷
-                if(!this.cragShieldActive) this.defense += 150; // 방어력 대폭 상승
+                this.attackAnimTimer = 0.8;
+                if(!this.cragShieldActive) this.defense += 150;
                 this.shield = this.maxHp * 0.30;
                 this.cragShieldActive = true;
                 this.cragShieldTimer = 5.0;
                 this.emote = '🛡️'; this.emoteTimer = 1.0;
-                spawnRing(this.x, this.y, '#4ade80', 120, 1.0);
+                
+                // 황금빛 바위 오라가 거대하게 용솟음 치는 효과!
+                if (typeof spawnRockAura !== 'undefined') spawnRockAura(this.x, this.y, 200); 
+                spawnRing(this.x, this.y, '#facc15', 200, 2.0);
+                spawnAOE(this.x, this.y, 150, '#facc1533', 2.0); 
+                if(typeof playSFX !== 'undefined') playSFX('heal'); 
             }
         } else if(k === 'ARIEL') {
             if(idx === 1) { // 치유의 파동
