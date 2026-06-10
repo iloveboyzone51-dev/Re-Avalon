@@ -169,6 +169,14 @@ const WARMOG_REGEN      = 0.10;    // 워모그 초당 10%
 
 // ============ 영웅 템플릿 (근접/원거리 밸런스 전면 수정) ============
 const HERO_TMPL = {
+    CRAG: {
+        name:"크래그", color:"#4b5563",
+        hp:4500, atk:55, aspd:0.85, move:160, range:100, type:"melee", role_desc:"[탱커 / 근거리 / 오버파워]",
+        skill1: { name:"대지 강타", cd:8, desc:"주변 반경 150의 모든 적에게 강한 마법 피해를 입히고 1.5초 기절시킵니다." },
+        skill2: { name:"바위 갑옷", cd:15, desc:"5초 동안 최대 체력의 30% 방어막을 얻고 방어력이 대폭 상승합니다." },
+        draw:(ctx,x,y,r,dir,f,anim,ent) => drawBlockyHero(ctx,x,y,r,dir,f,'crag',anim,ent)
+    },
+
     BERSERKER: { name:"광전사", color:"#ef4444", hp:2470, atk:52, aspd:1.3, move:185, range:90,  type:"melee", role_desc:"[근접 / 브루저 / 광역 제어]",
         skill1:{name:"회전 참격",cd:5, desc:"주변 반경 내 적들에게 광역 데미지를 주고 0.5초 기절시킵니다."}, 
         skill2:{name:"도약 강타",cd:8, desc:"대상에게 도약하여 주변에 큰 데미지를 주고 1.5초 기절시킵니다."},  
@@ -1190,6 +1198,15 @@ class Hero extends Entity {
         }
         if(this.attackAnimTimer > 0) this.attackAnimTimer -= dt;
         if(this.zhonyaTimer > 0) this.zhonyaTimer -= dt;
+        if(this.cragShieldTimer > 0) {
+            this.cragShieldTimer -= dt;
+            if(this.cragShieldTimer <= 0 && this.cragShieldActive) {
+                this.shield = 0;
+                this.defense -= 150;
+                this.cragShieldActive = false;
+            }
+        }
+
         // 자연 골드 및 EXP 획득 (패시브)
         if(!this.isDead) {
             this.gold += dt * 1;
@@ -1804,7 +1821,27 @@ class Hero extends Entity {
         
 
 
-        if(k==='BERSERKER') {
+        
+        } else if(k === 'CRAG') {
+            if(idx === 1) { // 대지 강타
+                spawnAOE(this.x, this.y, 150, '#facc1588', 0.5); // 노란/녹색 충격파
+                this.emote = '💥'; this.emoteTimer = 1.0;
+                let tgts = nearEnemies(this.x, this.y, 150);
+                tgts.forEach(e => {
+                    e.applyRawDamage(skillDmg * 1.5, this);
+                    e.applyStun && e.applyStun(1.5);
+                });
+                for(let i=0; i<8; i++) spawnSlash(this.x, this.y, (Math.PI/4)*i, '#4ade80', 150); // 녹색 균열
+                spawnParticles(this.x, this.y, '#22c55e', 40, 150, 0.8);
+            } else { // 바위 갑옷
+                if(!this.cragShieldActive) this.defense += 150; // 방어력 대폭 상승
+                this.shield = this.maxHp * 0.30;
+                this.cragShieldActive = true;
+                this.cragShieldTimer = 5.0;
+                this.emote = '🛡️'; this.emoteTimer = 1.0;
+                spawnRing(this.x, this.y, '#4ade80', 120, 1.0);
+            }
+        } else if(k==='BERSERKER') {
             if(idx===1) { // 소용돌이
                 spawnRing(this.x, this.y, '#ef4444', 150, 0.4);
                 nearEnemies(this.x,this.y,150).forEach(e=>{
