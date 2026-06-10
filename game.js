@@ -1548,8 +1548,10 @@ class Hero extends Entity {
     }
     gainExp(amt){
         this.exp+=amt;
+        let leveledUp = 0;
         while(this.exp>=this.maxExp){
             this.exp-=this.maxExp; this.level++; this.maxExp=Math.floor(this.maxExp*1.15); // 레벨업 요구치 완화
+            leveledUp++;
             let stats=['atk','hp','move','aspd']; let c=stats[Math.floor(Math.random()*stats.length)];
             let statMsg = '';
             if(c==='atk') { this.baseAtk+=6; statMsg = '공격력 +6'; }
@@ -1561,9 +1563,16 @@ class Hero extends Entity {
                 addText(this.x,this.y-60,'LEVEL UP!','#fcd34d',22);
                 setTimeout(()=>addText(this.x,this.y-80,'운빨 스탯: '+statMsg+'!', '#a78bfa', 16), 300);
                 playSFX('heal');
-                setTimeout(() => this.showSkillSelection(), 500);
+            }
+        }
+        if (leveledUp > 0) {
+            if (this.isPlayer) {
+                this.pendingSkillLevels = (this.pendingSkillLevels || 0) + leveledUp;
+                if (!this.pendingLevelUp) {
+                    setTimeout(() => this.showSkillSelection(), 500);
+                }
             } else {
-                this.aiSelectSkill();
+                for(let i=0; i<leveledUp; i++) this.aiSelectSkill();
             }
         }
     }
@@ -1601,6 +1610,8 @@ class Hero extends Entity {
 
             if(window.addKillFeed) addKillFeed(attacker, this);
             if(window.AIChat) window.AIChat.onKill(attacker, this);
+        } else if (attacker && attacker.mtype === 'boss_dragon') {
+            if(window.addKillFeed) addKillFeed({heroKey:'dragon', name:'드래곤', isPlayer:false}, this);
         }
         if(this.isPlayer) document.getElementById('respawnOverlay').classList.replace('hidden', 'flex');
         spawnParticles(this.x,this.y,HERO_TMPL[this.heroKey].color,20,200,1.0);
@@ -2324,12 +2335,20 @@ class Hero extends Entity {
     selectPassiveSkill(skillId) {
         this.passiveSkills[skillId] = (this.passiveSkills[skillId]||0) + 1;
         this.applyStats(); this.checkEvolution();
-        document.getElementById('skillSelectionOverlay').classList.add('hidden');
-        this.pendingLevelUp = false;
-        this.pendingSkillLevels = 0; GS.paused = false;
+        
         let sk = PASSIVE_SKILLS.find(s=>s.id===skillId);
         addText(this.x,this.y-60, sk.icon+' '+sk.name+' Lv.'+this.passiveSkills[skillId]+'!', '#fcd34d', 18);
         playSFX('heal');
+
+        if (this.pendingSkillLevels > 1) {
+            this.pendingSkillLevels--;
+            this.showSkillSelection();
+        } else {
+            this.pendingSkillLevels = 0;
+            document.getElementById('skillSelectionOverlay').classList.add('hidden');
+            this.pendingLevelUp = false;
+            GS.paused = false;
+        }
     }
     aiSelectSkill() {
         let available = PASSIVE_SKILLS.filter(s=>(this.passiveSkills[s.id]||0)<s.maxLv);
@@ -2395,7 +2414,16 @@ class Hero extends Entity {
         ctx.fillStyle='#1e293b'; ctx.fillRect(bx-1,by-1,bw+2,bh+2); ctx.fillStyle='#374151'; ctx.fillRect(bx,by,bw,bh);
         ctx.fillStyle=this.hp/this.maxHp>0.5?'#22c55e':'#ef4444'; ctx.fillRect(bx,by,bw*(this.hp/this.maxHp),bh);
         ctx.fillStyle='#fbbf24'; ctx.font='bold 9px monospace'; ctx.textAlign='center'; ctx.fillText('Lv'+this.level, this.x, by-2);
-        if(this.isPlayer) { ctx.fillText('▶ YOU', this.x, by-15); }
+        if(this.isPlayer) { 
+            ctx.fillText('▶ YOU', this.x, by-15); 
+        } else if (player && this.faction !== player.faction) {
+            ctx.fillStyle = '#ef4444';
+            ctx.beginPath();
+            ctx.moveTo(this.x, by-15);
+            ctx.lineTo(this.x - 6, by-22);
+            ctx.lineTo(this.x + 6, by-22);
+            ctx.fill();
+        }
         // 화염 고리 렌더링
         if((this.passiveSkills['fireRing']||0) > 0) {
             let frLv = this.passiveSkills['fireRing'];
@@ -3952,13 +3980,17 @@ function updateUI(){
     
     document.getElementById('hudLevelBadge').textContent='Lv.'+player.level; document.getElementById('hudKDA').textContent='K:'+player.kills+' / D:'+player.deaths;
     document.getElementById('hudHpBar').style.width=(player.hp/player.maxHp)*100+'%'; document.getElementById('hudHpText').textContent=Math.floor(player.hp)+' / '+Math.floor(player.maxHp); document.getElementById('hudXpBar').style.width=(player.exp/player.maxExp)*100+'%';
-    const inv=document.getElementById('inventorySlots'); inv.innerHTML='';
+    document.getElementById('hudGoldText').textContent=Math.floor(player.gold)+'G';
+    
+    const inv=document.getElementById('inventorySlots'); 
+    let newInvHtml='';
     for(let i=0;i<10;i++){ 
         let item=player.inventory[i]; 
         let bi=item?[...BASE_ITEMS,...EVOLUTION_ITEMS].find(b=>b.id===item.id):null; 
         let content=item?'<div class="flex items-center justify-center w-full h-full text-[13px] md:text-base leading-none pt-0.5">'+(bi?bi.icon:'?')+'</div>'+(item.upgrade>0?'<div class="absolute -top-1.5 -right-1.5 md:-top-2 md:-right-2 text-[9px] bg-rose-600 text-white rounded-[4px] px-1 py-px font-bold leading-none shadow z-10">+'+item.upgrade+'</div>':''):''; 
-        inv.innerHTML+='<div class="relative w-7 h-7 md:w-10 md:h-10 rounded-lg bg-slate-900 border border-slate-700 flex items-center justify-center shadow-inner">'+content+'</div>'; 
+        newInvHtml+='<div class="relative w-7 h-7 md:w-10 md:h-10 rounded-lg bg-slate-900 border border-slate-700 flex items-center justify-center shadow-inner">'+content+'</div>'; 
     }
+    if (inv.lastHtml !== newInvHtml) { inv.innerHTML = newInvHtml; inv.lastHtml = newInvHtml; }
     // 히어로 패시브 쿨다운 표시
     let m1=document.getElementById('maskSkill1'), m2=document.getElementById('maskSkill2');
     if(m1) { if(player.heroSkill1Timer>0){m1.classList.remove('hidden');m1.textContent=player.heroSkill1Timer.toFixed(1);}else m1.classList.add('hidden'); }

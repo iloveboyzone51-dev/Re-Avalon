@@ -321,6 +321,9 @@
             <div id="joyNub" class="w-10 h-10 rounded-full bg-white/40 shadow-lg" style="transform: translate(0px, 0px);"></div>
         </div>
 
+        <!-- 실시간 킬 로그 -->
+        <div id="killLogs" class="absolute top-24 right-4 flex flex-col items-end gap-1 pointer-events-none z-[80]"></div>
+
         <!-- 패시브 스킬 표시 영역 (하단 중앙) -->
         <div id="passiveSkillBar" class="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1 flex-wrap pointer-events-none z-10 justify-center w-full max-w-[200px]"></div>
 
@@ -392,7 +395,7 @@
     </div>
 
     <!-- 부활 오버레이 -->
-    <div id="respawnOverlay" class="hidden absolute inset-0 z-30 bg-transparent flex-col items-center justify-center pointer-events-none">
+    <div id="respawnOverlay" class="hidden absolute inset-0 z-[100] bg-black/60 flex-col items-center justify-center pointer-events-none">
         <h2 class="text-6xl md:text-8xl font-black text-rose-500 tracking-widest mb-6 orbitron"
             style="text-shadow:0 0 30px rgba(239,68,68,0.8)">DEAD</h2>
         <p class="text-lg font-mono text-white bg-slate-900/90 px-8 py-4 rounded-2xl border border-slate-700 shadow-2xl">
@@ -512,7 +515,7 @@ window.onerror = function(msg, url, line, col, error) {
     </div>
 
     <!-- 패치노트 모달 -->
-    <div id="patchNotesModal" class="hidden absolute inset-0 z-[70] bg-black/80 flex items-center justify-center p-4">
+    <div id="patchNotesModal" class="hidden absolute inset-0 flex items-center justify-center p-4" style="z-index: 99999; background: rgba(0,0,0,0.8); pointer-events: auto;">
         <div class="bg-slate-900 border border-slate-700 p-6 md:p-8 rounded-2xl max-w-2xl w-full max-h-[85vh] flex flex-col shadow-2xl relative">
             <button onclick="document.getElementById('patchNotesModal').classList.add('hidden')" class="absolute top-4 right-4 text-slate-400 hover:text-white text-3xl font-bold">&times;</button>
             <h2 class="text-2xl md:text-3xl font-black text-amber-400 mb-6 border-b border-slate-700 pb-3 orbitron">📝 PATCH NOTES</h2>
