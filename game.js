@@ -257,7 +257,12 @@ const BASE_ITEMS = [
     { id:'mage_staff',name:'현자의 지팡이',cost:450, stat:'cdr',      val:0.15, icon:'🔮', desc:'스킬 쿨타임 감소 및 데미지 증가' },
     { id:'hourglass',name:'시공의 모래시계',cost:600, stat:'dodge_heal', val:0.15, icon:'⏳', desc:'피격 시 15% 확률로 피해 무시 및 체력 회복' },
     { id:'giant_slayer',name:'거인 학살자',cost:500, stat:'giant_slayer',val:0.02,icon:'🏹', desc:'나보다 체력 높은 적에게 체력차 비례 추뎀' },
-    { id:'legion_shield',name:'군단의 방패',cost:450, stat:'shield',  val:20,   icon:'🔰', desc:'아군 방어력 증가 오라' }
+    { id:'legion_shield',name:'군단의 방패',cost:450, stat:'shield',  val:20,   icon:'🔰', desc:'아군 방어력 증가 오라' },
+    { id:'tiamat',         name:'티아맷의 도끼',   cost:1600, stat:'tiamat',  val:1, icon:'🪓', desc:'[근거리 전용] 기본 공격 시 주변 120 반경 35% 광역 피해' },
+    { id:'frost_gauntlet', name:'서리불꽃 건틀릿', cost:1400, stat:'frost_g', val:1, icon:'🧤', desc:'공격 시 적 이속 둔화 (근거리 50%, 원거리 25%)' },
+    { id:'behemoth_armor', name:'괴수의 뼈갑옷',   cost:1800, stat:'behemoth',val:1, icon:'🦴', desc:'[근거리 전용] 받는 피해 15% 감소, 기절 30% 감소' },
+    { id:'guardian_angel', name:'수호천사의 은총', cost:2800, stat:'ga',      val:1, icon:'👼', desc:'사망 시 체력 1 생존 + 최대 체력 50% 실드 (쿨 60초)' },
+    { id:'hermes_boots',   name:'헤르메스의 장화', cost:1000, stat:'hermes',  val:1, icon:'🥾', desc:'이동속도+45, 비전투 3초 이후 이속 25% 추가 증가' }
 ];
 const ENHANCE_RATES = [1,1,1,0.6,0.5,0.4,0.3,0.2,0.1];
 
@@ -1171,6 +1176,7 @@ class Entity {
         if(this.curseTimer>0) this.curseTimer-=dt;
         if(this.airborneTimer>0) this.airborneTimer-=dt;
         if(this.slowTimer > 0) this.slowTimer -= dt;
+        if(this.gaTimer > 0) this.gaTimer -= dt; // 수호천사 쿨다운 감소
         if(this.arielBuffTimer > 0) {
             this.arielBuffTimer -= dt;
             if(Math.random()<0.05) spawnParticles(this.x, this.y, '#fef08a', 1, 30, 0.3);
@@ -1289,7 +1295,21 @@ class Entity {
             if(dmg <= 0) return 0;
         }
 
+        // 괴수의 뼈갑옷: 근거리 전용 최종 데미지 15% 감소
+        if(this.type === 'hero' && this.hasBehemoth && HERO_TMPL[this.heroKey] && HERO_TMPL[this.heroKey].type === 'melee') {
+            dmg = Math.max(1, dmg * 0.85);
+        }
         if(this.curseTimer > 0) dmg *= 1.3;
+        // 수호천사의 은총: 치명적 피해 시 체력 1 생존 + 50% 실드
+        if(this.hp - dmg <= 0 && this.type === 'hero' && this.hasGA && (this.gaTimer === undefined || this.gaTimer <= 0)) {
+            this.hp = 1;
+            this.shield = (this.shield || 0) + (this.maxHp * 0.5);
+            this.gaTimer = 60.0;
+            spawnRing(this.x, this.y, '#fbbf24', 220, 0.9);
+            spawnParticles(this.x, this.y, '#fbbf24', 40, 200, 1.2);
+            addText(this.x, this.y - 65, '👼 수호천사 발동!', '#fef08a', 24);
+            return 0; // 사망 방지
+        }
         this.hp-=dmg;
         
         if (this.passiveSkills && this.passiveSkills['mirrorImage'] > 0) {
@@ -1682,8 +1702,13 @@ class Hero extends Entity {
         this.attackTimer=1.0/this.aspd;
         let dmg=this.atk;
         let isCrit=Math.random()<this.critChance; if(isCrit) dmg*=2;
-        if(this.giantSlayerRate > 0 && !target.isBuilding) dmg += target.maxHp * this.giantSlayerRate;
-        if(this.borkActive&&!target.isBuilding) dmg+=target.hp*0.08;
+        if(this.giantSlayerRate > 0 && !target.isBuilding) {
+            if(target.maxHp > this.maxHp) {
+                let diff = Math.floor((target.maxHp - this.maxHp) / 100);
+                dmg *= (1 + diff * 0.02);
+            }
+        }
+        if(this.borkActive&&!target.isBuilding) dmg+=target.hp*0.05;
 
         if(HERO_TMPL[this.heroKey].type==='ranged'){
             this.attackAnimTimer = 0.2;
@@ -1732,6 +1757,23 @@ class Hero extends Entity {
                 if(this.lifeSteal>0) { this.hp=Math.min(this.maxHp, this.hp+dealt*this.lifeSteal); playSFX('heal'); }
                 if(this.burnDmg>0&&!target.isBuilding) target.burnTicks.push({dmg:this.burnDmg,ticks:3,timer:1.0,src:this});
                 if(this.stunChance>0&&Math.random()<this.stunChance&&!target.isBuilding) target.stunTimer = target.type==='hero' && target.inventory && target.inventory.some(i=>i.id==='behemoth_armor') && HERO_TMPL[target.heroKey] && HERO_TMPL[target.heroKey].type==='melee' ? (1.0)*0.7 : (1.0);
+                // 서리불꽃 건틀릿: 이속 둔화 (근거리 50%, 원거리 25%)
+                if(this.hasFrostG && !target.isBuilding) {
+                    let isMeleeSelf = HERO_TMPL[this.heroKey] && HERO_TMPL[this.heroKey].type === 'melee';
+                    target.moveSpdTimer = 1.5;
+                    target.moveSpdBuff = isMeleeSelf ? -0.5 : -0.25;
+                    spawnParticles(target.x, target.y, '#bae6fd', 5, 25, 0.3);
+                }
+                // 티아맷의 도끼: 광역 Splash (근거리 전용)
+                if(this.hasTiamat && !target.isBuilding && HERO_TMPL[this.heroKey] && HERO_TMPL[this.heroKey].type === 'melee') {
+                    let splashDmg = this.atk * 0.35;
+                    spawnRing(target.x, target.y, '#ef4444', 120, 0.2);
+                    entities.forEach(ne => {
+                        if(ne.faction !== this.faction && !ne.isDead && ne !== target && dist(target, ne) < 120) {
+                            ne.applyRawDamage(splashDmg, this, false);
+                        }
+                    });
+                }
                 spawnSlash(this.x+Math.cos(a)*this.range*0.5, this.y+Math.sin(a)*this.range*0.5, a, isCrit?'#fbbf24':HERO_TMPL[this.heroKey].color);
             }
         }
@@ -1876,6 +1918,7 @@ class Hero extends Entity {
         this.reflectRate=0; this.burnDmg=0; this.stunChance=0; this.shield=0;
         this.cdr=0; this.skillDmgBonus=0; this.giantSlayerRate=0; this.defense=0; this.hasZhonya=false;
         this.borkActive=false; this.hasWarmog=false;
+        this.hasTiamat=false; this.hasFrostG=false; this.hasBehemoth=false; this.hasGA=false; this.hasHermes=false;
         this.inventory.forEach(i=>{
             let m=1+(i.upgrade*0.5);
             if(i.stat==='atk') this.atk+=i.val*m; if(i.stat==='hp') this.maxHp+=i.val*m;
@@ -1887,6 +1930,11 @@ class Hero extends Entity {
             if(i.stat==='giant_slayer' || i.stat==='reaper') this.giantSlayerRate+=i.val*m;
             if(i.stat==='bork') this.borkActive=true;
             if(i.stat==='warmog') this.hasWarmog=true;
+            if(i.stat==='tiamat')  { this.hasTiamat=true;  this.atk+=25*m; this.maxHp+=300*m; }
+            if(i.stat==='frost_g') { this.hasFrostG=true;  this.maxHp+=400*m; }
+            if(i.stat==='behemoth'){ this.hasBehemoth=true; this.maxHp+=600*m; }
+            if(i.stat==='ga')      { this.hasGA=true; this.atk+=40*m; this.shield+=200*m; }
+            if(i.stat==='hermes')  { this.hasHermes=true; this.moveSpd+=45*m; }
             if((i.stat==='zhonya' || i.stat==='fate_zhonya') && i.upgrade>=1) this.hasZhonya=true; 
             
             // 진화 아이템 전용 특수 스탯 처리
@@ -1938,6 +1986,13 @@ class Hero extends Entity {
             });
         }
         
+        // 시너지: 얼어붙은 학살자 (서리불꽃 건틀릿 + 몰락검)
+        if(this.hasFrostG && this.borkActive) { this.atk += 30; this.lifeSteal += 0.10; }
+        // 시너지: 불사조의 분노 (수호천사 + 티아맷의 도끼)
+        if(this.hasGA && this.hasTiamat) { this.maxHp += 500; }
+        // 몰락한 왕의 검: 피흡 5% 기본 추가
+        if(this.borkActive) { this.lifeSteal += 0.05; }
+
         this.staticAtk = this.atk; this.staticAspd = this.aspd; this.staticMoveSpd = this.moveSpd;
         this.hp=Math.min(this.hp, this.maxHp);
     }
@@ -1970,6 +2025,10 @@ class Hero extends Entity {
             effMove *= 1.3; effAspd *= 1.3;
         }
         
+        // 헤르메스의 장화: 비전투 3초 이후 이속 25% 추가 증가
+        if(this.hasHermes && this.nonCombatTimer > 3.0) {
+            effMove *= 1.25;
+        }
         this.atk = effAtk; this.aspd = effAspd; this.moveSpd = effMove;
     }
     autoUseHeroSkills(){
