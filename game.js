@@ -336,6 +336,8 @@ let particles = [];
 let floatingTexts = [];
 let environments = []; // 나무, 바위 등
 let slashEffects = [];
+let earthCrackEffects = [];
+let rockAuraEffects = [];
 let aoeEffects = [];
 
 const keys = { w:false, a:false, s:false, d:false };
@@ -354,6 +356,40 @@ function spawnParticles(x,y,color,n=8,spd=120,life=0.4, shape='circle'){
     for(let i=0;i<n;i++){ let a=rand(0,Math.PI*2); particles.push({x,y,vx:Math.cos(a)*rand(spd*0.3,spd),vy:Math.sin(a)*rand(spd*0.3,spd),life,maxLife:life,color,size:rand(2,5),shape}); }
 }
 function spawnSlash(x,y,angle,color,r=60){ slashEffects.push({x,y,angle,color,r,life:0.25,maxLife:0.25}); }
+
+function spawnEarthCrack(x, y, radius, color) {
+    let lines = [];
+    for(let i=0; i<7; i++) {
+        let angle = (Math.PI*2/7)*i + (Math.random()-0.5);
+        let dist = radius * (0.5 + Math.random()*0.5);
+        let pts = [{x:0, y:0}];
+        let cx=0, cy=0;
+        for(let j=0; j<4; j++) {
+            cx += Math.cos(angle + (Math.random()-0.5)*1.2) * (dist/4);
+            cy += Math.sin(angle + (Math.random()-0.5)*1.2) * (dist/4);
+            pts.push({x:cx, y:cy});
+        }
+        lines.push(pts);
+    }
+    earthCrackEffects.push({x, y, lines, color, life: 2.5, maxLife: 2.5});
+}
+
+function spawnRockAura(x, y, radius) {
+    let rocks = [];
+    for(let i=0; i<15; i++) {
+        let angle = Math.random() * Math.PI * 2;
+        let dist = radius * 0.3 + Math.random()*radius*0.7;
+        rocks.push({
+            angle: angle,
+            dist: dist,
+            size: 15 + Math.random()*25,
+            speedY: -150 - Math.random()*150,
+            yOffset: 50 + Math.random()*50
+        });
+    }
+    rockAuraEffects.push({x, y, rocks, life: 2.0, maxLife: 2.0});
+}
+
 function spawnAOE(x,y,r,color,life=0.6){ aoeEffects.push({x,y,r,color,life,maxLife:life}); }
 
 let beamEffects = [];    // 빔/번개 효과
@@ -3813,7 +3849,7 @@ window.startGame=()=>{
     generateEnv();
 
     // 완벽한 초기화
-    entities=[]; projectiles=[]; particles=[]; floatingTexts=[]; slashEffects=[]; aoeEffects=[];
+    entities=[]; projectiles=[]; particles=[]; floatingTexts=[]; slashEffects=[]; aoeEffects=[]; earthCrackEffects=[]; rockAuraEffects=[];
     GS.scoreBlue=0; GS.scoreRed=0; GS.time=0; GS.paused=false; minionTimer=MINION_INTERVAL-2;
     midBossSpawned = [false, false, false]; suddenDeathTriggered = false; goblinSpawned = false;
     document.getElementById('scoreBlue').textContent='0'; document.getElementById('scoreRed').textContent='0';
@@ -4191,6 +4227,13 @@ function gameLoop(now){
         for(let i=particles.length-1;i>=0;i--){let p=particles[i];p.x+=p.vx*dt;p.y+=p.vy*dt;p.life-=dt;if(p.life<=0)particles.splice(i,1);}
         for(let i=floatingTexts.length-1;i>=0;i--){let ft=floatingTexts[i];ft.y+=ft.vy*dt;ft.life-=dt;if(ft.life<=0)floatingTexts.splice(i,1);}
         for(let i=slashEffects.length-1;i>=0;i--){slashEffects[i].life-=dt;if(slashEffects[i].life<=0)slashEffects.splice(i,1);}
+        for(let i=earthCrackEffects.length-1; i>=0; i--) { earthCrackEffects[i].life -= dt; if(earthCrackEffects[i].life <= 0) earthCrackEffects.splice(i, 1); }
+        for(let i=rockAuraEffects.length-1; i>=0; i--) { 
+            let eff = rockAuraEffects[i];
+            eff.life -= dt; 
+            eff.rocks.forEach(r => { r.yOffset += r.speedY * dt; r.angle += dt; });
+            if(eff.life <= 0) rockAuraEffects.splice(i, 1); 
+        }
         for(let i=aoeEffects.length-1;i>=0;i--){aoeEffects[i].life-=dt;if(aoeEffects[i].life<=0)aoeEffects.splice(i,1);}
         for(let i=ringEffects.length-1;i>=0;i--) { ringEffects[i].life-=dt; ringEffects[i].r = ringEffects[i].maxR*(1-ringEffects[i].life/ringEffects[i].maxLife); if(ringEffects[i].life<=0) ringEffects.splice(i,1); }
         for(let i=beamEffects.length-1;i>=0;i--) { beamEffects[i].life-=dt; if(beamEffects[i].life<=0) beamEffects.splice(i,1); }
@@ -4290,6 +4333,63 @@ function draw(){
 
     aoeEffects.forEach(ae=>{ let r=ae.life/ae.maxLife; ctx.globalAlpha=r*0.5; ctx.fillStyle=ae.color; ctx.beginPath(); ctx.arc(ae.x,ae.y,ae.r,0,Math.PI*2); ctx.fill(); ctx.globalAlpha=1; });
     slashEffects.forEach(se=>{ let r=se.life/se.maxLife; ctx.globalAlpha=r*0.9; ctx.strokeStyle=se.color; ctx.lineWidth=4*r+1; ctx.save(); ctx.translate(se.x,se.y); ctx.rotate(se.angle); ctx.beginPath(); ctx.arc(0,0,se.r,Math.PI*0.2,Math.PI*0.8); ctx.stroke(); ctx.restore(); ctx.globalAlpha=1; });
+
+    earthCrackEffects.forEach(eff => {
+        let alpha = eff.life / eff.maxLife;
+        ctx.globalAlpha = alpha;
+        ctx.save(); ctx.translate(eff.x, eff.y);
+        ctx.shadowColor = eff.color; ctx.shadowBlur = 15;
+        
+        // 안쪽 어두운 균열 배경
+        ctx.strokeStyle = '#292524'; ctx.lineWidth = 8 * alpha + 2;
+        eff.lines.forEach(line => {
+            ctx.beginPath(); ctx.moveTo(line[0].x, line[0].y);
+            for(let j=1; j<line.length; j++) ctx.lineTo(line[j].x, line[j].y);
+            ctx.stroke();
+        });
+        
+        // 중심부 빛나는 에너지
+        ctx.strokeStyle = eff.color; ctx.lineWidth = 4 * alpha + 1;
+        eff.lines.forEach(line => {
+            ctx.beginPath(); ctx.moveTo(line[0].x, line[0].y);
+            for(let j=1; j<line.length; j++) ctx.lineTo(line[j].x, line[j].y);
+            ctx.stroke();
+        });
+        
+        ctx.restore();
+        ctx.globalAlpha = 1;
+    });
+
+    rockAuraEffects.forEach(eff => {
+        let alpha = eff.life / eff.maxLife;
+        ctx.globalAlpha = Math.min(1, alpha * 2);
+        ctx.save(); ctx.translate(eff.x, eff.y);
+        
+        // 솟구치는 거대한 황금빛 오라 기둥
+        let grad = ctx.createLinearGradient(0, -250, 0, 50);
+        grad.addColorStop(0, 'rgba(250, 204, 21, 0)');
+        grad.addColorStop(0.5, 'rgba(250, 204, 21, '+(0.6*alpha)+')');
+        grad.addColorStop(1, 'rgba(250, 204, 21, 0)');
+        ctx.fillStyle = grad;
+        ctx.beginPath(); ctx.ellipse(0, 50, 120, 40, 0, 0, Math.PI*2); ctx.fill();
+        ctx.fillRect(-120, -250, 240, 300);
+
+        // 떠오르는 거대 바위 파편들
+        eff.rocks.forEach(r => {
+            ctx.save();
+            let rx = Math.cos(r.angle) * r.dist;
+            let ry = Math.sin(r.angle) * r.dist * 0.5 + r.yOffset;
+            ctx.translate(rx, ry);
+            ctx.rotate(r.angle * 3);
+            ctx.fillStyle = '#44403c'; 
+            ctx.fillRect(-r.size/2, -r.size/2, r.size, r.size);
+            ctx.strokeStyle = '#facc15'; ctx.lineWidth=2;
+            ctx.strokeRect(-r.size/2, -r.size/2, r.size, r.size);
+            ctx.restore();
+        });
+        ctx.restore();
+        ctx.globalAlpha = 1;
+    });
     
     // 충격파 링 렌더
     ringEffects.forEach(re => {
