@@ -266,10 +266,19 @@
         <!-- 우상단: 상점 + 인벤토리 -->
         <div class="flex flex-col items-end gap-1.5 z-20 md:scale-150 md:origin-top-right">
             <div class="flex flex-col items-end gap-1 pointer-events-auto">
-                <!-- 골드 표시 -->
-                <div class="bg-slate-950/95 border border-amber-500/50 rounded-lg px-1.5 py-0.5 md:px-2 md:py-1 flex items-center gap-1 md:gap-1.5">
-                    <span class="text-amber-400 text-[10px] md:text-xs">💰</span>
-                    <span id="hudGoldText" class="text-amber-300 font-black font-mono text-xs md:text-sm">0G</span>
+                <!-- 골드 및 팀 금고 표시 -->
+                <div class="bg-slate-950/95 border border-amber-500/50 rounded-lg px-1.5 py-0.5 md:px-2 md:py-1 flex flex-col items-end gap-0.5">
+                    <div class="flex items-center gap-1 md:gap-1.5">
+                        <span class="text-amber-400 text-[10px] md:text-xs">💰</span>
+                        <span id="hudGoldText" class="text-amber-300 font-black font-mono text-xs md:text-sm">0G</span>
+                    </div>
+                    <div class="flex items-center gap-1 text-[8px] md:text-[10px] border-t border-slate-700/50 pt-0.5 mt-0.5 w-full justify-between">
+                        <span class="text-purple-400 font-bold tracking-wider">TEAM VAULT</span>
+                        <div class="flex items-center gap-1.5 font-mono">
+                            <span class="text-emerald-300"><span id="hudVaultSouls">0</span>🔮</span>
+                            <span class="text-amber-300"><span id="hudVaultGold">0</span>G</span>
+                        </div>
+                    </div>
                 </div>
                 <div class="flex flex-col gap-1 w-full mt-0.5 md:mt-1">
                     <div class="flex flex-row gap-1 w-full justify-end">

@@ -292,6 +292,17 @@ const EVOLUTION_ITEMS = [
 let GS = { status:'TITLE', platform:'PC', faction:'BLUE', hero:'grrr', time:0, lastFrame:0, paused:false, autoSkill1:false, autoSkill2:false, hitStopTimer:0, sfxEnabled:true };
 let camera = { x:1500, y:2500, zoom:0.65 };
 let player = null;
+window.TEAM_VAULT = { souls: 0, gold: 0 };
+window.addGold = function(hero, amount) {
+    if(!hero) return;
+    if(hero.faction === player?.faction) {
+        let tax = amount * 0.03;
+        window.TEAM_VAULT.gold += tax;
+        window.addGold(hero, (amount - tax));
+    } else {
+        window.addGold(hero, amount);
+    }
+};
 let entities = [];
 let projectiles = [];
 let particles = [];
@@ -1115,7 +1126,10 @@ class Entity {
         // 히트 플래시 (번쩍임 효과)
         this.hitFlashTimer = 0.1;
 
-        if(this.hp<=0){ this.hp=0; this.isDead=true; if(attacker&&attacker.onKill) attacker.onKill(this); this.onDeath(attacker); }
+        if(this.hp<=0){ this.hp=0; this.isDead=true;
+            if ((this.type === 'minion' || this.type === 'jungle') && this.faction !== player?.faction) {
+                if(Math.random() < 0.15) window.TEAM_VAULT.souls++;
+            } if(attacker&&attacker.onKill) attacker.onKill(this); this.onDeath(attacker); }
         if (triggerEffects && (attacker === player || this === player)) {
             playSFX(attacker === player ? 'hit' : 'hit_receive');
         }
@@ -1178,7 +1192,7 @@ class Hero extends Entity {
         if(this.zhonyaTimer > 0) this.zhonyaTimer -= dt;
         // 자연 골드 및 EXP 획득 (패시브)
         if(!this.isDead) {
-            this.gold += dt * 4;
+            window.addGold(this, dt * 4);
             this.gainExp(dt * 0.5);
         }
         
@@ -1531,18 +1545,18 @@ class Hero extends Entity {
             else if(this.killStreak >= 3) showBanner(hName + '가 미쳐 날뛰고 있습니다!', '👹', this.faction===player?.faction);
             else showBanner(hName + ' 처치!', '⚔️', this.faction===player?.faction);
 
-            this.gold+=250; this.gainExp(80);
+            window.addGold(this, 250); this.gainExp(80);
             if(target.faction!=='BLUE') GS.scoreBlue++; else GS.scoreRed++;
             document.getElementById('scoreBlue').textContent=GS.scoreBlue; document.getElementById('scoreRed').textContent=GS.scoreRed;
             if(this.isPlayer) addText(this.x, this.y-40, '+250G / 80XP', '#fbbf24', 16);
         } else if(target.type==='minion'){ 
-            this.gold+=60; this.gainExp(25);
+            window.addGold(this, 60); this.gainExp(25);
             if(this.isPlayer) addText(this.x, this.y-40, '+60G', '#fbbf24', 16);
         } else if(target.type==='jungle'){ 
-            this.gold+=100; this.gainExp(60);
+            window.addGold(this, 100); this.gainExp(60);
             if(this.isPlayer) addText(this.x, this.y-40, '+100G / 60XP', '#fbbf24', 18);
         } else if(target.type.startsWith('boss')){ 
-            this.gold+=400; this.gainExp(150); showBanner('보스 처치!', '👑', this.faction===player?.faction);
+            window.addGold(this, 400); this.gainExp(150); showBanner('보스 처치!', '👑', this.faction===player?.faction);
             if(this.isPlayer) addText(this.x, this.y-40, '+400G / 150XP', '#fbbf24', 18);
         }
     }
@@ -1602,7 +1616,7 @@ class Hero extends Entity {
                 if(c.attacker !== attacker && !c.attacker.isDead) {
                     c.attacker.assists++;
                     c.attacker.gainExp(this.level * 15);
-                    c.attacker.gold += 150;
+                    window.addGold(c.attacker, 150);
                     if(c.attacker.triggerWarAnthem) c.attacker.triggerWarAnthem();
                 }
             });
@@ -1975,7 +1989,7 @@ class Hero extends Entity {
                 let bet = Math.max(100, Math.min(1500, Math.floor(this.gold * 0.25)));
                 this.gold -= bet;
                 if(Math.random() < 0.6) { // 60% 확률 당첨!
-                    this.gold += bet * 2;
+                    window.addGold(this, bet * 2);
 
                     spawnRing(this.x, this.y, '#fbbf24', 250, 0.8);
                     spawnAOE(this.x, this.y, 250, '#fcd34d66', 0.8);
@@ -2491,12 +2505,12 @@ class Building extends Entity {
             let oppFaction = this.faction === 'BLUE' ? 'RED' : 'BLUE';
             entities.forEach(e => {
                 if(e.type === 'hero' && e.faction === oppFaction) {
-                    e.gold += 300;
+                    window.addGold(e, 300);
                     if(e === player) addText(e.x, e.y-40, '타워 파괴 +300G!', '#fbbf24', 18);
                 }
             });
             if(attacker && attacker.type === 'hero') {
-                attacker.gold += 200;
+                window.addGold(attacker, 200);
                 addText(attacker.x, attacker.y-60, '최종타 +200G!', '#f59e0b', 16);
             }
             showBanner('아군이 포탑을 파괴했습니다! (+300G)', '🏰', player ? (this.faction !== player.faction) : (this.faction !== 'BLUE'));
@@ -2819,6 +2833,242 @@ class Minion extends Entity {
         let hpRatio = Math.max(0, Math.min(1, drawHp / drawMaxHp));
         let bw=24,bh=4,bx=this.x-bw/2,by=this.y-this.radius-10; ctx.fillStyle='#374151'; ctx.fillRect(bx,by,bw,bh); ctx.fillStyle=this.faction==='BLUE'?'#3b82f6':'#ef4444'; ctx.fillRect(bx,by,bw*hpRatio,bh);
         if(this.emote) { ctx.font = '28px sans-serif'; ctx.fillText(this.emote, this.x - 14, this.y - this.radius*1.5 - 20); }
+    }
+}
+
+
+window.spawnCreatures = function(count) {
+    const lanes = ['top', 'mid', 'bot'];
+    const types = ['dragon', 'golem', 'beast'];
+    showBanner('크리처 군단 소환!', '🐉', true);
+    for(let i=0; i<count; i++) {
+        let lane = lanes[Math.floor(Math.random() * lanes.length)];
+        let ctype = types[Math.floor(Math.random() * types.length)];
+        entities.push(new Creature(300, 2700, player.faction, lane, ctype));
+    }
+};
+
+class Guardian extends Entity {
+    constructor(x, y, faction) {
+        super(x, y, faction, 'guardian');
+        this.maxHp = 50000; this.hp = this.maxHp;
+        this.atk = 200; this.aspd = 0.8; this.moveSpd = 100; this.range = 70; this.radius = 28;
+        this.home = {x, y};
+        this.healTimer = 0;
+    }
+    applyRawDamage(dmg, attacker, triggerEffects=true) {
+        return super.applyRawDamage(dmg * 0.5, attacker, triggerEffects); // 50% damage reduction
+    }
+    applyStun(duration) { } // Immune to CC
+    applySlow(amount, duration) { } // Immune to CC
+
+    draw(ctx) {
+        if(this.isDead) return;
+        let r = this.radius;
+        // 그림자
+        ctx.fillStyle='rgba(0,0,0,0.4)'; ctx.beginPath(); ctx.ellipse(this.x, this.y+r, r*1.2, r*0.5, 0, 0, Math.PI*2); ctx.fill();
+        
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        
+        // 광배 (후광)
+        ctx.fillStyle = 'rgba(234, 179, 8, 0.3)';
+        ctx.beginPath(); ctx.arc(0, -r*1.5, r*1.5, 0, Math.PI*2); ctx.fill();
+        ctx.strokeStyle = '#facc15'; ctx.lineWidth = 2; ctx.stroke();
+
+        // 붉은 비단 띠 (어깨 뒤)
+        ctx.fillStyle = '#ef4444';
+        ctx.beginPath(); ctx.ellipse(-r*1.2, -r, r*0.5, r*1.5, -0.5, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(r*1.2, -r, r*0.5, r*1.5, 0.5, 0, Math.PI*2); ctx.fill();
+        
+        // 다리
+        ctx.fillStyle = '#0f766e'; // 청록색 다리
+        ctx.fillRect(-r*0.6, r*0.2, r*0.4, r*0.8);
+        ctx.fillRect(r*0.2, r*0.2, r*0.4, r*0.8);
+        
+        // 몸통 (갑옷)
+        ctx.fillStyle = '#b91c1c'; // 붉은 베이스
+        ctx.fillRect(-r*0.8, -r, r*1.6, r*1.2);
+        // 갑옷 장식
+        ctx.fillStyle = '#f59e0b'; ctx.fillRect(-r*0.4, -r*0.8, r*0.8, r*0.4);
+        ctx.fillStyle = '#10b981'; ctx.fillRect(-r*0.2, -r*0.6, r*0.4, r*0.2); // 중앙 보석
+
+        // 얼굴
+        ctx.fillStyle = '#fcd34d'; // 살구/황금빛 피부
+        ctx.fillRect(-r*0.6, -r*1.8, r*1.2, r*0.8);
+        
+        // 화려한 보관 (왕관)
+        ctx.fillStyle = '#f59e0b';
+        ctx.beginPath(); ctx.moveTo(-r*0.8, -r*1.8); ctx.lineTo(-r*1.2, -r*2.5); ctx.lineTo(-r*0.4, -r*2.2); ctx.lineTo(0, -r*2.8); ctx.lineTo(r*0.4, -r*2.2); ctx.lineTo(r*1.2, -r*2.5); ctx.lineTo(r*0.8, -r*1.8); ctx.fill();
+        ctx.fillStyle = '#10b981'; ctx.beginPath(); ctx.arc(0, -r*2.2, r*0.2, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = '#3b82f6'; ctx.beginPath(); ctx.arc(-r*0.6, -r*2.1, r*0.15, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = '#ef4444'; ctx.beginPath(); ctx.arc(r*0.6, -r*2.1, r*0.15, 0, Math.PI*2); ctx.fill();
+        
+        // 눈 (부리부리함)
+        ctx.fillStyle = 'white'; ctx.beginPath(); ctx.arc(-r*0.25, -r*1.5, r*0.15, 0, Math.PI*2); ctx.arc(r*0.25, -r*1.5, r*0.15, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = 'black'; ctx.beginPath(); ctx.arc(-r*0.25, -r*1.5, r*0.05, 0, Math.PI*2); ctx.arc(r*0.25, -r*1.5, r*0.05, 0, Math.PI*2); ctx.fill();
+        
+        // 팔과 무기 (거대한 창/보탑)
+        ctx.fillStyle = '#0f766e';
+        ctx.fillRect(-r*1.2, -r*0.8, r*0.4, r); // 왼팔
+        ctx.fillRect(r*0.8, -r*0.8, r*0.4, r); // 오른팔
+        
+        // 왼손 창
+        ctx.fillStyle = '#38bdf8'; // 푸른빛 창대
+        ctx.fillRect(-r*1.1, -r*2.5, r*0.2, r*3.5);
+        ctx.fillStyle = '#94a3b8'; // 창날
+        ctx.beginPath(); ctx.moveTo(-r*1.2, -r*2.5); ctx.lineTo(-r*1.0, -r*3.2); ctx.lineTo(-r*0.8, -r*2.5); ctx.fill();
+        
+        // 오른손 보탑
+        ctx.fillStyle = '#e2e8f0';
+        ctx.fillRect(r*0.9, -r*1.2, r*0.5, r*0.2);
+        ctx.fillRect(r*1.0, -r*1.4, r*0.3, r*0.2);
+        ctx.fillRect(r*1.1, -r*1.6, r*0.1, r*0.2);
+        
+        ctx.restore();
+
+        // 체력바
+        let hpRatio = Math.max(0, this.hp/this.maxHp);
+        ctx.fillStyle='#374151'; ctx.fillRect(this.x-20, this.y-this.radius-20, 40, 5);
+        ctx.fillStyle='#facc15'; ctx.fillRect(this.x-20, this.y-this.radius-20, 40*hpRatio, 5);
+    }
+
+    update(dt) {
+        if(this.isDead) return; super.update(dt);
+        let distToHome = dist(this, this.home);
+        if (distToHome < 150) {
+            this.healTimer -= dt;
+            if (this.healTimer <= 0) {
+                this.hp = Math.min(this.maxHp, this.hp + 100); // 회복
+                this.healTimer = 1;
+            }
+        }
+        
+        let target = entities.find(e => e.faction !== this.faction && !e.isDead && dist(this, e) <= 400 && dist(this.home, e) <= 400);
+        if(target) {
+            if(dist(this, target) > this.range) {
+                let a = Math.atan2(target.y - this.y, target.x - this.x);
+                this.vx = Math.cos(a) * this.moveSpd; this.vy = Math.sin(a) * this.moveSpd;
+            } else {
+                this.vx = 0; this.vy = 0;
+                if(this.attackTimer <= 0) {
+                    this.attackTimer = 1 / this.aspd;
+                    let r = Math.random();
+                    if(r < 0.2) {
+                        // 지진격
+                        target.applyRawDamage(this.atk * 1.5, this);
+                        target.applyStun && target.applyStun(1.5);
+                        target.applySlow && target.applySlow(0.5, 3);
+                        spawnAOE(this.x, this.y, 100, '#a16207aa', 0.5);
+                        addText(this.x, this.y-40, '지진격!', '#facc15', 20);
+                    } else if(r < 0.4) {
+                        // 신위 (weaken is not implemented natively, just damage)
+                        target.applyRawDamage(this.atk * 2, this);
+                        spawnAOE(this.x, this.y, 80, '#ef4444aa', 0.5);
+                        addText(this.x, this.y-40, '신위!', '#f87171', 20);
+                    } else {
+                        // 평타 (스플래시)
+                        let splash = entities.filter(e => e.faction !== this.faction && !e.isDead && dist(target, e) <= 60);
+                        splash.forEach(e => e.applyRawDamage(this.atk, this));
+                        spawnSlash(this.x, this.y, Math.atan2(target.y-this.y, target.x-this.x), '#fbbf24', 35);
+                    }
+                }
+            }
+        } else {
+            if(distToHome > 10) {
+                let a = Math.atan2(this.home.y - this.y, this.home.x - this.x);
+                this.vx = Math.cos(a) * this.moveSpd; this.vy = Math.sin(a) * this.moveSpd;
+            } else {
+                this.vx = 0; this.vy = 0;
+            }
+        }
+    }
+}
+
+class Creature extends Minion {
+    constructor(x, y, faction, lane, ctype) {
+        super(x, y, faction, lane);
+        this.ctype = ctype; // 'dragon', 'golem', 'beast'
+        this.type = 'creature';
+        
+        if (ctype === 'dragon') {
+            this.maxHp = 15000; this.hp = this.maxHp;
+            this.atk = 300; this.moveSpd = 120; this.radius = 24; this.aspd = 0.6;
+        } else if (ctype === 'golem') {
+            this.maxHp = 30000; this.hp = this.maxHp;
+            this.atk = 100; this.moveSpd = 100; this.radius = 30; this.aspd = 0.5;
+        } else { // beast
+            this.maxHp = 12000; this.hp = this.maxHp;
+            this.atk = 400; this.moveSpd = 250; this.radius = 20; this.aspd = 1.5;
+        }
+    }
+
+    draw(ctx) {
+        if(this.isDead) return;
+        let r = this.radius;
+        // 그림자
+        ctx.fillStyle='rgba(0,0,0,0.3)'; ctx.beginPath(); ctx.ellipse(this.x, this.y+r*0.8, r, r*0.4, 0, 0, Math.PI*2); ctx.fill();
+        
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        let anim = Math.sin(this.animPhase) * r * 0.1;
+
+        if (this.ctype === 'dragon') {
+            // 화룡 (Infernal Dragon)
+            ctx.fillStyle = '#ea580c'; // 몸통
+            ctx.fillRect(-r*0.8, -r+anim, r*1.6, r*1.5);
+            ctx.fillStyle = '#dc2626'; // 머리
+            ctx.fillRect(-r*0.6, -r*1.8+anim, r*1.2, r*0.8);
+            ctx.fillStyle = '#fef08a'; // 눈
+            ctx.fillRect(-r*0.4, -r*1.6+anim, r*0.2, r*0.2); ctx.fillRect(r*0.2, -r*1.6+anim, r*0.2, r*0.2);
+            ctx.fillStyle = '#b91c1c'; // 날개
+            ctx.beginPath(); ctx.moveTo(-r*0.8, -r+anim); ctx.lineTo(-r*2, -r*2+anim); ctx.lineTo(-r*0.8, -r*0.2+anim); ctx.fill();
+            ctx.beginPath(); ctx.moveTo(r*0.8, -r+anim); ctx.lineTo(r*2, -r*2+anim); ctx.lineTo(r*0.8, -r*0.2+anim); ctx.fill();
+            // 불꽃 효과
+            if(Math.random()<0.3) spawnParticles(this.x, this.y-r+anim, '#f97316', 1, 30, 0.3);
+
+        } else if (this.ctype === 'golem') {
+            // 에메랄드 골렘 (Emerald Golem)
+            ctx.fillStyle = '#065f46'; // 몸통
+            ctx.fillRect(-r, -r*1.2+anim, r*2, r*1.8);
+            ctx.fillStyle = '#10b981'; // 코어 및 장식
+            ctx.fillRect(-r*0.3, -r*0.5+anim, r*0.6, r*0.6);
+            ctx.fillRect(-r*0.8, -r*1.5+anim, r*0.4, r*0.8); ctx.fillRect(r*0.4, -r*1.5+anim, r*0.4, r*0.8);
+            ctx.fillStyle = '#a7f3d0'; // 눈
+            ctx.fillRect(-r*0.4, -r*0.8+anim, r*0.2, r*0.1); ctx.fillRect(r*0.2, -r*0.8+anim, r*0.2, r*0.1);
+            // 주먹
+            ctx.fillStyle = '#064e3b';
+            ctx.fillRect(-r*1.4, -r*0.2+anim, r*0.6, r*0.8); ctx.fillRect(r*0.8, -r*0.2+anim, r*0.6, r*0.8);
+
+        } else {
+            // 황금 마수 (Golden Beast)
+            ctx.fillStyle = '#ca8a04'; // 몸통
+            ctx.fillRect(-r*0.7, -r*0.8+anim, r*1.4, r*1.2);
+            ctx.fillStyle = '#eab308'; // 갈기
+            ctx.beginPath(); ctx.arc(0, -r*0.8+anim, r, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = '#fef08a'; // 얼굴
+            ctx.fillRect(-r*0.5, -r*1.2+anim, r, r*0.8);
+            ctx.fillStyle = '#ef4444'; // 붉은 눈 (흉폭함)
+            ctx.fillRect(-r*0.3, -r*1.0+anim, r*0.2, r*0.1); ctx.fillRect(r*0.1, -r*1.0+anim, r*0.2, r*0.1);
+            // 발톱
+            ctx.fillStyle = '#f8fafc';
+            ctx.fillRect(-r*0.8, r*0.2+anim, r*0.4, r*0.2); ctx.fillRect(r*0.4, r*0.2+anim, r*0.4, r*0.2);
+        }
+        
+        ctx.restore();
+
+        // 체력바
+        let hpRatio = Math.max(0, this.hp/this.maxHp);
+        ctx.fillStyle='#374151'; ctx.fillRect(this.x-15, this.y-this.radius-15, 30, 4);
+        ctx.fillStyle=this.faction==='BLUE'?'#3b82f6':'#ef4444'; ctx.fillRect(this.x-15, this.y-this.radius-15, 30*hpRatio, 4);
+    }
+
+    update(dt) {
+        if(this.isDead) return; super.update(dt);
+        if(this.attackTimer <= 0 && this.ctype === 'dragon') {
+             // 브레스 (가상)
+             if(Math.random()<0.1) spawnParticles(this.x, this.y, '#ef4444', 5, 60, 0.5);
+        }
     }
 }
 
@@ -3296,6 +3546,8 @@ window.startGame=()=>{
 
     // 건물 세팅 (3라인 + 수호타워)
     entities.push(new Building(300,2700,'BLUE','nexus')); entities.push(new Building(2700,300,'RED','nexus'));
+    // 수호신 스폰
+    entities.push(new Guardian(300, 2700, 'BLUE')); entities.push(new Guardian(2700, 300, 'RED'));
     // 수호 타워 (Nexus Turrets)
     entities.push(new Building(300,2550,'BLUE','nexus_turret')); entities.push(new Building(450,2700,'BLUE','nexus_turret')); entities.push(new Building(150,2700,'BLUE','nexus_turret')); entities.push(new Building(300,2850,'BLUE','nexus_turret'));
     entities.push(new Building(2700,450,'RED','nexus_turret')); entities.push(new Building(2550,300,'RED','nexus_turret')); entities.push(new Building(2850,300,'RED','nexus_turret')); entities.push(new Building(2700,150,'RED','nexus_turret'));
@@ -3508,6 +3760,8 @@ window.toggleAutoSkill = (num) => {
 function renderShop(){
     const cont=document.getElementById('shopItemContainer'); cont.innerHTML='';
     if(!player) return; document.getElementById('hudGoldText').textContent=Math.floor(player.gold)+'G';
+    document.getElementById('hudVaultSouls').textContent = window.TEAM_VAULT.souls;
+    document.getElementById('hudVaultGold').textContent = Math.floor(window.TEAM_VAULT.gold);
     BASE_ITEMS.forEach(i=>{
         let slot=player.inventory.find(inv=>inv.id===i.id); let lv=slot?'<span class="text-rose-400 font-bold">+'+slot.upgrade+'</span>':'';
         let canBuy=player.gold>=i.cost&&(slot||player.inventory.length<10);
@@ -3605,7 +3859,7 @@ function gameLoop(now){
             // 처치 시 거대 골드 보상
             goblin.onDeath = function(attacker) {
                 if(attacker && attacker.type === 'hero') {
-                    attacker.gold += 2500;
+                    window.addGold(attacker, 2500);
                     addText(attacker.x, attacker.y-60, '💰 황금 고블린 +2500G!', '#fbbf24', 20);
                     spawnSpecial(this.x, this.y, '#fbbf24', 'star', 20, 250, 1.0);
                 }
