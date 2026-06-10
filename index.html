@@ -522,11 +522,25 @@ window.onerror = function(msg, url, line, col, error) {
     </div>
 
     <!-- 패치노트 모달 -->
-    <div id="patchNotesModal" class="hidden absolute inset-0 flex items-center justify-center p-4" style="z-index: 99999; background: rgba(0,0,0,0.8); pointer-events: auto;">
+    <div id="patchNotesModal" class="absolute inset-0 flex items-center justify-center p-4" style="z-index: 99999; background: rgba(0,0,0,0.8); pointer-events: auto;">
         <div class="bg-slate-900 border border-slate-700 p-6 md:p-8 rounded-2xl max-w-2xl w-full max-h-[85vh] flex flex-col shadow-2xl relative">
             <button onclick="document.getElementById('patchNotesModal').classList.add('hidden')" class="absolute top-4 right-4 text-slate-400 hover:text-white text-3xl font-bold">&times;</button>
             <h2 class="text-2xl md:text-3xl font-black text-amber-400 mb-6 border-b border-slate-700 pb-3 orbitron">📝 PATCH NOTES</h2>
             <div class="flex-1 overflow-y-auto pr-4 text-sm md:text-base text-slate-300 space-y-4 custom-scrollbar">
+                <details class="bg-slate-700/50 rounded-lg border border-slate-600/50" open>
+                    <summary class="cursor-pointer p-3 font-bold text-amber-400 hover:text-amber-300 transition select-none flex justify-between items-center">
+                        v1010 - 신규 영웅 & 대형 크리쳐(수호신) 업데이트
+                        <span class="text-xs text-slate-400 font-normal ml-2 text-rose-400 font-bold">NEW</span>
+                    </summary>
+                    <div class="p-3 pt-0 text-sm text-slate-200 space-y-2 border-t border-slate-600/50 mt-1 pb-3 px-4">
+                        <ul class="list-disc pl-4 space-y-1">
+                            <li><span class="font-bold text-amber-400">신규 영웅 (크래그):</span> 거대한 바위 골렘 '크래그'가 추가되었습니다! 대지 강타로 지진 균열을 일으키며 적을 스턴시키고, 바위 갑옷으로 황금빛 오라를 뿜어내며 엄청난 탱킹력을 자랑합니다.</li>
+                            <li><span class="font-bold text-amber-400">신규 영웅 (아리엘):</span> 아군 치유 전담 서포터 '아리엘'이 추가되었습니다! 넓은 범위에 치유의 파동을 뿜어내며, 십자가 이펙트와 함께 아군을 극적으로 생존시킵니다.</li>
+                            <li><span class="font-bold text-emerald-400">대형 크리쳐 (수호신):</span> 넥서스를 지키던 수호신이 생명력을 가진 거대한 크리쳐로 재탄생했습니다! 적이 다가오면 당당하게 걸어나가 거대한 창을 시원하게 횡으로 휘둘러 무자비하게 적을 쓸어버립니다.</li>
+                            <li><span class="font-bold text-blue-400">시각 및 전투 피드백:</span> 강력한 스킬(대지 강타 등) 사용 시 엄청난 화면 흔들림(Screen Shake) 효과가 추가되어 타격감이 대폭 개선되었습니다.</li>
+                        </ul>
+                    </div>
+                </details>
                 
                 <details class="bg-slate-700/50 rounded-lg border border-slate-600/50" open>
                     <summary class="cursor-pointer p-3 font-bold text-amber-400 hover:text-amber-300 transition select-none flex justify-between items-center">
