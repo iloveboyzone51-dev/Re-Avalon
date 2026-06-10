@@ -1192,7 +1192,7 @@ class Hero extends Entity {
         if(this.zhonyaTimer > 0) this.zhonyaTimer -= dt;
         // 자연 골드 및 EXP 획득 (패시브)
         if(!this.isDead) {
-            window.addGold(this, dt * 4);
+            this.gold += dt * 1;
             this.gainExp(dt * 0.5);
         }
         
@@ -2860,8 +2860,15 @@ class Guardian extends Entity {
         return super.applyRawDamage(dmg * 0.5, attacker, triggerEffects); // 50% damage reduction
     }
     applyStun(duration) { } // Immune to CC
+    
+    applyRawDamage(dmg, attacker, triggerEffects=true) {
+        let d = super.applyRawDamage(dmg * 0.5, attacker, triggerEffects);
+        this.hitStopTimer = 0; // 완전한 상태이상/경직 면역
+        return d;
+    }
+    applyStun(duration) { } // Immune to CC
     applySlow(amount, duration) { } // Immune to CC
-
+    
     draw(ctx) {
         if(this.isDead) return;
         let r = this.radius;
@@ -2933,8 +2940,17 @@ class Guardian extends Entity {
         ctx.fillStyle='#facc15'; ctx.fillRect(this.x-20, this.y-this.radius-20, 40*hpRatio, 5);
     }
 
+    
     update(dt) {
         if(this.isDead) return; super.update(dt);
+        
+        // 시간에 따른 무한 스케일링 (초반 강력, 후반 괴물)
+        let scale = 1 + (window.GS ? window.GS.time / 300 : 0); // 5분마다 1배수 증가
+        let oldMax = this.maxHp;
+        this.maxHp = 50000 * scale;
+        this.atk = 200 * scale;
+        if(this.maxHp > oldMax) this.hp += (this.maxHp - oldMax);
+        
         let distToHome = dist(this, this.home);
         if (distToHome < 150) {
             this.healTimer -= dt;
@@ -2990,16 +3006,17 @@ class Creature extends Minion {
         super(x, y, faction, lane);
         this.ctype = ctype; // 'dragon', 'golem', 'beast'
         this.type = 'creature';
+        let scale = 1 + (window.GS ? window.GS.time / 360 : 0); // 6분에 2배, 12분에 3배
         
         if (ctype === 'dragon') {
-            this.maxHp = 15000; this.hp = this.maxHp;
-            this.atk = 300; this.moveSpd = 120; this.radius = 24; this.aspd = 0.6;
+            this.maxHp = 15000 * scale; this.hp = this.maxHp;
+            this.atk = 300 * scale; this.moveSpd = 120; this.radius = 24; this.aspd = 0.6;
         } else if (ctype === 'golem') {
-            this.maxHp = 30000; this.hp = this.maxHp;
-            this.atk = 100; this.moveSpd = 100; this.radius = 30; this.aspd = 0.5;
+            this.maxHp = 30000 * scale; this.hp = this.maxHp;
+            this.atk = 100 * scale; this.moveSpd = 100; this.radius = 30; this.aspd = 0.5;
         } else { // beast
-            this.maxHp = 12000; this.hp = this.maxHp;
-            this.atk = 400; this.moveSpd = 250; this.radius = 20; this.aspd = 1.5;
+            this.maxHp = 12000 * scale; this.hp = this.maxHp;
+            this.atk = 400 * scale; this.moveSpd = 250; this.radius = 20; this.aspd = 1.5;
         }
     }
 
@@ -3910,13 +3927,7 @@ function gameLoop(now){
         }
         
         // 미드 보스 (5분, 10분, 15분)
-        for(let i=0; i<3; i++) {
-            if(!midBossSpawned[i] && GS.time >= MID_BOSS_TIMES[i]) {
-                midBossSpawned[i] = true;
-                entities.push(new Monster(1500, 1500, 'boss_dragon'));
-                showBanner('\uC2DC\uAC04 \uACBD\uACFC! \uAC70\uB300 \uBAC0\uC2A4\uD130 \uCD9C\uD604!', '\uD83D\uDC09', true);
-            }
-        }
+        // 미드 보스 스폰 제거됨
         } // End of PLAYING block
 
         entities.forEach(e=>e.update(dt)); projectiles.forEach(p=>p.update(dt));
