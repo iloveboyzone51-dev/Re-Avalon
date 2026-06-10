@@ -3160,6 +3160,57 @@ class Guardian extends Entity {
     applyStun(duration) { } // Immune to CC
     applySlow(amount, duration) { } // Immune to CC
     
+    update(dt) {
+        if(this.isDead) return;
+        super.update(dt);
+        
+        let target = null;
+        let minDist = 800; // 수호신의 어그로 범위 (상당히 넓음)
+        entities.forEach(e => {
+            if(e.faction === this.faction || e.isDead || e.type === 'tower' || e.type === 'nexus_turret' || e.type === 'nexus' || e.type === 'jungle') return;
+            let d = dist(this, e);
+            if(d < minDist) {
+                minDist = d;
+                target = e;
+            }
+        });
+
+        if(target) {
+            let dToTarget = dist(this, target);
+            if(dToTarget > this.range) {
+                let a = Math.atan2(target.y - this.y, target.x - this.x);
+                this.vx = Math.cos(a) * this.moveSpd;
+                this.vy = Math.sin(a) * this.moveSpd;
+            } else {
+                this.vx = 0; this.vy = 0;
+                if(this.attackTimer <= 0) {
+                    this.attackTimer = 1 / this.aspd;
+                    
+                    // 수호신의 무자비한 공격 ("쓱싹 해버리는")
+                    target.applyRawDamage(this.atk * 1.5, this); // 강력한 일격
+                    if(target.applyStun) target.applyStun(0.5); // 강력한 경직/스턴
+                    
+                    // 수호신 전용 거대 무기 휘두르기 이펙트
+                    let angle = Math.atan2(target.y - this.y, target.x - this.x);
+                    if(typeof spawnSlash !== 'undefined') spawnSlash(this.x, this.y - this.radius, angle, '#38bdf8', 150); // 푸른빛 거대 창 궤적
+                    if(typeof spawnParticles !== 'undefined') spawnParticles(target.x, target.y, '#facc15', 20, 80, 0.5);
+                    if(typeof playSFX !== 'undefined') playSFX('skill_burst');
+                }
+            }
+        } else {
+            // 주변에 적이 없으면 원래 위치(home)로 당당하게 복귀
+            if(dist(this, this.home) > 10) {
+                let a = Math.atan2(this.home.y - this.y, this.home.x - this.x);
+                this.vx = Math.cos(a) * this.moveSpd;
+                this.vy = Math.sin(a) * this.moveSpd;
+            } else {
+                this.vx = 0; this.vy = 0;
+                // 복귀 완료 시 체력 회복
+                if(this.hp < this.maxHp) this.hp = Math.min(this.maxHp, this.hp + this.maxHp * 0.1 * dt);
+            }
+        }
+    }
+    
     
     draw(ctx) {
         if(this.isDead) return;
