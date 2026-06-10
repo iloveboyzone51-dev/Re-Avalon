@@ -781,6 +781,7 @@ function drawBlockyHero(ctx, x, y, r, dir, faction, type, attackAnimTimer = 0, e
         ctx.save();
         ctx.translate(x, y);
         if(dir < 0) ctx.scale(-1, 1);
+        ctx.scale(1.3, 1.3); // 크기 30% 증가
         
         // 어깨/등 바위 덩어리
         ctx.fillStyle = '#44403c';
