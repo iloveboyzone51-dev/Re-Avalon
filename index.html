@@ -527,10 +527,23 @@ window.onerror = function(msg, url, line, col, error) {
             <button onclick="document.getElementById('patchNotesModal').classList.add('hidden')" class="absolute top-4 right-4 text-slate-400 hover:text-white text-3xl font-bold">&times;</button>
             <h2 class="text-2xl md:text-3xl font-black text-amber-400 mb-6 border-b border-slate-700 pb-3 orbitron">📝 PATCH NOTES</h2>
             <div class="flex-1 overflow-y-auto pr-4 text-sm md:text-base text-slate-300 space-y-4 custom-scrollbar">
-                <details class="bg-slate-700/50 rounded-lg border border-slate-600/50" open>
+                                <details class="bg-slate-700/50 rounded-lg border border-slate-600/50" open>
+                    <summary class="cursor-pointer p-3 font-bold text-rose-400 hover:text-rose-300 transition select-none flex justify-between items-center">
+                        v1011 - 신규 아이템 대격변 및 리밸런싱
+                        <span class="text-xs text-slate-400 font-normal ml-2 text-rose-400 font-bold">NEW</span>
+                    </summary>
+                    <div class="p-3 pt-0 text-sm text-slate-200 space-y-2 border-t border-slate-600/50 mt-1 pb-3 px-4">
+                        <ul class="list-disc pl-4 space-y-1">
+                            <li><span class="font-bold text-rose-400">신규 아이템 5종:</span> 티아맷의 도끼(근접 광역 피해), 서리불꽃 건틀릿(공격 시 둔화), 괴수의 뼈갑옷(근접 뎀감 및 강인함), 수호천사의 은총(사망 시 부활), 헤르메스의 장화(비전투 폭발적 기동성) 추가!</li>
+                            <li><span class="font-bold text-amber-400">기존 아이템 리밸런싱:</span> 거인 학살자(체력 차 비례 추뎀), 몰락한 왕의 검(퍼뎀 5% 하향 + 피흡 5% 부여), 워모그의 갑옷(최대 체력 4% 회복) 전면 개편.</li>
+                            <li><span class="font-bold text-purple-400">히든 시너지:</span> 얼어붙은 학살자(건틀릿+몰락검) 및 불사조의 분노(수호천사+티아맷) 장착 시 초강력 스탯 제공 시너지 발동!</li>
+                        </ul>
+                    </div>
+                </details>
+                <details class="bg-slate-700/50 rounded-lg border border-slate-600/50" >
                     <summary class="cursor-pointer p-3 font-bold text-amber-400 hover:text-amber-300 transition select-none flex justify-between items-center">
                         v1010 - 신규 영웅 & 대형 크리쳐(수호신) 업데이트
-                        <span class="text-xs text-slate-400 font-normal ml-2 text-rose-400 font-bold">NEW</span>
+                        <span class="text-xs text-slate-400 font-normal ml-2">과거</span>
                     </summary>
                     <div class="p-3 pt-0 text-sm text-slate-200 space-y-2 border-t border-slate-600/50 mt-1 pb-3 px-4">
                         <ul class="list-disc pl-4 space-y-1">

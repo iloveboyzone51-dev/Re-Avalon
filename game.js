@@ -252,11 +252,11 @@ const BASE_ITEMS = [
     { id:'reflect',  name:'가시 갑옷',   cost:400, stat:'reflect',  val:0.15, icon:'🦔', desc:'피격 시 데미지 반사' },
     { id:'burn',     name:'화염검',      cost:400, stat:'burn',     val:18,   icon:'🔥', desc:'평타 시 화상 피해 추가' },
     { id:'stun',     name:'전투 망치',   cost:400, stat:'stun',     val:0.08, icon:'🔨', desc:'평타 시 기절 확률 추가' },
-    { id:'bork',     name:'몰락한 왕의 검',cost:500, stat:'bork',     val:1,    icon:'🗡️', desc:'적 현재 체력 비례 추가 피해' },
-    { id:'warmog',   name:'워모그의 갑옷',cost:500, stat:'warmog',   val:1,    icon:'💚', desc:'비전투 시 체력 대폭 회복' },
+    { id:'bork',     name:'몰락한 왕의 검',cost:500, stat:'bork',     val:1,    icon:'🗡️', desc:'현재 체력 5% 피해 및 피흡 5% 추가' },
+    { id:'warmog',   name:'워모그의 갑옷',cost:500, stat:'warmog',   val:1,    icon:'💚', desc:'비전투 시 초당 최대 체력의 4% 회복' },
     { id:'mage_staff',name:'현자의 지팡이',cost:450, stat:'cdr',      val:0.15, icon:'🔮', desc:'스킬 쿨타임 감소 및 데미지 증가' },
     { id:'hourglass',name:'시공의 모래시계',cost:600, stat:'dodge_heal', val:0.15, icon:'⏳', desc:'피격 시 15% 확률로 피해 무시 및 체력 회복' },
-    { id:'giant_slayer',name:'거인 학살자',cost:500, stat:'giant_slayer',val:0.03,icon:'🏹', desc:'적 최대 체력 비례 고정 피해' },
+    { id:'giant_slayer',name:'거인 학살자',cost:500, stat:'giant_slayer',val:0.02,icon:'🏹', desc:'나보다 체력 높은 적에게 체력차 비례 추뎀' },
     { id:'legion_shield',name:'군단의 방패',cost:450, stat:'shield',  val:20,   icon:'🔰', desc:'아군 방어력 증가 오라' }
 ];
 const ENHANCE_RATES = [1,1,1,0.6,0.5,0.4,0.3,0.2,0.1];
@@ -1217,7 +1217,7 @@ class Entity {
         
         // 피회복 및 이펙트 (14번 요구사항)
         if(!this.isBuilding && this.nonCombatTimer>=REGEN_DELAY && this.hp < this.maxHp) {
-            let rate = this.hasWarmog ? WARMOG_REGEN : REGEN_RATE;
+            let rate = this.hasWarmog ? 0.04 : REGEN_RATE;
             let healAmt = this.maxHp*rate*dt;
             this.hp = Math.min(this.maxHp, this.hp + healAmt);
             if(Math.random() < 0.1) spawnParticles(this.x+rand(-10,10), this.y-this.radius-10, '#22c55e', 1, 50, 0.5, 'plus');
@@ -1731,7 +1731,7 @@ class Hero extends Entity {
                 this.triggerOnHitPassives(target);
                 if(this.lifeSteal>0) { this.hp=Math.min(this.maxHp, this.hp+dealt*this.lifeSteal); playSFX('heal'); }
                 if(this.burnDmg>0&&!target.isBuilding) target.burnTicks.push({dmg:this.burnDmg,ticks:3,timer:1.0,src:this});
-                if(this.stunChance>0&&Math.random()<this.stunChance&&!target.isBuilding) target.stunTimer=1.0;
+                if(this.stunChance>0&&Math.random()<this.stunChance&&!target.isBuilding) target.stunTimer = target.type==='hero' && target.inventory && target.inventory.some(i=>i.id==='behemoth_armor') && HERO_TMPL[target.heroKey] && HERO_TMPL[target.heroKey].type==='melee' ? (1.0)*0.7 : (1.0);
                 spawnSlash(this.x+Math.cos(a)*this.range*0.5, this.y+Math.sin(a)*this.range*0.5, a, isCrit?'#fbbf24':HERO_TMPL[this.heroKey].color);
             }
         }
@@ -2007,7 +2007,7 @@ class Hero extends Entity {
             spawnAOE(this.x, this.y, 125, '#f59e0b88', 0.5);
             this.emote = '🤬'; this.emoteTimer = 2.0;
             let tgts = nearEnemies(this.x, this.y, 125);
-            tgts.forEach(e => { e.applyRawDamage(this.atk*2.0, this); e.stunTimer = 2.0; });
+            tgts.forEach(e => { e.applyRawDamage(this.atk*2.0, this); e.stunTimer = e.type==='hero' && e.inventory && e.inventory.some(i=>i.id==='behemoth_armor') && HERO_TMPL[e.heroKey] && HERO_TMPL[e.heroKey].type==='melee' ? (2.0)*0.7 : (2.0); });
 
             // 바닥 갈라짐 + 흙먼지 이펙트
             for(let i=0; i<5; i++) spawnSlash(this.x, this.y, Math.random()*Math.PI*2, '#78350f', 125);
@@ -2103,7 +2103,7 @@ class Hero extends Entity {
                 spawnRing(this.x, this.y, '#ef4444', 150, 0.4);
                 nearEnemies(this.x,this.y,150).forEach(e=>{
                     e.applyRawDamage(skillDmg*1.8,this); 
-                    e.stunTimer=1.0; e.airborneTimer=0.7;
+                    e.stunTimer = e.type==='hero' && e.inventory && e.inventory.some(i=>i.id==='behemoth_armor') && HERO_TMPL[e.heroKey] && HERO_TMPL[e.heroKey].type==='melee' ? (1.0)*0.7 : (1.0); e.airborneTimer=0.7;
                     let ea = Math.atan2(e.y - this.y, e.x - this.x);
                     e.vx+=Math.cos(ea)*600; e.vy+=Math.sin(ea)*600;
                 });
@@ -2114,7 +2114,7 @@ class Hero extends Entity {
                 spawnAOE(this.x, this.y, 175, '#b91c1c99', 0.5);
                 spawnRing(this.x, this.y, '#7f1d1d', 175, 0.5);
                 spawnSpecial(this.x, this.y, '#fca5a5', 'plus', 24, 150, 0.5);
-                nearEnemies(this.x,this.y,175).forEach(e=>{e.applyRawDamage(skillDmg*2.0,this); e.stunTimer=2.0;});
+                nearEnemies(this.x,this.y,175).forEach(e=>{e.applyRawDamage(skillDmg*2.0,this); e.stunTimer = e.type==='hero' && e.inventory && e.inventory.some(i=>i.id==='behemoth_armor') && HERO_TMPL[e.heroKey] && HERO_TMPL[e.heroKey].type==='melee' ? (2.0)*0.7 : (2.0);});
                 // 피분수 이펙트
                 for(let i=0; i<3; i++) setTimeout(()=>spawnParticles(this.x, this.y, '#9f1239', 20, 125, 0.6), i*100);
             }
@@ -2202,7 +2202,7 @@ class Hero extends Entity {
                 spawnAOE(this.x, this.y, 125, '#881337AA', 0.6);
                 nearEnemies(this.x, this.y, 125).forEach(e => {
                     e.applyRawDamage(skillDmg*2.5,this);
-                    e.stunTimer = 1.5;
+                    e.stunTimer = e.type==='hero' && e.inventory && e.inventory.some(i=>i.id==='behemoth_armor') && HERO_TMPL[e.heroKey] && HERO_TMPL[e.heroKey].type==='melee' ? (1.5)*0.7 : (1.5);
                 });
                 spawnSpecial(this.x, this.y, '#fca5a5', 'star', 20, 125, 0.6);
                 for(let i=0; i<5; i++) spawnSlash(this.x, this.y, Math.random()*Math.PI*2, '#f43f5e', 100);
@@ -2217,7 +2217,7 @@ class Hero extends Entity {
                         spawnRing(tg.x, tg.y, '#fef08a', 150, 0.3);
                     }, i*100);
                 }
-                nearEnemies(tg.x, tg.y, 150).forEach(e=>{e.applyRawDamage(skillDmg*2.2,this); e.stunTimer=1.5;});
+                nearEnemies(tg.x, tg.y, 150).forEach(e=>{e.applyRawDamage(skillDmg*2.2,this); e.stunTimer = e.type==='hero' && e.inventory && e.inventory.some(i=>i.id==='behemoth_armor') && HERO_TMPL[e.heroKey] && HERO_TMPL[e.heroKey].type==='melee' ? (1.5)*0.7 : (1.5);});
                 spawnParticles(tg.x, tg.y, '#60a5fa', 40, 150, 0.7);
             } else { // 천둥신의 분노
                 spawnRing(this.x, this.y, '#93c5fd', 225, 0.8);
@@ -2226,7 +2226,7 @@ class Hero extends Entity {
                 nearEnemies(this.x, this.y, 225).forEach(e=>{
                     e.applyRawDamage(skillDmg*1.5,this); 
                     e.slowTimer=3; e.slowRate=0.1; 
-                    e.stunTimer=1.2; e.airborneTimer=1.0;
+                    e.stunTimer = e.type==='hero' && e.inventory && e.inventory.some(i=>i.id==='behemoth_armor') && HERO_TMPL[e.heroKey] && HERO_TMPL[e.heroKey].type==='melee' ? (1.2)*0.7 : (1.2); e.airborneTimer=1.0;
                     spawnParticles(e.x, e.y, '#fef08a', 10, 50, 0.5);
                 });
             }
@@ -2253,7 +2253,7 @@ class Hero extends Entity {
                 spawnAOE(tg.x, tg.y, 125, '#bae6fdCC', 0.8);
                 spawnRing(tg.x, tg.y, '#0284c7', 125, 0.8);
                 for(let i=0; i<8; i++) spawnSlash(tg.x, tg.y, (Math.PI/4)*i, '#7dd3fc', 125);
-                nearEnemies(tg.x, tg.y, 125).forEach(e => { e.applyRawDamage(skillDmg*1.8, this); e.stunTimer = 2.5; e.isFrozen = true; });
+                nearEnemies(tg.x, tg.y, 125).forEach(e => { e.applyRawDamage(skillDmg*1.8, this); e.stunTimer = e.type==='hero' && e.inventory && e.inventory.some(i=>i.id==='behemoth_armor') && HERO_TMPL[e.heroKey] && HERO_TMPL[e.heroKey].type==='melee' ? (2.5)*0.7 : (2.5); e.isFrozen = true; });
                 spawnSpecial(tg.x, tg.y, '#e0f2fe', 'star', 24, 125, 0.8);
             }
         } else if(k==='JOKER') {
@@ -2290,7 +2290,7 @@ class Hero extends Entity {
                     for(let i=0; i<20; i++) setTimeout(()=>spawnParticles(this.x+rand(-150,150), this.y+rand(-150,150), '#ffffff', 5, 75, 0.5), i*50);
                     nearEnemies(this.x, this.y, 250).forEach(e => {
                         e.applyRawDamage(skillDmg * 3.5 + bet * 2.5, this);
-                        e.stunTimer = 1.5; e.airborneTimer = 0.5;
+                        e.stunTimer = e.type==='hero' && e.inventory && e.inventory.some(i=>i.id==='behemoth_armor') && HERO_TMPL[e.heroKey] && HERO_TMPL[e.heroKey].type==='melee' ? (1.5)*0.7 : (1.5); e.airborneTimer = 0.5;
                     });
                 } else {
 
@@ -2346,7 +2346,7 @@ class Hero extends Entity {
                 }
                 nearEnemies(tg.x, tg.y, 200).forEach(e => {
                     e.applyRawDamage(skillDmg * 2.5, this);
-                    e.stunTimer = 0.5;
+                    e.stunTimer = e.type==='hero' && e.inventory && e.inventory.some(i=>i.id==='behemoth_armor') && HERO_TMPL[e.heroKey] && HERO_TMPL[e.heroKey].type==='melee' ? (0.5)*0.7 : (0.5);
                 });
 
             } else { // 마엘스톰 (갈색 구체 완전 마비)
@@ -2358,7 +2358,7 @@ class Hero extends Entity {
                 // 마엘스톰 내부의 적 완전 마비
                 nearEnemies(tg.x, tg.y, 180).forEach(e => {
                     e.applyRawDamage(skillDmg * 1.5, this);
-                    e.stunTimer = duration; // 완전 마비
+                    e.stunTimer = e.type==='hero' && e.inventory && e.inventory.some(i=>i.id==='behemoth_armor') && HERO_TMPL[e.heroKey] && HERO_TMPL[e.heroKey].type==='melee' ? (duration)*0.7 : (duration); // 완전 마비
                     spawnParticles(e.x, e.y, '#b45309', 20, 100, duration);
                 });
 
@@ -2880,7 +2880,7 @@ class EpicDragon extends Entity {
                     spawnSpecial(tx, ty, this.dtype==='red'?'#fca5a5':'#e0f2fe', 'star', 20, 150, 0.5);
                     entities.filter(e=>!e.isDead && e.type==='hero' && dist({x:tx,y:ty},e)<=150).forEach(e => {
                         e.applyRawDamage(this.atk * 1.5, this);
-                        e.stunTimer = 1.0;
+                        e.stunTimer = e.type==='hero' && e.inventory && e.inventory.some(i=>i.id==='behemoth_armor') && HERO_TMPL[e.heroKey] && HERO_TMPL[e.heroKey].type==='melee' ? (1.0)*0.7 : (1.0);
                     });
                 }, 1000);
             }
@@ -2899,7 +2899,7 @@ class EpicDragon extends Entity {
             targets.forEach(e => {
                 if(dist(this, e) <= 500) {
                     e.applyRawDamage(this.atk, this);
-                    e.stunTimer = 1.5;
+                    e.stunTimer = e.type==='hero' && e.inventory && e.inventory.some(i=>i.id==='behemoth_armor') && HERO_TMPL[e.heroKey] && HERO_TMPL[e.heroKey].type==='melee' ? (1.5)*0.7 : (1.5);
                     let a = Math.atan2(e.y - this.y, e.x - this.x);
                     e.vx += Math.cos(a) * 800; e.vy += Math.sin(a) * 800; // 넉백
                 }
@@ -3547,7 +3547,7 @@ class Monster extends Entity {
                     } else if(r < 0.6) {
                         spawnRing(this.x, this.y, '#f59e0b', 300, 0.8);
                         let targets = entities.filter(e => e.faction !== this.faction && !e.isDead && dist(this, e) <= 300);
-                        targets.forEach(t => { t.applyRawDamage(this.atk*2, this); t.stunTimer = 1.0; });
+                        targets.forEach(t => { t.applyRawDamage(this.atk*2, this); t.stunTimer = t.type==='hero' && t.inventory && t.inventory.some(i=>i.id==='behemoth_armor') && HERO_TMPL[t.heroKey] && HERO_TMPL[t.heroKey].type==='melee' ? (1.0)*0.7 : (1.0); });
                         playSFX('skill_magic');
                     } else target.applyRawDamage(this.atk,this);
                 } else target.applyRawDamage(this.atk,this);
@@ -3749,7 +3749,7 @@ class Projectile {
                 if(this.attacker && this.attacker.triggerOnHitPassives) this.attacker.triggerOnHitPassives(tgt);
                 if(this.attacker.lifeSteal>0&&this.attacker.type==='hero') { this.attacker.hp=Math.min(this.attacker.maxHp,this.attacker.hp+this.dmg*this.attacker.lifeSteal); playSFX('heal'); }
                 if(this.attacker.burnDmg>0&&!tgt.isBuilding) tgt.burnTicks.push({dmg:this.attacker.burnDmg,ticks:3,timer:1.0,src:this.attacker});
-                if(this.attacker.stunChance>0&&Math.random()<this.attacker.stunChance&&!tgt.isBuilding) tgt.stunTimer=1.0;
+                if(this.attacker.stunChance>0&&Math.random()<this.attacker.stunChance&&!tgt.isBuilding) tgt.stunTimer = tgt.type==='hero' && tgt.inventory && tgt.inventory.some(i=>i.id==='behemoth_armor') && HERO_TMPL[tgt.heroKey] && HERO_TMPL[tgt.heroKey].type==='melee' ? (1.0)*0.7 : (1.0);
                 
                 let hitColor = this.isCrit?'#ff6b35':'#fbbf24';
                 if(this.ptype==='blood') hitColor = '#e11d48';
