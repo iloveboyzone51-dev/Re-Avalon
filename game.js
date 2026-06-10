@@ -1341,7 +1341,7 @@ class Hero extends Entity {
                 else if(this.laneRole === 'bot' || this.laneRole === 'support') { tx = 2700; ty = 2700; }
                 else if(this.laneRole === 'mid') { tx = 1500; ty = 1500; }
                 else if(this.laneRole === 'jungle') {
-                    let jg = entities.filter(e=>e.type==='jungle' && !e.isDead).sort((a,b)=>dist(this,a)-dist(this,b))[0];
+                    let jg = entities.filter(e=>e.type==='jungle' && !e.isDead && (!e.mtype || !e.mtype.includes('boss'))).sort((a,b)=>dist(this,a)-dist(this,b))[0];
                     if(jg) { tx = jg.x; ty = jg.y; }
                     else { tx = 1500; ty = 1500; }
                 }
@@ -2441,7 +2441,8 @@ class Building extends Entity {
 // ============ 에픽 드래곤 보스 ============
 class EpicDragon extends Entity {
     constructor(x, y, dtype, scale) {
-        super(x, y, 'NEUTRAL', 'epic_dragon');
+        super(x, y, 'NEUTRAL', 'jungle');
+        this.mtype = 'boss_epic_dragon';
         this.dtype = dtype; // 'red' or 'blue'
         this.radius = 60; // 5배 크기 (기본 영웅 12)
         this.maxHp = 45000 * scale; this.hp = this.maxHp;
