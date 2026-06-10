@@ -1002,14 +1002,9 @@ class Entity {
             if(Math.random()<0.01 && !this.emote) { this.emote = ['🤤','👼','💖'][Math.floor(Math.random()*3)]; this.emoteTimer=2; }
         }
 
-        let inCombat = this.lastAttackedTimer > 0;
-        if(!this.isBuilding) {
-            if (!inCombat) {
-                this.nonCombatTimer += dt;
-            } else {
-                this.nonCombatTimer = 0;
-            }
-        }
+        let isMoving = this.vx!==0||this.vy!==0;
+        let inCombat = this.lastAttackedTimer>0;
+        if(!this.isBuilding && !inCombat && !isMoving) { this.nonCombatTimer+=dt; } else if(inCombat) { this.nonCombatTimer=0; }
         
         // 피회복 및 이펙트 (14번 요구사항)
         if(!this.isBuilding && this.nonCombatTimer>=REGEN_DELAY && this.hp < this.maxHp) {
@@ -1098,11 +1093,8 @@ class Entity {
         // 정글몹 어그로 반격 로직 추가
         if(this.type === 'jungle' && attacker && !attacker.isBuilding) this.aggroTarget = attacker;
 
-        if(triggerEffects && this.reflectRate > 0 && attacker && !attacker.isBuilding){
-            let ref = dmg * this.reflectRate;
-            if (typeof attacker.applyRawDamage === 'function') {
-                attacker.applyRawDamage(ref, this, false);
-            }
+        if(triggerEffects && this.reflectRate>0 && attacker && !attacker.isBuilding){
+            let ref=dmg*this.reflectRate; attacker.hp-=ref; addText(attacker.x, attacker.y-25, Math.floor(ref), '#e879f9', 12);
         }
         
         let color = attacker===player?'#fbbf24':(attacker&&attacker.faction==='BLUE'?'#60a5fa':'#f87171');
@@ -1258,149 +1250,89 @@ class Hero extends Entity {
     handleAI(dt){
         if(this.isDead || this.stunTimer>0) return;
 
-        let myBase = this.faction === 'BLUE' ? {x:300, y:2700} : {x:2700, y:300};
-        
-        // 본진 근처면 즉시 최적의 장비 구매 시도
+        let myBase = this.faction==='BLUE' ? {x:300,y:2700} : {x:2700,y:300};
         if(dist(this, myBase) < 400) {
-            this.aiShopTimer -= dt;
-            if(this.aiShopTimer <= 0) {
-                this.aiShopAI();
-                this.aiShopTimer = 4.0;
-            }
+            this.aiShopTimer-=dt; if(this.aiShopTimer<=0){ this.aiShopAI(); this.aiShopTimer=5; }
         }
 
-        let hpRatio = this.hp / this.maxHp;
+        let hpRatio = this.hp/this.maxHp;
         
-        // 0.2초마다 주변 전황 및 고도화된 정보 캐싱
         if (!this.aiUpdateTimer) this.aiUpdateTimer = 0;
         this.aiUpdateTimer -= dt;
         if (this.aiUpdateTimer <= 0) {
-            this.aiUpdateTimer = 0.2;
-            this.nearEnemiesCache = entities.filter(e => e.faction !== this.faction && !e.isDead && dist(this, e) < 900);
-            this.nearAlliesCache = entities.filter(e => e.faction === this.faction && !e.isDead && dist(this, e) < 900 && e !== this);
+            this.aiUpdateTimer = 0.2 + Math.random()*0.1;
+            this.nearEnemiesCache = entities.filter(e=>e.faction!==this.faction && !e.isDead && dist(this,e)<600 && e.type!=='tower' && e.type!=='nexus_turret' && e.type!=='nexus');
         }
-
         let nearEnemies = (this.nearEnemiesCache || []).filter(e => !e.isDead);
-        let nearAllies = (this.nearAlliesCache || []).filter(e => !e.isDead);
-
-        // ────────────────────────────────────────
-        // [가이드 4.3.1] 동적 전술 상태 결정 알고리즘
-        // ────────────────────────────────────────
-        let oldState = this.aiState;
         
-        if (hpRatio <= 0.35) {
-            let superWeakEnemy = nearEnemies.find(e => e.type === 'hero' && (e.hp / e.maxHp) <= 0.15 && dist(this, e) < this.range * 1.3);
-            if (superWeakEnemy) {
-                this.aiState = 'ATTACK';
+        let oldState = this.aiState;
+
+
+        // 1차 AI: 체력 기반 로직만 적용
+        if (hpRatio <= 0.3) {
+            let weakestEnemy = nearEnemies.sort((a,b)=>(a.hp/a.maxHp)-(b.hp/b.maxHp))[0];
+            if (weakestEnemy && (weakestEnemy.hp/weakestEnemy.maxHp) <= 0.1) {
+                this.aiState = 'ATTACK'; // 적 체력이 10% 이하면 추격 유지
             } else {
-                this.aiState = 'RETREAT';
+                this.aiState = 'RETREAT'; // 내 체력이 30% 이하 시 후퇴
             }
+        } else if (nearEnemies.length > 0) {
+            this.aiState = 'ATTACK';
         } else {
-            let combatAllies = nearAllies.filter(a => a.type === 'hero' && a.lastAttackedTimer > 0);
-            let visibleEnemyHeroes = nearEnemies.filter(e => e.type === 'hero');
-            
-            if (combatAllies.length > 0 && visibleEnemyHeroes.length > 0) {
-                this.aiState = 'TEAMFIGHT_JOIN';
-            } else if (nearEnemies.length > 0) {
-                this.aiState = 'ATTACK';
-            } else {
-                this.aiState = 'LANE';
-            }
+            this.aiState = 'LANE';
         }
 
         if (oldState !== this.aiState) {
+            this.aiStateChangedAt = GS.time;
             this.aiChasing = false;
-            this.reactionDelay = 0.15;
-        }
-        if (this.reactionDelay > 0) {
-            this.reactionDelay -= dt;
-            return;
         }
 
-        // ────────────────────────────────────────
-        // [가이드 4.3.2] 타겟 우선순위 스코어링 수식 기반 스마트 타겟팅
-        // ────────────────────────────────────────
+        // --- 2. 상태별 행동 실행 ---
+        let tx = 1500, ty = 1500; // default
         let target = null;
-        if (nearEnemies.length > 0) {
-            let bestScore = -99999;
-            nearEnemies.forEach(e => {
-                if (e.type === 'nexus' && entities.some(t => t.type==='nexus_turret' && t.faction===e.faction && !t.isDead)) return;
-                
-                let d = dist(this, e);
-                let score = 0;
-                score += (1.0 - (e.hp / e.maxHp)) * 400;
-                score += (1.0 - (d / 900)) * 300;
-                if (e.type === 'hero') score += 250;
-                if ((e.type === 'tower' || e.type === 'nexus_turret') && !entities.some(m => m.faction === this.faction && m.type === 'minion' && dist(m, e) < e.range)) {
-                    score -= 600;
-                }
 
-                if (score > bestScore) {
-                    bestScore = score;
-                    target = e;
-                }
-            });
-        }
+        // 이동 헬퍼 함수 (히스테리시스 적용)
+        const moveToTarget = (t, startDist, stopDist) => {
+            let d = dist(this, t);
+            if (this.aiChasing && d <= stopDist) this.aiChasing = false;
+            else if (!this.aiChasing && d >= startDist) this.aiChasing = true;
 
-        // ────────────────────────────────────────
-        // [가이드 4.3.3] 각 상태별 세부 주행 제어
-        // ────────────────────────────────────────
-        let tx = 1500, ty = 1500;
-        
-        const followDirection = (targetPos, stopDist) => {
-            let d = dist(this, targetPos);
-            if (d > stopDist) {
-                let a = Math.atan2(targetPos.y - this.y, targetPos.x - this.x);
-                this.vx = Math.cos(a) * this.moveSpd;
-                this.vy = Math.sin(a) * this.moveSpd;
+            if (this.aiChasing) {
+                let a = Math.atan2(t.y-this.y, t.x-this.x);
+                this.vx = Math.cos(a)*this.moveSpd; this.vy = Math.sin(a)*this.moveSpd;
+                this.facingDir = t.x < this.x ? -1 : 1;
             } else {
                 this.vx = 0; this.vy = 0;
+                this.facingDir = t.x < this.x ? -1 : 1;
             }
-            this.facingDir = targetPos.x < this.x ? -1 : 1;
         };
 
         switch(this.aiState) {
             case 'RETREAT':
-                let pursuer = nearEnemies.find(e => e.type === 'hero' && dist(this, e) < 300);
-                if (pursuer) {
-                    let escapeAngle = Math.atan2(myBase.y - this.y, myBase.x - this.x);
-                    let evadeNoise = Math.sin(performance.now() / 150) * 0.4;
-                    this.vx = Math.cos(escapeAngle + evadeNoise) * this.moveSpd;
-                    this.vy = Math.sin(escapeAngle + evadeNoise) * this.moveSpd;
-                } else {
-                    followDirection(myBase, 50);
-                }
-                break;
-
-            case 'TEAMFIGHT_JOIN':
-                let targetFight = nearAllies.find(a => a.type === 'hero' && a.lastAttackedTimer > 0);
-                if (targetFight) {
-                    followDirection(targetFight, this.range * 0.7);
-                    if (target && dist(this, target) <= this.range) {
-                        if(this.heroSkill1Timer <= 0) this.useSkill(1);
-                        if(this.heroSkill2Timer <= 0) this.useSkill(2);
+                tx = myBase.x; ty = myBase.y;
+                let enemyTower1 = entities.find(t=>(t.type==='tower'||t.type==='nexus_turret') && t.faction!==this.faction && !t.isDead && dist(this,t)<t.range+50);
+                if (enemyTower1) {
+                    let hasFriendlyMinion1 = entities.some(m => m.faction === this.faction && m.type === 'minion' && !m.isDead && dist(m, enemyTower1) < enemyTower1.range);
+                    if ((!hasFriendlyMinion1 && GS.time < 300) || hpRatio < 0.7) {
+                        let a = Math.atan2(myBase.y-this.y, myBase.x-this.x);
+                        this.vx = Math.cos(a)*this.moveSpd; this.vy = Math.sin(a)*this.moveSpd;
+                        break;
                     }
-                } else {
-                    this.aiState = 'LANE';
+                }
+                if(dist(this, myBase) < 150) { this.vx=0; this.vy=0; } // 힐링
+                else {
+                    let a = Math.atan2(ty-this.y, tx-this.x);
+                    this.vx = Math.cos(a)*this.moveSpd; this.vy = Math.sin(a)*this.moveSpd;
+                    this.facingDir = tx < this.x ? -1 : 1;
                 }
                 break;
 
             case 'ATTACK':
-                if (target) {
-                    let d = dist(this, target);
-                    if (this.attackTimer > 0 && HERO_TMPL[this.heroKey].type === 'ranged' && d < this.range * 0.8) {
-                        let escapeAngle = Math.atan2(this.y - target.y, this.x - target.x);
-                        this.vx = Math.cos(escapeAngle) * this.moveSpd * 0.85;
-                        this.vy = Math.sin(escapeAngle) * this.moveSpd * 0.85;
-                    } else {
-                        followDirection(target, this.range * 0.6);
-                    }
-                    
-                    if(this.heroSkill1Timer <= 0) this.useSkill(1);
-                    if(this.heroSkill2Timer <= 0 && d < this.range * 1.1) this.useSkill(2);
-                } else {
-                    this.aiState = 'LANE';
-                }
+                target = nearEnemies.sort((a,b) => dist(this,a) - dist(this,b))[0];
+                if(target) moveToTarget(target, this.range * 0.8, this.range * 0.4);
+                
+                if(this.heroSkill1Timer <= 0) this.useSkill(1);
+                else if(this.heroSkill2Timer <= 0) this.useSkill(2);
                 break;
 
             case 'LANE':
@@ -1409,27 +1341,38 @@ class Hero extends Entity {
                 else if(this.laneRole === 'bot' || this.laneRole === 'support') { tx = 2700; ty = 2700; }
                 else if(this.laneRole === 'mid') { tx = 1500; ty = 1500; }
                 else if(this.laneRole === 'jungle') {
-                    let jg = entities.filter(e => e.type === 'jungle' && !e.isDead && (!e.mtype || !e.mtype.includes('boss'))).sort((a,b) => dist(this,a) - dist(this,b))[0];
+                    let jg = entities.filter(e=>e.type==='jungle' && !e.isDead && (!e.mtype || !e.mtype.includes('boss'))).sort((a,b)=>dist(this,a)-dist(this,b))[0];
                     if(jg) { tx = jg.x; ty = jg.y; }
                     else { tx = 1500; ty = 1500; }
                 }
-
-                if(dist(this, {x:tx, y:ty}) < 250) {
-                    let enemyBase = this.faction === 'BLUE' ? {x:2700, y:300} : {x:300, y:2700};
+                
+                if(this.laneRole !== 'jungle' && dist(this, {x:tx, y:ty}) < 200) {
+                    let enemyBase = this.faction==='BLUE'?{x:2700,y:300}:{x:300,y:2700};
                     tx = enemyBase.x; ty = enemyBase.y;
                 }
-
-                let enemyTower = entities.find(t => (t.type==='tower' || t.type==='nexus_turret') && t.faction !== this.faction && !t.isDead && dist(this, t) < t.range + 80);
-                if (enemyTower) {
-                    let hasFriendlyMinion = entities.some(m => m.faction === this.faction && m.type === 'minion' && !m.isDead && dist(m, enemyTower) < enemyTower.range);
-                    if (!hasFriendlyMinion) {
-                        let retreatAngle = Math.atan2(this.y - enemyTower.y, this.x - enemyTower.x);
-                        tx = enemyTower.x + Math.cos(retreatAngle) * (enemyTower.range + 100);
-                        ty = enemyTower.y + Math.sin(retreatAngle) * (enemyTower.range + 100);
+                
+                let possibleEnemies = entities.filter(e=>e.faction!==this.faction && !e.isDead && dist(this,e)<this.range);
+                possibleEnemies = possibleEnemies.filter(e => !(e.type==='nexus' && entities.some(t=>t.type==='nexus_turret' && t.faction===e.faction && !t.isDead)));
+                let targetEnemy = possibleEnemies.find(e=>e.type==='hero') || possibleEnemies.find(e=>e.type==='minion'||e.type==='jungle') || possibleEnemies.find(e=>e.type==='tower'||e.type==='nexus_turret'||e.type==='nexus') || possibleEnemies.sort((a,b)=>dist(this,a)-dist(this,b))[0];
+                if(targetEnemy) {
+                    this.vx=0; this.vy=0;
+                    this.facingDir = targetEnemy.x < this.x ? -1 : 1;
+                    if(this.heroSkill1Timer <= 0) this.useSkill(1);
+                } else {
+                    let enemyTower = entities.find(t=>(t.type==='tower'||t.type==='nexus_turret') && t.faction!==this.faction && !t.isDead && dist(this,t)<t.range+50);
+                    if (enemyTower) {
+                        let hasFriendlyMinion = entities.some(m => m.faction === this.faction && m.type === 'minion' && !m.isDead && dist(m, enemyTower) < enemyTower.range);
+                        if ((!hasFriendlyMinion && GS.time < 300) || hpRatio < 0.7) {
+                            let a = Math.atan2(myBase.y-this.y, myBase.x-this.x);
+                            this.vx = Math.cos(a)*this.moveSpd; this.vy = Math.sin(a)*this.moveSpd;
+                            break;
+                        }
                     }
-                }
 
-                followDirection({x:tx, y:ty}, 40);
+                    // 목표 방향 이동 (히스테리시스 적용)
+                    let waypoint = {x:tx, y:ty};
+                    moveToTarget(waypoint, 50, 20);
+                }
                 break;
         }
 
@@ -1628,11 +1571,7 @@ class Hero extends Entity {
         this.applyStats(); this.checkEvolution(); renderShop();
     }
     applyStats(){
-        this.maxHp = this.baseMaxHp;
-        if (this.isGiant) {
-            this.maxHp *= 1.5;
-        }
-        this.atk=this.baseAtk; this.aspd=this.baseAspd; this.moveSpd=this.baseMoveSpd;
+        this.maxHp=this.baseMaxHp; this.atk=this.baseAtk; this.aspd=this.baseAspd; this.moveSpd=this.baseMoveSpd;
         let t=HERO_TMPL[this.heroKey];
         this.critChance=t.critChance||0; this.lifeSteal=t.lifeSteal||0;
         this.reflectRate=0; this.burnDmg=0; this.stunChance=0; this.shield=0;
@@ -1961,7 +1900,7 @@ class Hero extends Entity {
                     }, i*250);
                 }
             } else { // 잭팟 (광역 카드 비)
-                let bet = Math.max(100, Math.min(1500, Math.floor(this.gold * 0.25)));
+                let bet = Math.max(100, Math.floor(this.gold * 0.25));
                 this.gold -= bet;
                 if(Math.random() < 0.6) { // 60% 확률 당첨!
                     this.gold += bet * 2;
@@ -2805,29 +2744,6 @@ class Monster extends Entity {
     update(dt){
         if(this.isDead){ if(!this.mtype.includes('boss') && this.mtype !== 'summon' && this.mtype !== 'goblin') { this.respawnTimer-=dt; if(this.respawnTimer<=0){ this.isDead=false; this.hp=this.maxHp; this.x=this.home.x; this.y=this.home.y; this.aggroTarget=null; } } return; }
         super.update(dt);
-
-        // [V4 섹션 4.2] 황금 고블린 비폭력 도망(Flee) 전용 AI
-        if (this.mtype === 'goblin') {
-            let threatHeroes = entities.filter(e => e.type === 'hero' && e.faction !== this.faction && !e.isDead && dist(this, e) < 500);
-            if (threatHeroes.length > 0) {
-                let nearestThreat = threatHeroes.sort((a,b) => dist(this, a) - dist(this, b))[0];
-                let fleeAngle = Math.atan2(this.y - nearestThreat.y, this.x - nearestThreat.x);
-                let zigZag = Math.sin(performance.now() / 100) * 0.3;
-                this.vx = Math.cos(fleeAngle + zigZag) * this.moveSpd;
-                this.vy = Math.sin(fleeAngle + zigZag) * this.moveSpd;
-                this.facingDir = this.vx >= 0 ? 1 : -1;
-            } else {
-                if (dist(this, this.home) > 100) {
-                    let returnAngle = Math.atan2(this.home.y - this.y, this.home.x - this.x);
-                    this.vx = Math.cos(returnAngle) * this.moveSpd * 0.5;
-                    this.vy = Math.sin(returnAngle) * this.moveSpd * 0.5;
-                } else {
-                    this.vx = 0; this.vy = 0;
-                }
-            }
-            return; // 반격 공격 로직 타지 않도록 완벽 격리
-        }
-
         let target = this.aggroTarget;
         
         if(this.mtype === 'summon') {
@@ -2874,166 +2790,42 @@ class Monster extends Entity {
     onDeath(attacker){ this.respawnTimer=15; if(this.mtype==='boss_dragon'){ showBanner('드래곤 처치!','🐲', attacker?.faction===player?.faction); } }
     draw(ctx){
         if(this.isDead) return;
-
-        let t = performance.now();
-        let anim = Math.sin(t / 150 + (this.animPhase||0));
-        let walk = Math.sin(t / 100 + (this.animPhase||0)) * 10;
-
-        // 1. 바닥 그림자 렌더링
-        ctx.fillStyle = 'rgba(0,0,0,0.25)';
-        ctx.beginPath();
-        ctx.ellipse(this.x, this.y + this.radius * 0.7, this.radius * 1.1, this.radius * 0.35, 0, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.save();
-
-        // 피격 시 흰색 번쩍임 플래시 효과
-        if (this.hitFlashTimer > 0) {
-            ctx.shadowColor = '#ffffff';
-            ctx.shadowBlur = 15;
-        }
-
-        // 2. 몬스터 타입별 개성 있는 외형 렌더링
-        if (this.mtype === 'summon') {
-            // [소환수: 해골 미니언]
-            ctx.fillStyle = '#0f172a';
-            ctx.fillRect(this.x - this.radius, this.y - this.radius * 1.5 + anim * 3, this.radius * 2, this.radius * 1.8);
-            ctx.fillStyle = '#6b7280';
-            ctx.fillRect(this.x - this.radius * 1.2, this.y - this.radius * 0.8 + anim * 3, this.radius * 0.5, this.radius * 0.6);
-            ctx.fillRect(this.x + this.radius * 0.7, this.y - this.radius * 0.8 + anim * 3, this.radius * 0.5, this.radius * 0.6);
-            ctx.fillStyle = '#a855f7';
-            ctx.fillRect(this.x - this.radius * 0.4, this.y - this.radius * 1.1 + anim * 3, 3, 3);
-            ctx.fillRect(this.x + this.radius * 0.1, this.y - this.radius * 1.1 + anim * 3, 3, 3);
-            if (Math.random() < 0.15) spawnParticles(this.x, this.y - this.radius, '#7e22ce', 1, 30, 0.4);
-
-        } else if (this.mtype === 'slime') {
-            // [슬라임] - 말랑말랑 출렁이는 반투명 젤리
-            ctx.fillStyle = 'rgba(34, 197, 94, 0.85)';
-            ctx.strokeStyle = '#15803d';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.ellipse(this.x, this.y + anim * 2, this.radius * 1.1, this.radius * (0.8 - anim * 0.08), 0, 0, Math.PI * 2);
-            ctx.fill(); ctx.stroke();
-            ctx.fillStyle = '#ffffff';
-            ctx.beginPath();
-            ctx.arc(this.x - this.radius * 0.3, this.y - this.radius * 0.2 + anim * 2, 4, 0, Math.PI * 2);
-            ctx.arc(this.x + this.radius * 0.3, this.y - this.radius * 0.2 + anim * 2, 4, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.fillStyle = '#000000';
-            ctx.beginPath();
-            ctx.arc(this.x - this.radius * 0.3, this.y - this.radius * 0.2 + anim * 2, 2, 0, Math.PI * 2);
-            ctx.arc(this.x + this.radius * 0.3, this.y - this.radius * 0.2 + anim * 2, 2, 0, Math.PI * 2);
-            ctx.fill();
-
-        } else if (this.mtype === 'wolf') {
-            // [늑대] - 날렵한 각진 머리칼, 쫑긋한 귀
-            ctx.fillStyle = '#475569';
-            ctx.fillRect(this.x - this.radius * 1.2, this.y - this.radius * 0.6 + anim, this.radius * 2.2, this.radius * 1.1);
-            ctx.fillStyle = '#334155';
-            ctx.beginPath();
-            ctx.moveTo(this.x + this.radius * 0.4, this.y - this.radius * 0.8);
-            ctx.lineTo(this.x + this.radius * 1.3, this.y - this.radius * 0.4);
-            ctx.lineTo(this.x + this.radius * 0.4, this.y);
-            ctx.closePath(); ctx.fill();
-            ctx.beginPath();
-            ctx.moveTo(this.x + this.radius * 0.2, this.y - this.radius * 0.8);
-            ctx.lineTo(this.x, this.y - this.radius * 1.4);
-            ctx.lineTo(this.x + this.radius * 0.5, this.y - this.radius * 0.8);
-            ctx.closePath(); ctx.fill();
-            ctx.fillStyle = '#38bdf8';
-            ctx.fillRect(this.x + this.radius * 0.6, this.y - this.radius * 0.6, 3, 2);
-
-        } else if (this.mtype === 'bear') {
-            // [곰] - 묵직한 거대 사각형 가죽
-            ctx.fillStyle = '#78350f';
-            ctx.fillRect(this.x - this.radius * 1.1, this.y - this.radius * 1.2 + anim, this.radius * 2.2, this.radius * 1.8);
-            ctx.fillStyle = '#451a03';
-            ctx.fillRect(this.x - this.radius * 1.2, this.y + this.radius * 0.3 + walk * 0.3, this.radius * 0.5, this.radius * 0.6);
-            ctx.fillRect(this.x + this.radius * 0.7, this.y + this.radius * 0.3 - walk * 0.3, this.radius * 0.5, this.radius * 0.6);
-            ctx.beginPath();
-            ctx.arc(this.x - this.radius * 0.7, this.y - this.radius * 1.2 + anim, 6, 0, Math.PI * 2);
-            ctx.arc(this.x + this.radius * 0.7, this.y - this.radius * 1.2 + anim, 6, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.fillStyle = '#ef4444';
-            ctx.fillRect(this.x - this.radius * 0.3, this.y - this.radius * 0.8 + anim, 3, 3);
-            ctx.fillRect(this.x + this.radius * 0.1, this.y - this.radius * 0.8 + anim, 3, 3);
-
-        } else if (this.mtype === 'golem') {
-            // [고렘] - 금이 간 바위 텍스처, 고대 정수 코어
-            ctx.fillStyle = '#64748b';
-            ctx.fillRect(this.x - this.radius, this.y - this.radius * 1.4 + anim * 0.5, this.radius * 2, this.radius * 2.0);
-            ctx.strokeStyle = '#c084fc';
-            ctx.lineWidth = 3;
-            ctx.beginPath();
-            ctx.moveTo(this.x - this.radius * 0.5, this.y - this.radius * 0.5);
-            ctx.lineTo(this.x + this.radius * 0.3, this.y + this.radius * 0.2);
-            ctx.stroke();
-            ctx.shadowColor = '#a855f7'; ctx.shadowBlur = 10;
-            ctx.fillStyle = '#d8b4fe';
-            ctx.beginPath();
-            ctx.arc(this.x, this.y - this.radius * 0.9, 6, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.shadowBlur = 0;
-
-        } else if (this.mtype === 'skeleton') {
-            // [해골 전사] - 갈비뼈 상자 구조
-            ctx.fillStyle = '#e2e8f0';
-            ctx.fillRect(this.x - this.radius * 0.4, this.y - this.radius * 1.4 + anim, this.radius * 0.8, this.radius * 1.8);
-            ctx.fillStyle = '#0f172a';
-            ctx.fillRect(this.x - this.radius * 0.5, this.y - this.radius * 0.8 + anim, this.radius * 1.0, 3);
-            ctx.fillRect(this.x - this.radius * 0.5, this.y - this.radius * 0.5 + anim, this.radius * 1.0, 3);
-            ctx.fillStyle = '#78350f';
-            ctx.fillRect(this.x - this.radius * 1.1, this.y - this.radius * 0.4, this.radius * 0.4, this.radius * 0.9);
-            ctx.fillStyle = '#cbd5e1';
-            ctx.strokeRect(this.x - this.radius * 1.1, this.y - this.radius * 0.4, this.radius * 0.4, this.radius * 0.9);
-            ctx.fillStyle = '#ef4444';
-            ctx.fillRect(this.x - 3, this.y - this.radius * 1.1, 2, 2);
-            ctx.fillRect(this.x + 1, this.y - this.radius * 1.1, 2, 2);
-
-        } else if (this.mtype === 'goblin') {
-            // [황금 고블린] - 등에 황금 자루를 짊어진 도둑
-            ctx.fillStyle = '#15803d';
-            ctx.fillRect(this.x - this.radius * 0.6, this.y - this.radius * 1.1, this.radius * 1.2, this.radius * 1.4);
-            ctx.beginPath();
-            ctx.moveTo(this.x - this.radius * 0.5, this.y - this.radius * 0.8);
-            ctx.lineTo(this.x - this.radius * 1.4, this.y - this.radius * 1.1);
-            ctx.lineTo(this.x - this.radius * 0.4, this.y - this.radius * 0.6);
-            ctx.closePath(); ctx.fill();
-            ctx.beginPath();
-            ctx.moveTo(this.x + this.radius * 0.5, this.y - this.radius * 0.8);
-            ctx.lineTo(this.x + this.radius * 1.4, this.y - this.radius * 1.1);
-            ctx.lineTo(this.x + this.radius * 0.4, this.y - this.radius * 0.6);
-            ctx.closePath(); ctx.fill();
-            ctx.fillStyle = '#fbbf24';
-            ctx.beginPath();
-            ctx.arc(this.x - this.radius * 0.8, this.y - this.radius * 0.3, this.radius * 0.7, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.strokeStyle = '#d97706'; ctx.lineWidth = 1.5; ctx.stroke();
-            ctx.fillStyle = '#fef08a';
-            ctx.fillRect(this.x - 4, this.y - this.radius * 0.7, 2, 2);
-            ctx.fillRect(this.x + 2, this.y - this.radius * 0.7, 2, 2);
-            if (Math.random() < 0.35) {
-                spawnParticles(this.x, this.y, '#fcd34d', 1, 40, 0.3, 'circle');
-            }
-
+        ctx.fillStyle='rgba(0,0,0,0.3)'; ctx.beginPath(); ctx.ellipse(this.x,this.y+this.radius*0.8,this.radius,this.radius*0.4,0,0,Math.PI*2); ctx.fill();
+        
+        if(this.mtype === 'summon') {
+            ctx.fillStyle = '#1e293b';
+            ctx.fillRect(this.x - this.radius, this.y - this.radius, this.radius*2, this.radius*2);
+            ctx.fillStyle = '#9333ea';
+            ctx.fillRect(this.x - this.radius*0.4, this.y - this.radius*0.6, this.radius*0.8, this.radius*0.4);
+            if(Math.random()<0.3) spawnParticles(this.x, this.y, '#1e293b', 1, 30, 0.5);
         } else {
-            // [기타 기본형 보스 개체 등]
-            ctx.fillStyle = '#991b1b';
+            // 몬스터 타입에 따른 다양한 색상
+            if(this.mtype === 'wolf') ctx.fillStyle = '#475569';
+            else if(this.mtype === 'bear') ctx.fillStyle = '#78350f';
+            else if(this.mtype === 'golem') ctx.fillStyle = '#94a3b8';
+            else if(this.mtype === 'skeleton') ctx.fillStyle = '#f8fafc';
+            else if(this.mtype === 'slime') ctx.fillStyle = '#22c55e';
+            else ctx.fillStyle = '#991b1b'; // Boss
+
+            ctx.beginPath(); ctx.ellipse(this.x, this.y, this.radius, this.radius*0.8, 0, 0, Math.PI*2); ctx.fill();
+        }
+        
+        if (this.hitFlashTimer > 0) {
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
             ctx.beginPath();
-            ctx.ellipse(this.x, this.y, this.radius, this.radius * 0.8, 0, 0, Math.PI * 2);
+            ctx.ellipse(this.x, this.y-this.radius*0.5, this.radius*1.2, this.radius*1.2, 0, 0, Math.PI*2);
             ctx.fill();
         }
 
-        ctx.restore();
+        // 눈 포인트
+        ctx.fillStyle='#ef4444'; ctx.beginPath(); ctx.arc(this.x-this.radius*0.3, this.y-this.radius*0.2, 3, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(this.x+this.radius*0.3, this.y-this.radius*0.2, 3, 0, Math.PI*2); ctx.fill();
 
-        // 3. 체력바 렌더링
         let drawHp = (typeof this.hp !== 'number' || isNaN(this.hp)) ? 1500 : this.hp;
         let drawMaxHp = (typeof this.maxHp !== 'number' || isNaN(this.maxHp) || this.maxHp <= 0) ? 1500 : this.maxHp;
         let hpRatio = Math.max(0, Math.min(1, drawHp / drawMaxHp));
         
-        let bw = this.radius * 2, bh = 6, bx = this.x - bw / 2, by = this.y - this.radius - 15;
-        ctx.fillStyle = '#374151'; ctx.fillRect(bx, by, bw, bh);
-        ctx.fillStyle = '#f97316'; ctx.fillRect(bx, by, bw * hpRatio, bh);
+        let bw=this.radius*2,bh=6,bx=this.x-bw/2,by=this.y-this.radius-15; ctx.fillStyle='#374151'; ctx.fillRect(bx,by,bw,bh); ctx.fillStyle='#f97316'; ctx.fillRect(bx,by,bw*hpRatio,bh);
     }
 }
 
@@ -3577,8 +3369,8 @@ function gameLoop(now){
             // 처치 시 거대 골드 보상
             goblin.onDeath = function(attacker) {
                 if(attacker && attacker.type === 'hero') {
-                    attacker.gold += 2500;
-                    addText(attacker.x, attacker.y-60, '💰 황금 고블린 +2500G!', '#fbbf24', 20);
+                    attacker.gold += 20000;
+                    addText(attacker.x, attacker.y-60, '💰 황금 고블린 +20000G!', '#fbbf24', 26);
                     spawnSpecial(this.x, this.y, '#fbbf24', 'star', 20, 250, 1.0);
                 }
                 showBanner('황금 고블린 처치!', '💰', attacker?.faction===player?.faction);
