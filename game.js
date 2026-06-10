@@ -3265,26 +3265,49 @@ class Guardian extends Entity {
         ctx.fillStyle = 'white'; ctx.beginPath(); ctx.arc(-r*0.25, -r*1.5, r*0.15, 0, Math.PI*2); ctx.arc(r*0.25, -r*1.5, r*0.15, 0, Math.PI*2); ctx.fill();
         ctx.fillStyle = 'black'; ctx.beginPath(); ctx.arc(-r*0.25, -r*1.5, r*0.05, 0, Math.PI*2); ctx.arc(r*0.25, -r*1.5, r*0.05, 0, Math.PI*2); ctx.fill();
         
-        // 팔과 무기 (거대한 창/보탑)
+                // 팔과 무기 (거대한 창/보탑)
         ctx.save();
-        // 공격 모션: 팔뚝이 앞뒤로 찌르는 모션
-        let thrust = atkAnim * r * 1.5;
         
+        let swingAngle = 0;
+        if(atkAnim > 0) {
+            // 크게 뒤로 젖혔다가 가로로 시원하게 휘두르는 각도 계산
+            if(atkAnim > 0.5) {
+                let p = (1.0 - atkAnim) * 2.0; // 0.0 -> 1.0
+                swingAngle = -Math.PI * 0.4 + p * (Math.PI * 0.9);
+            } else {
+                let p = atkAnim * 2.0; // 1.0 -> 0.0
+                swingAngle = p * (Math.PI * 0.5);
+            }
+        }
+        
+        // 오른팔 (보탑)은 그대로
         ctx.fillStyle = '#0f766e';
-        ctx.fillRect(-r*1.2, -r*0.8 - thrust, r*0.4, r); // 왼팔
         ctx.fillRect(r*0.8, -r*0.8, r*0.4, r); // 오른팔
-        
-        // 왼손 창
-        ctx.fillStyle = '#38bdf8'; // 푸른빛 창대
-        ctx.fillRect(-r*1.1, -r*2.5 - thrust, r*0.2, r*3.5);
-        ctx.fillStyle = '#94a3b8'; // 창날
-        ctx.beginPath(); ctx.moveTo(-r*1.2, -r*2.5 - thrust); ctx.lineTo(-r*1.0, -r*3.2 - thrust); ctx.lineTo(-r*0.8, -r*2.5 - thrust); ctx.fill();
-        
-        // 오른손 보탑
-        ctx.fillStyle = '#e2e8f0';
+        ctx.fillStyle = '#e2e8f0'; // 보탑
         ctx.fillRect(r*0.9, -r*1.2, r*0.5, r*0.2);
         ctx.fillRect(r*1.0, -r*1.4, r*0.3, r*0.2);
         ctx.fillRect(r*1.1, -r*1.6, r*0.1, r*0.2);
+        
+        // 왼팔과 거대 창 (가로 휘두르기)
+        ctx.save();
+        ctx.translate(-r*1.0, 0); // 어깨 관절 축으로 이동
+        ctx.rotate(swingAngle);
+        
+        ctx.fillStyle = '#0f766e';
+        ctx.fillRect(-r*0.2, -r*0.8, r*0.4, r); // 왼팔
+        
+        ctx.fillStyle = '#38bdf8'; // 푸른빛 창대
+        ctx.fillRect(-r*0.1, -r*3.0, r*0.2, r*4.5); // 창대 연장
+        ctx.fillStyle = '#94a3b8'; // 창날
+        ctx.beginPath(); ctx.moveTo(-r*0.3, -r*3.0); ctx.lineTo(0, -r*4.2); ctx.lineTo(r*0.3, -r*3.0); ctx.fill();
+        
+        // 무기를 휘두를 때 순간적인 잔상/오라 효과
+        if(atkAnim > 0.5) {
+            ctx.fillStyle = 'rgba(56, 189, 248, 0.4)';
+            ctx.beginPath(); ctx.moveTo(0, -r); ctx.arc(0, -r, r*3.5, -Math.PI*0.5, -Math.PI*0.1); ctx.fill();
+        }
+        
+        ctx.restore();
         
         ctx.restore();
         
