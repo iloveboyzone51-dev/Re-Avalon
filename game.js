@@ -2869,9 +2869,17 @@ class Guardian extends Entity {
     applyStun(duration) { } // Immune to CC
     applySlow(amount, duration) { } // Immune to CC
     
+    
     draw(ctx) {
         if(this.isDead) return;
         let r = this.radius;
+        
+        let atkAnim = 0; // 0 ~ 1
+        let maxAtkTime = 1 / this.aspd;
+        if(this.attackTimer > maxAtkTime - 0.2) {
+            atkAnim = (this.attackTimer - (maxAtkTime - 0.2)) / 0.2; // 1 -> 0
+        }
+
         // 그림자
         ctx.fillStyle='rgba(0,0,0,0.4)'; ctx.beginPath(); ctx.ellipse(this.x, this.y+r, r*1.2, r*0.5, 0, 0, Math.PI*2); ctx.fill();
         
@@ -2916,21 +2924,27 @@ class Guardian extends Entity {
         ctx.fillStyle = 'black'; ctx.beginPath(); ctx.arc(-r*0.25, -r*1.5, r*0.05, 0, Math.PI*2); ctx.arc(r*0.25, -r*1.5, r*0.05, 0, Math.PI*2); ctx.fill();
         
         // 팔과 무기 (거대한 창/보탑)
+        ctx.save();
+        // 공격 모션: 팔뚝이 앞뒤로 찌르는 모션
+        let thrust = atkAnim * r * 1.5;
+        
         ctx.fillStyle = '#0f766e';
-        ctx.fillRect(-r*1.2, -r*0.8, r*0.4, r); // 왼팔
+        ctx.fillRect(-r*1.2, -r*0.8 - thrust, r*0.4, r); // 왼팔
         ctx.fillRect(r*0.8, -r*0.8, r*0.4, r); // 오른팔
         
         // 왼손 창
         ctx.fillStyle = '#38bdf8'; // 푸른빛 창대
-        ctx.fillRect(-r*1.1, -r*2.5, r*0.2, r*3.5);
+        ctx.fillRect(-r*1.1, -r*2.5 - thrust, r*0.2, r*3.5);
         ctx.fillStyle = '#94a3b8'; // 창날
-        ctx.beginPath(); ctx.moveTo(-r*1.2, -r*2.5); ctx.lineTo(-r*1.0, -r*3.2); ctx.lineTo(-r*0.8, -r*2.5); ctx.fill();
+        ctx.beginPath(); ctx.moveTo(-r*1.2, -r*2.5 - thrust); ctx.lineTo(-r*1.0, -r*3.2 - thrust); ctx.lineTo(-r*0.8, -r*2.5 - thrust); ctx.fill();
         
         // 오른손 보탑
         ctx.fillStyle = '#e2e8f0';
         ctx.fillRect(r*0.9, -r*1.2, r*0.5, r*0.2);
         ctx.fillRect(r*1.0, -r*1.4, r*0.3, r*0.2);
         ctx.fillRect(r*1.1, -r*1.6, r*0.1, r*0.2);
+        
+        ctx.restore();
         
         ctx.restore();
 
@@ -3010,19 +3024,27 @@ class Creature extends Minion {
         
         if (ctype === 'dragon') {
             this.maxHp = 15000 * scale; this.hp = this.maxHp;
-            this.atk = 300 * scale; this.moveSpd = 120; this.radius = 24; this.aspd = 0.6;
+            this.atk = 300 * scale; this.moveSpd = 120; this.radius = 24; this.aspd = 0.6; this.range = 80;
         } else if (ctype === 'golem') {
             this.maxHp = 30000 * scale; this.hp = this.maxHp;
-            this.atk = 100 * scale; this.moveSpd = 100; this.radius = 30; this.aspd = 0.5;
+            this.atk = 100 * scale; this.moveSpd = 100; this.radius = 30; this.aspd = 0.5; this.range = 90;
         } else { // beast
             this.maxHp = 12000 * scale; this.hp = this.maxHp;
-            this.atk = 400 * scale; this.moveSpd = 250; this.radius = 20; this.aspd = 1.5;
+            this.atk = 400 * scale; this.moveSpd = 250; this.radius = 20; this.aspd = 1.5; this.range = 70;
         }
     }
 
+    
     draw(ctx) {
         if(this.isDead) return;
         let r = this.radius;
+        
+        let atkAnim = 0; // 0 ~ 1
+        let maxAtkTime = 1 / this.aspd;
+        if(this.attackTimer > maxAtkTime - 0.2) {
+            atkAnim = (this.attackTimer - (maxAtkTime - 0.2)) / 0.2; // 1 -> 0
+        }
+
         // 그림자
         ctx.fillStyle='rgba(0,0,0,0.3)'; ctx.beginPath(); ctx.ellipse(this.x, this.y+r*0.8, r, r*0.4, 0, 0, Math.PI*2); ctx.fill();
         
@@ -3093,7 +3115,7 @@ class Monster extends Entity {
     constructor(x,y,mtype){
         super(x,y,'NEUTRAL','jungle'); this.mtype=mtype; this.home={x,y};
         this.maxHp = mtype.includes('boss') ? 5000 : 1500; this.hp=this.maxHp;
-        this.atk = mtype.includes('boss') ? 150 : 40; this.aspd=0.8; this.moveSpd=80; this.range=50; this.radius = mtype.includes('boss') ? 40 : 18;
+        this.atk = mtype.includes('boss') ? 150 : 40; this.aspd=0.8; this.moveSpd=80; this.range = mtype.includes('boss') ? 90 : 50; this.radius = mtype.includes('boss') ? 40 : 18;
         this.respawnTimer=0;
     }
     update(dt){
