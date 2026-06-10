@@ -775,6 +775,42 @@ function drawBlockyHero(ctx, x, y, r, dir, faction, type, attackAnimTimer = 0, e
         }
         ctx.restore();
         
+    } else if(type === 'ariel') {
+        drawBody('#fef08a', '#ffffff', '#e2e8f0', '#0ea5e9'); // 창백하고 빛나는 피부, 백색 드레스
+        
+        // 황금빛 후광 (Halo)
+        ctx.save();
+        ctx.translate(x, y-r*1.3-breath);
+        ctx.rotate(t/1000); // 천천히 회전
+        ctx.shadowColor = '#fef08a'; ctx.shadowBlur = 15;
+        ctx.strokeStyle = '#facc15'; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.arc(0, 0, r*0.7, 0, Math.PI*2); ctx.stroke();
+        for(let i=0; i<8; i++) {
+            ctx.rotate(Math.PI/4);
+            ctx.beginPath(); ctx.moveTo(0, r*0.7); ctx.lineTo(0, r*1.0); ctx.stroke();
+        }
+        ctx.restore();
+
+        // 화려한 백색/황금 드레스 치마
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath(); ctx.moveTo(x-r*0.6, y+r*0.2-breath); ctx.lineTo(x+r*0.6, y+r*0.2-breath);
+        ctx.lineTo(x+r*1.2, y+r*1.5); ctx.lineTo(x-r*1.2, y+r*1.5); ctx.fill();
+        ctx.fillStyle = '#fef08a'; // 황금빛 마감
+        ctx.beginPath(); ctx.moveTo(x-r*1.2, y+r*1.5); ctx.lineTo(x+r*1.2, y+r*1.5); ctx.lineTo(x+r*1.0, y+r*1.2); ctx.lineTo(x-r*1.0, y+r*1.2); ctx.fill();
+
+        // 거대한 황금 지팡이
+        ctx.save();
+        if(isAttacking) {
+            ctx.translate(x+r*0.6, y); ctx.rotate(Math.PI * 0.25 * rotDir);
+        } else {
+            ctx.translate(x+r*0.6, y-r*0.2-breath); ctx.rotate(Math.PI * 0.1 * rotDir);
+        }
+        ctx.fillStyle = '#facc15'; ctx.fillRect(-2, -r*1.5, 4, r*3.0); // 지팡이 대
+        // 푸른 보석 머리
+        ctx.shadowColor = '#38bdf8'; ctx.shadowBlur = 15; ctx.fillStyle = '#38bdf8';
+        ctx.beginPath(); ctx.moveTo(0, -r*1.8); ctx.lineTo(6, -r*1.5); ctx.lineTo(0, -r*1.2); ctx.lineTo(-6, -r*1.5); ctx.fill();
+        ctx.restore();
+
     } else if (type === 'darkpriest') {
         drawBody('#f3f4f6', '#1e1b4b', '#0f172a', '#8b5cf6', true); // 공허한 하얀 피부, 검보라색 옷
         
