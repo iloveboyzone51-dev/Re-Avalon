@@ -2041,15 +2041,18 @@ class Hero extends Entity {
                     }, i * 50);
                 }
 
-                // 강력한 데미지와 스턴 적용
-                setTimeout(() => {
-                    if(GS.status !== 'PLAYING' || this.isDead) return;
-                    let tgts = nearEnemies(this.x, this.y, 220); // 범위도 넓어짐
-                    tgts.forEach(e => {
-                        e.applyRawDamage((this.atk * 2.0 || 50) * 2.0, this);
-                        if(e.applyStun) e.applyStun(2.0);
-                    });
-                }, 300);
+                // 즉각적인 타격 판정 및 시각 효과 (명중률 100%)
+                let tgts = nearEnemies(this.x, this.y, 250); // 범위 더욱 넓힘
+                tgts.forEach(e => {
+                    let dmg = skillDmg * 2.5; // 확실한 폭딜
+                    let dealt = e.applyRawDamage(dmg, this);
+                    if(dealt > 0) this.totalDmg += dealt;
+                    if(e.applyStun) e.applyStun(2.0);
+                    
+                    // 타격 피드백 (텍스트 및 이펙트)
+                    spawnParticles(e.x, e.y, '#facc15', 10, 80, 0.5);
+                    addText(e.x, e.y - 20, '💥스턴!', '#facc15', 18);
+                });
 
             } else { // 바위 갑옷
                 this.attackAnimTimer = 0.8;
@@ -4243,6 +4246,13 @@ function gameLoop(now){
             }
         }
 
+        // Creature Spawn Logic (6분 = 360초)
+        if(GS.lastCreatureSpawn === undefined) GS.lastCreatureSpawn = 0;
+        if(GS.time > 0 && GS.time - GS.lastCreatureSpawn >= 360) {
+            GS.lastCreatureSpawn = GS.time;
+            if(window.spawnCreatures) window.spawnCreatures(1);
+        }
+        
         // Dragon Spawn Logic
         if(GS.lastDragonCheck === undefined) GS.lastDragonCheck = 0;
         if(GS.time >= 300 && GS.time - GS.lastDragonCheck >= 300) {
