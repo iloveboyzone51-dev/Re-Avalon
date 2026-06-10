@@ -42,15 +42,8 @@ window.toggleSFX = () => {
     }
 };
 
-let _lastPlaySFX = {};
-
 function playSFX(type) {
     if (!GS.sfxEnabled || !audioCtx) return;
-    
-    let nowReal = performance.now();
-    if (_lastPlaySFX[type] && nowReal - _lastPlaySFX[type] < 30) return;
-    _lastPlaySFX[type] = nowReal;
-
     if (audioCtx.state === 'suspended') { audioCtx.resume(); return; }
 
     const now = audioCtx.currentTime;
@@ -169,48 +162,48 @@ const WARMOG_REGEN      = 0.10;    // 워모그 초당 10%
 
 // ============ 영웅 템플릿 (근접/원거리 밸런스 전면 수정) ============
 const HERO_TMPL = {
-    BERSERKER: { name:"광전사", color:"#ef4444", hp:2470, atk:52, aspd:1.3, move:185, range:90,  type:"melee", role_desc:"[근접 / 브루저 / 광역 제어]",
+    BERSERKER: { name:"광전사", color:"#ef4444", hp:2850, atk:52, aspd:1.3, move:185, range:90,  type:"melee", role_desc:"[근접 / 브루저 / 광역 제어]",
         skill1:{name:"회전 참격",cd:5, desc:"주변 반경 내 적들에게 광역 데미지를 주고 0.5초 기절시킵니다."}, 
         skill2:{name:"도약 강타",cd:8, desc:"대상에게 도약하여 주변에 큰 데미지를 주고 1.5초 기절시킵니다."},  
         draw:(ctx,x,y,r,dir,f,anim,ent)=>drawBlockyHero(ctx,x,y,r,dir,f,'berserker',anim,ent) },
-    ARCHON:    { name:"아칸",      color:"#3b82f6", hp:1820, atk:60, aspd:1.8, move:150, range:150, type:"ranged", role_desc:"[중거리 / 광역 폭딜 / 제어]",
+    ARCHON:    { name:"아칸",      color:"#3b82f6", hp:2100, atk:60, aspd:1.8, move:150, range:150, type:"ranged", role_desc:"[중거리 / 광역 폭딜 / 제어]",
         skill1:{name:"사이어닉 스톰",cd:6, desc:"지정 범위에 3초간 지속적인 하얀 번개를 내리쳐 광역 피해를 줍니다."}, 
         skill2:{name:"마엘스톰",    cd:12, desc:"지정 범위 내 적을 갈색 원형에 가두어 완전 마비시킵니다."}, 
         draw:(ctx,x,y,r,dir,f,anim,ent)=>drawBlockyHero(ctx,x,y,r,dir,f,'archon',anim,ent) },
-    BARBARIAN: { name:"바바리안",  color:"#fb923c", hp:2860, atk:55, aspd:1.3, move:175, range:90,  type:"melee", role_desc:"[근접 / 브루저 / 광역 딜러]",
+    BARBARIAN: { name:"바바리안",  color:"#fb923c", hp:3300, atk:55, aspd:1.3, move:175, range:90,  type:"melee", role_desc:"[근접 / 브루저 / 광역 딜러]",
         skill1:{name:"점프샷",      cd:7, desc:"적진으로 도약하여 넓은 범위의 적들을 느리게 만듭니다."}, 
         skill2:{name:"휠윈드",      cd:10, desc:"3초간 무기를 회전하며 지속 광역 피해를 주고 적을 띄웁니다."}, 
         draw:(ctx,x,y,r,dir,f,anim,ent)=>drawBlockyHero(ctx,x,y,r,dir,f,'barbarian',anim,ent) },
-    ARCHER:    { name:"궁수",    color:"#10b981", hp:1690, atk:35, aspd:1.3, move:165, range:420, type:"ranged", role_desc:"[원거리 / 지속 딜러 / 순간 회피]",
+    ARCHER:    { name:"궁수",    color:"#10b981", hp:1950, atk:35, aspd:1.3, move:165, range:420, type:"ranged", role_desc:"[원거리 / 지속 딜러 / 순간 회피]",
         skill1:{name:"블링크",  cd:10, desc:"전방으로 순간이동하며 5초간 공격속도가 50% 증가합니다."}, 
         skill2:{name:"화살 폭우",cd:6, desc:"단일 대상에게 연속으로 화살을 발사하여 큰 데미지를 줍니다."}, 
         critChance:0.12, draw:(ctx,x,y,r,dir,f,anim,ent)=>drawBlockyHero(ctx,x,y,r,dir,f,'archer',anim,ent) },
-    NECROMANCER:{ name:"네크로맨서",color:"#a855f7",hp:1820, atk:38, aspd:1.0, move:150, range:360, type:"ranged", role_desc:"[원거리 / 마법사 / 소환]",
+    NECROMANCER:{ name:"네크로맨서",color:"#a855f7",hp:2100, atk:38, aspd:1.0, move:150, range:360, type:"ranged", role_desc:"[원거리 / 마법사 / 소환]",
         skill1:{name:"해골 소환",cd:7, desc:"적의 어그로를 끄는 근접 해골 미니언을 소환합니다."}, 
         skill2:{name:"저주 역병",cd:11, desc:"넓은 범위에 도트 데미지를 주며 이동속도를 크게 감소시킵니다."}, 
         draw:(ctx,x,y,r,dir,f,anim,ent)=>drawBlockyHero(ctx,x,y,r,dir,f,'necromancer',anim,ent) },
-    grrr: { name:'그르르', color:"#f59e0b", hp:2080, atk:70, aspd:0.9, move:165, range:80, type:"melee", role_desc:"[근접 / 탱커 / 폭주]",
+    grrr: { name:'그르르', color:"#f59e0b", hp:2400, atk:70, aspd:0.9, move:165, range:80, type:"melee", role_desc:"[근접 / 탱커 / 폭주]",
         skill1:{name:'거대화', type:'self_buff', cd:18, desc:'일정 시간 동안 크기가 커지며 최대 체력/방어/공속/이속이 폭증합니다.'},
         skill2:{name:'포효', type:'aoe_stun', cd:12, desc:'크게 포효하여 주변의 모든 적을 2초간 강력하게 기절시킵니다.'},
         draw:(ctx,x,y,r,dir,f,anim,ent)=>drawBlockyHero(ctx,x,y,r,dir,f,'grrr',anim,ent) },
-    VAMPIRE:   { name:"뱀파이어",color:"#f43f5e", hp:2210, atk:45, aspd:1.2, move:175, range:110, type:"melee", role_desc:"[근접 / 암살자 / 피흡]",
+    VAMPIRE:   { name:"뱀파이어",color:"#f43f5e", hp:2550, atk:45, aspd:1.2, move:175, range:110, type:"melee", role_desc:"[근접 / 암살자 / 피흡]",
         skill1:{name:"흡혈 파동",cd:7, desc:"전방 부채꼴 범위의 적들에게 데미지를 주고 데미지 비례 체력을 회복합니다."}, 
         skill2:{name:"박쥐 강습",cd:9, desc:"적의 배후로 순간이동하며 데미지를 주고 1.5초간 기절시킵니다."},  
         lifeSteal:0.20, draw:(ctx,x,y,r,dir,f,anim,ent)=>drawBlockyHero(ctx,x,y,r,dir,f,'vampire',anim,ent) },
-    THOR:      { name:"토르",    color:"#60a5fa", hp:2600, atk:58, aspd:0.9, move:175, range:100, type:"melee", role_desc:"[근접 / 마법사 / 광역 폭딜]",
+    THOR:      { name:"토르",    color:"#60a5fa", hp:3000, atk:58, aspd:0.9, move:175, range:100, type:"melee", role_desc:"[근접 / 마법사 / 광역 폭딜]",
         skill1:{name:"번개 강타",cd:9, desc:"목표물에 번개를 떨어뜨려 주변에 큰 데미지와 스턴을 부여합니다."}, 
         skill2:{name:"충격파",  cd:11, desc:"주변 넓은 범위에 매우 큰 데미지를 주고 적들을 밀어내며 에어본시킵니다."}, 
         draw:(ctx,x,y,r,dir,f,anim,ent)=>drawBlockyHero(ctx,x,y,r,dir,f,'thor',anim,ent) },
     ICEBORN: {
         name:"이스버그", color:"#38bdf8",
-        hp:2860, atk:48, aspd:1.24, move:160, range:220, type:"ranged", role_desc:"[중거리 / 마법사 / 빙결 제어]",
+        hp:3300, atk:48, aspd:1.24, move:160, range:220, type:"ranged", role_desc:"[중거리 / 마법사 / 빙결 제어]",
         skill1: { name:"빙결 창격", cd:7, desc:"전방 원뿔형 범위에 얼음 창을 투척하여 데미지를 주고 적 이동속도 60% 감소 2.5초" },
         skill2: { name:"얼음 감옥", cd:14, desc:"대상 위치에 얼음 기둥 소환. 반경 100 내 적 2초 완전 빙결(스턴)" },
         draw:(ctx,x,y,r,dir,f,anim) => drawBlockyHero(ctx,x,y,r,dir,f,'iceborn',anim)
     },
     JOKER: {
         name:"조커블레이드", color:"#a855f7",
-        hp:1820, atk:42, aspd:1.45, move:175, range:360, type:"ranged", role_desc:"[원거리 / 딜러 / 도박]",
+        hp:2100, atk:42, aspd:1.45, move:175, range:360, type:"ranged", role_desc:"[원거리 / 딜러 / 도박]",
         critChance:0.12,
         skill1: { name:"왕의 패", cd:8, desc:"카드 3장을 무작위로 뽑음. 각각 공격/방어/공속 버프 등 무작위 효과 발동" },
         skill2: { name:"전체 배팅", cd:16, desc:"현재 소지 골드에 비례한 막대한 피해량 폭발. (모 아니면 도)" },
@@ -218,7 +211,7 @@ const HERO_TMPL = {
     },
     DARKPRIEST: {
         name:"암흑사제", color:"#7c3aed",
-        hp:1950, atk:35, aspd:1.3, move:155, range:380, type:"ranged", role_desc:"[원거리 / 서포터 / 디버퍼]",
+        hp:2250, atk:35, aspd:1.3, move:155, range:380, type:"ranged", role_desc:"[원거리 / 서포터 / 디버퍼]",
         skill1: { name:"영혼 착취", cd:10, desc:"주변 아군 한 명의 체력을 일부 깎는 대신, 적에게 2.5배 강력한 레이저 공격을 뿜어냅니다." },
         skill2: { name:"저주의 낙인", cd:14, desc:"대상 적에게 10초간 낙인 부여. 아군의 모든 공격이 대상에게 30% 추가 피해" },
         draw:(ctx,x,y,r,dir,f,anim) => drawBlockyHero(ctx,x,y,r,dir,f,'darkpriest',anim)
@@ -227,19 +220,19 @@ const HERO_TMPL = {
 
 // ============ 아이템 ============
 const BASE_ITEMS = [
-    { id:'atk',      name:'전사의 투구', cost:300, stat:'atk',      val:18,   icon:'🪖', desc:'공격력 증가' },
+    { id:'atk',      name:'전사의 투구', cost:300, stat:'atk',      val:18,   icon:'⚔️', desc:'공격력 증가' },
     { id:'hp',       name:'수호자의 방패',cost:300, stat:'hp',       val:180,  icon:'🛡️', desc:'최대 체력 증가' },
     { id:'aspd',     name:'바람의 장화', cost:300, stat:'aspd',     val:0.25, icon:'👢', desc:'공격속도 증가' },
     { id:'crit',     name:'매의 눈물',   cost:300, stat:'crit',     val:0.1,  icon:'🦅', desc:'치명타 확률 증가' },
-    { id:'move',     name:'신속의 날개', cost:300, stat:'move',     val:30,   icon:'🪽', desc:'이동속도 증가' },
+    { id:'move',     name:'신속의 장화', cost:300, stat:'move',     val:30,   icon:'👟', desc:'이동속도 증가' },
     { id:'vamp',     name:'피바라기',    cost:400, stat:'vamp',     val:0.12, icon:'🩸', desc:'생명력 흡수 증가' },
     { id:'reflect',  name:'가시 갑옷',   cost:400, stat:'reflect',  val:0.15, icon:'🦔', desc:'피격 시 데미지 반사' },
-    { id:'burn',     name:'화염검',      cost:400, stat:'burn',     val:18,   icon:'🔥', desc:'평타 시 화상 피해 추가' },
-    { id:'stun',     name:'전투 망치',   cost:400, stat:'stun',     val:0.08, icon:'🔨', desc:'평타 시 기절 확률 추가' },
+    { id:'burn',     name:'화염검',      cost:400, stat:'burn',     val:18,   icon:'🔥', desc:'타격 시 화상 피해 추가' },
+    { id:'stun',     name:'전투 망치',   cost:400, stat:'stun',     val:0.08, icon:'🔨', desc:'타격 시 기절 확률 추가' },
     { id:'bork',     name:'몰락한 왕의 검',cost:500, stat:'bork',     val:1,    icon:'🗡️', desc:'적 현재 체력 비례 추가 피해' },
     { id:'warmog',   name:'워모그의 갑옷',cost:500, stat:'warmog',   val:1,    icon:'💚', desc:'비전투 시 체력 대폭 회복' },
     { id:'mage_staff',name:'현자의 지팡이',cost:450, stat:'cdr',      val:0.15, icon:'🔮', desc:'스킬 쿨타임 감소 및 데미지 증가' },
-    { id:'hourglass',name:'시공의 모래시계',cost:600, stat:'dodge_heal', val:0.15, icon:'⏳', desc:'피격 시 15% 확률로 피해 무시 및 체력 회복' },
+    { id:'hourglass',name:'시공의 모래시계',cost:600, stat:'zhonya', val:1,    icon:'⏳', desc:'피격 시 15% 확률로 피해 무효화' },
     { id:'giant_slayer',name:'거인 학살자',cost:500, stat:'giant_slayer',val:0.03,icon:'🏹', desc:'적 최대 체력 비례 고정 피해' },
     { id:'legion_shield',name:'군단의 방패',cost:450, stat:'shield',  val:20,   icon:'🔰', desc:'아군 방어력 증가 오라' }
 ];
@@ -282,8 +275,8 @@ const EVOLUTION_ITEMS = [
     { id:'eye_of_storm', name:'폭풍의 눈', reqItem:'move', reqPassive:'stormWalker', desc:'[진화] 이속 극대화 및 번개 구름 아군 이속 버프', icon:'🌪️', stat:'storm_eye', val:60 },
     { id:'vampiric_cloak', name:'흡혈마의 망토', reqItem:'vamp', reqPassive:'healing_spring', desc:'[진화] 흡혈 극대화 및 내 흡혈량으로 아군 회복', icon:'🩸', stat:'vampiric', val:0.3 },
     { id:'phantom_dagger', name:'환영의 단검', reqItem:'crit', reqPassive:'mirrorImage', desc:'[진화] 크리티컬 증가 및 복제본 도발 강화', icon:'🪞', stat:'phantom', val:0.25 },
-    { id:'hourglass_fate', name:'운명의 모래시계', reqItem:'hourglass', reqPassive:'meteor', desc:'[진화] 피격 시 25% 확률로 피해 무시, 체력 회복 및 유성우 폭발', icon:'⏳', stat:'fate_dodge', val:0.25 },
-    { id:'demonfire_blade', name:'화염마귀의 검', reqItem:'burn', reqPassive:'bombTrail', desc:'[진화] 평타 타격 시 대상 위치 폭탄 폭발', icon:'🧨', stat:'demonfire', val:100 },
+    { id:'hourglass_fate', name:'운명의 모래시계', reqItem:'hourglass', reqPassive:'meteor', desc:'[진화] 피격 시 25% 확률로 피해 무효화 및 유성 폭발', icon:'⏳', stat:'fate_zhonya', val:1 },
+    { id:'demonfire_blade', name:'화염마귀의 검', reqItem:'burn', reqPassive:'bombTrail', desc:'[진화] 타격 시 대상 위치 폭탄 폭발', icon:'🧨', stat:'demonfire', val:100 },
     { id:'oracle_glory', name:'오라클의 영광', reqItem:'legion_shield', reqPassive:'war_anthem', desc:'[진화] 방어 오라 극대화 및 1회 부활 지원', icon:'🔰', stat:'oracle_glory', val:30 },
     { id:'berserker_axe', name:'광전사의 도끼', reqItem:'aspd', reqPassive:'ironHealth', desc:'[진화] 잃은 체력 비례 공속 증가 및 피흡', icon:'🪓', stat:'berserker', val:0.5 }
 ];
@@ -952,6 +945,8 @@ class Entity {
         this.atk=10; this.aspd=1.0; this.moveSpd=0; this.range=50;
         this.vx=0; this.vy=0; this.radius=15;
         this.attackTimer=0; this.stunTimer=0;
+        this.emoji = null; this.emojiTimer = 0;
+        this.speechText = null; this.speechTimer = 0;
         this.burnTicks=[];
         this.nonCombatTimer=0; this.lastAttackedTimer=0;
         this.isBuilding=false; this.reflectRate=0; this.lifeSteal=0;
@@ -968,6 +963,12 @@ class Entity {
     }
     update(dt){
         if(this.isDead) return;
+        if(this.ignoreCCTimer > 0) {
+            this.ignoreCCTimer -= dt;
+            this.stunTimer = 0;
+            this.airborneTimer = 0;
+            this.isFrozen = false;
+        }
         if(this.invincibleTimer>0) {
             this.invincibleTimer-=dt;
             if(this.stunTimer > 0) this.stunTimer-=dt;
@@ -991,9 +992,27 @@ class Entity {
         } else {
             this.vx = 0; this.vy = 0;
         }
-        if(GS.status !== 'COUNTDOWN') this.attackTimer-=dt;
+        if(GS.status !== 'COUNTDOWN' && GS.status !== 'START_HOLD') this.attackTimer-=dt;
         this.lastAttackedTimer=Math.max(0, this.lastAttackedTimer-dt);
         this.animPhase+=dt*3; if(this.emoteTimer>0){this.emoteTimer-=dt; if(this.emoteTimer<=0)this.emote=null;}
+        
+        if(this.emojiTimer > 0) {
+            this.emojiTimer -= dt;
+            if(this.emojiTimer <= 0) this.emoji = null;
+        }
+        if(this.speechTimer > 0) {
+            this.speechTimer -= dt;
+            if(this.speechTimer <= 0) this.speechText = null;
+        } else if (this.type === 'hero' && !this.isDead && Math.random() < 0.005) {
+            let alliesNear = entities.some(e => e.type === 'hero' && e.faction === this.faction && e !== this && !e.isDead && dist(this, e) < 800);
+            let myBase = this.faction==='BLUE'?{x:300,y:2700}:{x:2700,y:300};
+            if (!alliesNear && dist(this, myBase) > 800) {
+                if (Math.random() < 0.1) {
+                    this.speechText = ["아.. 현타오네", "외롭다..", "다들 어디갔어", "혼자서 뭐하는거지"][Math.floor(Math.random()*4)];
+                    this.speechTimer = 3.0;
+                }
+            }
+        }
         
         let home = this.faction==='BLUE'?{x:300,y:2700}:{x:2700,y:300};
         if(dist(this, home) < 400 && this.hp < this.maxHp) {
@@ -1023,26 +1042,31 @@ class Entity {
     }
     applyRawDamage(amount, attacker, triggerEffects=true){
         if(this.isDead || this.invincibleTimer > 0) return 0;
-        if(this.type === 'nexus' && entities.some(t=>t.type==='nexus_turret' && t.faction===this.faction && !t.isDead)) return 0;
+        if(typeof amount !== 'number' || isNaN(amount)) amount = 1;
         
-        if (this.type === 'hero' && this.inventory) {
-            let hasFate = this.inventory.some(i=>i.id==='hourglass_fate');
-            let hasTime = !hasFate && this.inventory.some(i=>i.id==='hourglass');
-            if (hasFate && Math.random() < 0.25) {
-                spawnParticles(this.x, this.y, '#fef08a', 20, 100, 2.0);
-                addText(this.x, this.y-40, '⏳ 운명의 시간!', '#fef08a', 16);
-                this.hp = Math.min(this.maxHp, this.hp + this.maxHp*0.1);
-                if (attacker) entities.push(new Projectile(attacker.x, attacker.y-400, attacker.x, attacker.y, 400, 100, this, 'meteor_strike'));
-                return 0;
-            } else if (hasTime && Math.random() < 0.15) {
-                spawnParticles(this.x, this.y, '#fef08a', 10, 80, 1.5);
-                addText(this.x, this.y-40, '⏳ 시간 역행!', '#fef08a', 16);
-                this.hp = Math.min(this.maxHp, this.hp + this.maxHp*0.05);
+        if (triggerEffects && this.hasZhonya && amount > 0) {
+            let fateZhonya = this.inventory && this.inventory.some(i=>i.stat==='fate_zhonya');
+            let dodgeChance = fateZhonya ? 0.25 : 0.15;
+            if (Math.random() < dodgeChance) {
+                spawnParticles(this.x, this.y, '#fef08a', 5, 50, 0.5);
+                addText(this.x, this.y - 40, '⏳ 무효화!', '#fef08a', 14);
+                this.ignoreCCTimer = 0.5;
+                if (fateZhonya && this.atk) {
+                    spawnAOE(this.x, this.y, 150, '#f59e0b44', 0.5);
+                    let tgts = entities.filter(e=>e.faction!==this.faction && !e.isDead && dist(this, e)<=150);
+                    tgts.forEach(e => {
+                        e.applyRawDamage(this.atk * 3.0, this, false);
+                        e.stunTimer = 1.0;
+                    });
+                }
                 return 0;
             }
         }
-        
-        if(typeof amount !== 'number' || isNaN(amount)) amount = 1;
+
+        if (triggerEffects && attacker && attacker.type === 'hero' && !this.isBuilding) {
+            if (attacker.borkActive) amount += this.hp * 0.08;
+            if (attacker.giantSlayerRate > 0) amount += this.maxHp * attacker.giantSlayerRate;
+        }
         
         // Track contributors for assists
         if(this.type === 'hero' && attacker && attacker.type === 'hero' && attacker.faction !== this.faction) {
@@ -1083,6 +1107,34 @@ class Entity {
         if(this.curseTimer > 0) dmg *= 1.3;
         this.hp-=dmg;
         
+        if (triggerEffects && attacker && attacker.type === 'hero' && !this.isBuilding && dmg > 0) {
+            if (attacker.burnDmg > 0) {
+                let existing = this.burnTicks.find(b => b.src === attacker);
+                if (existing) {
+                    existing.ticks = 3;
+                    existing.dmg = attacker.burnDmg;
+                    existing.timer = 1.0;
+                } else {
+                    this.burnTicks.push({dmg: attacker.burnDmg, ticks: 3, timer: 1.0, src: attacker});
+                }
+            }
+            if (attacker.stunChance > 0 && Math.random() < attacker.stunChance) this.stunTimer = Math.max(this.stunTimer || 0, 1.0);
+            
+            // 화염마귀의 검 (demonfire) 폭발 구현
+            if (attacker.inventory && attacker.inventory.some(i=>i.stat==='demonfire') && Math.random() < 0.2) {
+                let now = Date.now();
+                if (!attacker._lastDemonfire || now - attacker._lastDemonfire > 500) {
+                    attacker._lastDemonfire = now;
+                    spawnAOE(this.x, this.y, 80, '#ef444488', 0.3);
+                    let tgts = entities.filter(e=>e.faction!==attacker.faction && !e.isDead && dist(this, e)<=80);
+                    tgts.forEach(e => {
+                        e.applyRawDamage(attacker.atk * 1.5, attacker, false);
+                    });
+                    spawnParticles(this.x, this.y, '#ef4444', 10, 80, 0.4);
+                }
+            }
+        }
+        
         if (this.passiveSkills && this.passiveSkills['mirrorImage'] > 0) {
             if(Math.random() < 0.15 + (this.passiveSkills['mirrorImage']-1)*0.05) {
                 this.shadowClones = this.shadowClones || [];
@@ -1108,7 +1160,7 @@ class Entity {
         this.hitFlashTimer = 0.1;
 
         if(this.hp<=0){ this.hp=0; this.isDead=true; if(attacker&&attacker.onKill) attacker.onKill(this); this.onDeath(attacker); }
-        if (triggerEffects && (attacker === player || this === player)) {
+        if (attacker === player || this === player) {
             playSFX(attacker === player ? 'hit' : 'hit_receive');
         }
         return dmg;
@@ -1167,7 +1219,7 @@ class Hero extends Entity {
             }
         }
         if(this.attackAnimTimer > 0) this.attackAnimTimer -= dt;
-        if(this.zhonyaTimer > 0) this.zhonyaTimer -= dt;
+        // 자연 골드 및 EXP 획득 (패시브)
         // 자연 골드 및 EXP 획득 (패시브)
         if(!this.isDead) {
             this.gold += dt * 4;
@@ -1224,9 +1276,17 @@ class Hero extends Entity {
         
         this.calculateDynamicStats(dt);
         if(this.isPlayer) this.handlePlayerInput(dt); else this.handleAI(dt);
+        
+        if(GS.status === 'START_HOLD') {
+            this.vx = 0; this.vy = 0;
+        }
+        
         super.update(dt);
-        this.autoAttack();
-        this.autoUseHeroSkills();
+        
+        if(GS.status === 'PLAYING') {
+            this.autoAttack();
+            this.autoUseHeroSkills();
+        }
         this.updatePassives(dt);
     }
     handlePlayerInput(dt){
@@ -1268,13 +1328,26 @@ class Hero extends Entity {
         let oldState = this.aiState;
 
 
-        // 1차 AI: 체력 기반 로직만 적용
+        // 1차 AI: 체력 및 상황 기반 로직 적용
+        let nearAllies = entities.filter(e=>e.faction===this.faction && !e.isDead && dist(this,e)<600);
+        let nearBuildings = nearEnemies.filter(e=>e.isBuilding);
+
         if (hpRatio <= 0.3) {
             let weakestEnemy = nearEnemies.sort((a,b)=>(a.hp/a.maxHp)-(b.hp/b.maxHp))[0];
             if (weakestEnemy && (weakestEnemy.hp/weakestEnemy.maxHp) <= 0.1) {
                 this.aiState = 'ATTACK'; // 적 체력이 10% 이하면 추격 유지
             } else {
                 this.aiState = 'RETREAT'; // 내 체력이 30% 이하 시 후퇴
+            }
+        } else if (nearEnemies.length >= 3 && nearAllies.length === 1 && dist(this, myBase) > 800) {
+            // 아군 혼자인데 적이 3명 이상일 경우 다이브 방지 (합류 또는 사거리 밖으로 도주)
+            this.aiState = 'GROUP_UP';
+        } else if (nearBuildings.length > 0 && dist(this, myBase) > 1000) {
+            // 적진 깊숙한 곳에서는 건물을 최우선 타겟으로 삼음
+            if (this.level >= 5 || nearAllies.length >= 2) {
+                this.aiState = 'ATTACK_BUILDING';
+            } else {
+                this.aiState = 'GROUP_UP'; // 혼자 저렙이면 타워 다이브 방지
             }
         } else if (nearEnemies.length > 0) {
             this.aiState = 'ATTACK';
@@ -1324,6 +1397,29 @@ class Hero extends Entity {
                 }
                 break;
 
+            case 'GROUP_UP':
+                // 다른 아군 영웅이 있는 곳으로 이동하거나 아군 넥서스 방향으로 이동
+                let otherAllies = entities.filter(e=>e.type==='hero' && e.faction===this.faction && !e.isDead && e!==this);
+                if(otherAllies.length > 0) {
+                    let allyToFollow = otherAllies.sort((a,b)=>dist(this,a)-dist(this,b))[0];
+                    moveToTarget(allyToFollow, 200, 100);
+                } else {
+                    moveToTarget(myBase, 200, 100);
+                }
+                break;
+
+            case 'ATTACK_BUILDING':
+                // 건물을 최우선 점사
+                let bTarget = nearEnemies.filter(e=>e.isBuilding).sort((a,b) => dist(this,a) - dist(this,b))[0];
+                if(bTarget) {
+                    moveToTarget(bTarget, this.range * 0.8, this.range * 0.4);
+                    if(this.heroSkill1Timer <= 0) this.useSkill(1);
+                    else if(this.heroSkill2Timer <= 0) this.useSkill(2);
+                } else {
+                    this.aiState = 'LANE';
+                }
+                break;
+
             case 'ATTACK':
                 target = nearEnemies.sort((a,b) => dist(this,a) - dist(this,b))[0];
                 if(target) moveToTarget(target, this.range * 0.8, this.range * 0.4);
@@ -1333,23 +1429,28 @@ class Hero extends Entity {
                 break;
 
             case 'LANE':
+            case 'LANE':
             default:
-                if(this.laneRole === 'top') { tx = 300; ty = 300; }
-                else if(this.laneRole === 'bot') { tx = 2700; ty = 2700; }
-                else if(this.laneRole === 'jungle') {
-                    let jg = entities.filter(e=>e.type==='jungle' && !e.isDead).sort((a,b)=>dist(this,a)-dist(this,b))[0];
-                    if(jg) { tx = jg.x; ty = jg.y; }
-                    else { tx = 1500; ty = 1500; }
+                let enemyBase = this.faction==='BLUE'?{x:2700,y:300}:{x:300,y:2700};
+                if(this.laneRole === 'top') { 
+                    if ((this.faction === 'BLUE' && this.y <= 600) || (this.faction === 'RED' && this.x <= 600)) {
+                        tx = enemyBase.x; ty = enemyBase.y;
+                    } else {
+                        tx = 300; ty = 300;
+                    }
                 }
-                
-                if(this.laneRole !== 'jungle' && dist(this, {x:tx, y:ty}) < 400) {
-                    let enemyBase = this.faction==='BLUE'?{x:2700,y:300}:{x:300,y:2700};
+                else if(this.laneRole === 'bot') { 
+                    if ((this.faction === 'BLUE' && this.x >= 2400) || (this.faction === 'RED' && this.y >= 2400)) {
+                        tx = enemyBase.x; ty = enemyBase.y;
+                    } else {
+                        tx = 2700; ty = 2700;
+                    }
+                }
+                else {
                     tx = enemyBase.x; ty = enemyBase.y;
                 }
                 
-                let possibleEnemies = entities.filter(e=>e.faction!==this.faction && !e.isDead && dist(this,e)<this.range);
-                possibleEnemies = possibleEnemies.filter(e => !(e.type==='nexus' && entities.some(t=>t.type==='nexus_turret' && t.faction===e.faction && !t.isDead)));
-                let targetEnemy = possibleEnemies.find(e=>e.type==='tower'||e.type==='nexus_turret'||e.type==='nexus') || possibleEnemies.sort((a,b)=>dist(this,a)-dist(this,b))[0];
+                let targetEnemy = entities.filter(e=>e.faction!==this.faction && !e.isDead && dist(this,e)<this.range).sort((a,b)=>dist(this,a)-dist(this,b))[0];
                 if(targetEnemy) {
                     this.vx=0; this.vy=0;
                     this.facingDir = targetEnemy.x < this.x ? -1 : 1;
@@ -1377,28 +1478,16 @@ class Hero extends Entity {
     autoAttack(){
         if(this.attackTimer>0) return;
         let target=null, minD=this.range;
-        let priorityTarget=null;
-        entities.forEach(e=>{
+    entities.forEach(e=>{
             if(e.faction!==this.faction&&!e.isDead){
-                if(e.type==='nexus' && entities.some(t=>t.type==='nexus_turret' && t.faction===e.faction && !t.isDead)) return;
-                let d=dist(this,e); 
-                if(d<=this.range) {
-                    if(e.type === 'tower' || e.type === 'nexus_turret' || e.type === 'nexus') {
-                        if(!priorityTarget || d<dist(this, priorityTarget)) priorityTarget = e;
-                    } else if (!priorityTarget && d<minD) {
-                        minD=d; target=e;
-                    }
-                }
+                let d=dist(this,e); if(d<=this.range&&d<minD){minD=d;target=e;}
             }
         });
-        if(priorityTarget) target = priorityTarget;
         if(!target) return;
 
         this.attackTimer=1.0/this.aspd;
         let dmg=this.atk;
         let isCrit=Math.random()<this.critChance; if(isCrit) dmg*=2;
-        if(this.giantSlayerRate > 0 && !target.isBuilding) dmg += target.maxHp * this.giantSlayerRate;
-        if(this.borkActive&&!target.isBuilding) dmg+=target.hp*0.08;
 
         if(HERO_TMPL[this.heroKey].type==='ranged'){
             this.attackAnimTimer = 0.2;
@@ -1432,10 +1521,8 @@ class Hero extends Entity {
                 let dealt=target.applyRawDamage(dmg, this); this.totalDmg+=dealt;
                 let a = Math.atan2(target.y-this.y, target.x-this.x);
                 spawnSlash(this.x, this.y-this.radius, a, this.faction==='BLUE'?'#93c5fd':'#fca5a5', 30);
-                this.triggerOnHitPassives(target);
                 if(this.lifeSteal>0) { this.hp=Math.min(this.maxHp, this.hp+dealt*this.lifeSteal); playSFX('heal'); }
-                if(this.burnDmg>0&&!target.isBuilding) target.burnTicks.push({dmg:this.burnDmg,ticks:3,timer:1.0,src:this});
-                if(this.stunChance>0&&Math.random()<this.stunChance&&!target.isBuilding) target.stunTimer=1.0;
+                this.triggerOnHitPassives(target);
                 spawnSlash(this.x+Math.cos(a)*this.range*0.5, this.y+Math.sin(a)*this.range*0.5, a, isCrit?'#fbbf24':HERO_TMPL[this.heroKey].color);
             }
         }
@@ -1443,8 +1530,6 @@ class Hero extends Entity {
     onKill(target){
         this.triggerOnKillPassives(target);
         if(target.type==='hero'){
-            this.emote = '🤣'; this.emoteTimer = 3.0;
-            target.emote = '😭'; target.emoteTimer = 3.0;
             this.kills++;
             this.killStreak = (this.killStreak || 0) + 1;
             let now = Date.now();
@@ -1461,6 +1546,9 @@ class Hero extends Entity {
             else if(this.multiKill >= 4) showBanner(hName + ' 쿼드라 킬!!!', '💥', this.faction===player?.faction);
             else if(this.killStreak >= 3) showBanner(hName + '가 미쳐 날뛰고 있습니다!', '👹', this.faction===player?.faction);
             else showBanner(hName + ' 처치!', '⚔️', this.faction===player?.faction);
+            
+            this.emoji = ['😈','😆','😎','🔥'][Math.floor(Math.random()*4)];
+            this.emojiTimer = 3.0;
 
             this.gold+=250; this.gainExp(80);
             if(target.faction!=='BLUE') GS.scoreBlue++; else GS.scoreRed++;
@@ -1533,6 +1621,10 @@ class Hero extends Entity {
             if(window.addKillFeed) addKillFeed(attacker, this);
             if(window.AIChat) window.AIChat.onKill(attacker, this);
         }
+        
+        this.emoji = ['💀','😢','👻','☠️'][Math.floor(Math.random()*4)];
+        this.emojiTimer = 3.0;
+        
         if(this.isPlayer) document.getElementById('respawnOverlay').classList.replace('hidden', 'flex');
         spawnParticles(this.x,this.y,HERO_TMPL[this.heroKey].color,20,200,1.0);
     }
@@ -1547,9 +1639,8 @@ class Hero extends Entity {
             if(slot.upgrade>=9) return;
             this.gold-=item.cost; if(Math.random()<ENHANCE_RATES[slot.upgrade]){ slot.upgrade++; if(this.isPlayer) addText(this.x,this.y-50,'+'+slot.upgrade+' 강화 성공!','#f59e0b'); 
                 if(slot.upgrade >= 5 && window.AIChat) {
-                    // Trigger emojis for nearby heroes
                     let nearby = entities.filter(e=>e.type==='hero' && dist(this, e)<500);
-                    nearby.forEach(n => { addText(n.x, n.y-60, ['😲','✨','🔥','😱'][Math.floor(Math.random()*4)], '#fff', 24); });
+                    nearby.forEach(n => { n.emoji = ['😲','✨','🔥','😱'][Math.floor(Math.random()*4)]; n.emojiTimer = 3.0; });
                 }
             } else { addText(this.x,this.y-50,'강화 실패...','#64748b'); }
         } else {
@@ -1629,6 +1720,9 @@ class Hero extends Entity {
         
         this.staticAtk = this.atk; this.staticAspd = this.aspd; this.staticMoveSpd = this.moveSpd;
         this.hp=Math.min(this.hp, this.maxHp);
+        if(this.isPlayer && window.renderEvolutionGuide && document.getElementById('evolutionGuideUI') && !document.getElementById('evolutionGuideUI').classList.contains('hidden')) {
+            window.renderEvolutionGuide();
+        }
     }
     calculateDynamicStats(dt) {
         let effAtk = this.staticAtk || this.atk; 
@@ -1668,7 +1762,7 @@ class Hero extends Entity {
         if(GS.autoSkill2 && this.heroSkill2Timer <= 0 && nearEnemies(this.x, this.y, 400).length > 0) this.useSkill(2);
     }
     useSkill(idx) {
-        if(GS.status === 'COUNTDOWN') return;
+        if(GS.status === 'COUNTDOWN' || GS.status === 'START_HOLD') return;
         let k = this.heroKey;
         let sl = Math.floor((this.level - 1) / 3) + 1;
         let baseCd = idx===1 ? HERO_TMPL[k].skill1.cd : HERO_TMPL[k].skill2.cd;
@@ -2166,7 +2260,7 @@ class Hero extends Entity {
         let ltLv=this.passiveSkills['lightning']||0;
         if(ltLv>0 && Math.random()<0.08+(ltLv-1)*0.02) {
             let targets=entities.filter(e=>e.faction!==this.faction&&!e.isDead&&dist(this,e)<=400).sort(()=>Math.random()-0.5).slice(0,ltLv);
-            targets.forEach((t,idx)=>setTimeout(()=>{if(!t.isDead){t.applyRawDamage(this.atk*0.8,this);spawnLightningEffect(t.x,t.y,this===player);}},idx*100));
+            targets.forEach((t,idx)=>setTimeout(()=>{if(!t.isDead){t.applyRawDamage(this.atk*0.8,this);spawnLightningEffect(t.x,t.y,this===player);addText(t.x,t.y-30,'⚡','#fbbf24',22);}},idx*100));
         }
         // 체인 라이트닝
         let clLv=this.passiveSkills['chainLightning']||0;
@@ -2185,7 +2279,7 @@ class Hero extends Entity {
         let fLv=this.passiveSkills['frost']||0;
         if(fLv>0 && Math.random()<0.08+(fLv-1)*0.04 && !target.isBuilding) {
             target.slowTimer=2+(fLv-1); target.slowRate=0.4+(fLv-1)*0.1;
-            spawnParticles(target.x,target.y,'#93c5fd',10,80,0.5);
+            spawnParticles(target.x,target.y,'#93c5fd',10,80,0.5); addText(target.x,target.y-20,'❄️','#93c5fd',16);
         }
     }
     triggerOnKillPassives(target) {
@@ -2198,13 +2292,14 @@ class Hero extends Entity {
         if(shLv>0) {
             this.hp=Math.min(this.maxHp,this.hp+this.maxHp*(0.05+(shLv-1)*0.03));
             this.soulAtkBonus=this.baseAtk*(0.08+(shLv-1)*0.06); this.soulBuffTimer=5;
-            spawnParticles(this.x,this.y,'#a78bfa',15,100,0.5); playSFX('heal');
+            spawnParticles(this.x,this.y,'#a78bfa',15,100,0.5); addText(this.x,this.y-40,'👻 영혼 수확!','#a78bfa',16); playSFX('heal');
         }
         let pBlood = this.passiveSkills['bloodFury'] || 0;
         if(pBlood > 0) {
             this.atkSpdBuffTimer = 3.0 + (pBlood-1);
             this.atkSpdBuffRate = 1.5;
             spawnParticles(this.x, this.y, '#dc2626', 10, 100, 0.4);
+            addText(this.x, this.y-50, '😡 피의 분노!', '#ef4444', 16);
         }
     }
     showSkillSelection() {
@@ -2224,24 +2319,21 @@ class Hero extends Entity {
             card.className = 'skill-card';
             let lvText = curLv > 0 ? 'Lv.' + curLv + ' → Lv.' + (curLv+1) : 'NEW! Lv.1';
             let lvClass = curLv > 0 ? 'text-emerald-400' : 'text-amber-400';
-            
-            let evoMatches = EVOLUTION_ITEMS.filter(evo => evo.reqPassive === skill.id);
-            let evoText = '';
-            if (evoMatches.length > 0) {
-                let itemsHtml = evoMatches.map(evo => {
-                    let reqItem = BASE_ITEMS.find(i => i.id === evo.reqItem);
-                    let hasItem = this.inventory.some(i => i.id === evo.reqItem);
-                    let status = hasItem ? '<span class="text-emerald-400 font-bold">(보유)</span>' : '<span class="text-slate-400">(미보유)</span>';
-                    return '<div class="text-[10px] text-slate-300 flex items-center justify-center gap-1">[' + evo.name + ' 재료] ' + (reqItem ? reqItem.icon + ' ' + reqItem.name : '?') + ' ' + status + '</div>';
-                }).join('');
-                evoText = '<div class="mt-2 pt-2 border-t border-slate-700 w-full">' + itemsHtml + '</div>';
+            let comboEvo = EVOLUTION_ITEMS.find(evo => evo.reqPassive === skill.id);
+            let comboHtml = '';
+            if(comboEvo) {
+                let reqItemName = BASE_ITEMS.find(i=>i.id===comboEvo.reqItem)?.name;
+                let hasItem = this.inventory.some(i => i.id === comboEvo.reqItem);
+                if(hasItem) {
+                    comboHtml = `<div class="mt-2 text-[9px] text-emerald-300 border border-emerald-500/30 bg-emerald-900/30 px-1 py-0.5 rounded">✅ [${reqItemName}] 보유중 (${comboEvo.name} 조합)</div>`;
+                } else {
+                    comboHtml = `<div class="mt-2 text-[9px] text-rose-300 border border-rose-500/30 bg-rose-900/30 px-1 py-0.5 rounded">❌ [${reqItemName}] 미보유 (${comboEvo.name} 조합)</div>`;
+                }
             }
-
             card.innerHTML = '<div class="text-4xl mb-2">' + skill.icon + '</div>' +
                 '<div class="text-sm font-bold text-white mb-1">' + skill.name + '</div>' +
                 '<div class="text-[10px] text-slate-300 mb-2 leading-tight">' + skill.desc + '</div>' +
-                '<div class="text-[10px] font-bold ' + lvClass + '">' + lvText + '</div>' +
-                evoText;
+                '<div class="text-[10px] font-bold ' + lvClass + '">' + lvText + '</div>' + comboHtml;
             card.setAttribute('data-skill-id', skill.id);
             card.onclick = function() { player.selectPassiveSkill(skill.id); };
             container.appendChild(card);
@@ -2359,10 +2451,7 @@ class Building extends Entity {
         if(this.atk > 0 && this.attackTimer<=0){
             let target=null, minD=this.range;
             for(let ptype of ['minion','hero','jungle']){
-                entities.forEach(e=>{if(e.faction!==this.faction&&!e.isDead){
-                    if(e.type==='nexus' && entities.some(t=>t.type==='nexus_turret' && t.faction===e.faction && !t.isDead)) return;
-                    let d=dist(this,e);if(d<=this.range&&d<minD&&e.type===ptype){minD=d;target=e;}
-                }});
+                entities.forEach(e=>{if(e.faction!==this.faction&&!e.isDead){let d=dist(this,e);if(d<=this.range&&d<minD&&e.type===ptype){minD=d;target=e;}}});
                 if(target) break;
             }
             if(target){
@@ -2398,7 +2487,7 @@ class Building extends Entity {
                 attacker.gold += 200;
                 addText(attacker.x, attacker.y-60, '최종타 +200G!', '#f59e0b', 16);
             }
-            showBanner('아군이 포탑을 파괴했습니다! (+300G)', '🏰', player ? (this.faction !== player.faction) : (this.faction !== 'BLUE'));
+            showBanner('타워 파괴!', '💥', player ? (this.faction !== player.faction) : (this.faction !== 'BLUE'));
         }
         spawnParticles(this.x,this.y,'#f59e0b',30,300,1.5);
     }
@@ -2431,9 +2520,9 @@ class EpicDragon extends Entity {
         super(x, y, 'NEUTRAL', 'epic_dragon');
         this.dtype = dtype; // 'red' or 'blue'
         this.radius = 60; // 5배 크기 (기본 영웅 12)
-        this.maxHp = 45000 * scale; this.hp = this.maxHp;
-        this.atk = 450 * scale;
-        this.defense = 75 * scale;
+        this.maxHp = 30000 * scale; this.hp = this.maxHp;
+        this.atk = 300 * scale;
+        this.defense = 50 * scale;
         this.moveSpd = 80;
         this.range = 150;
         
@@ -2462,8 +2551,11 @@ class EpicDragon extends Entity {
             
             // 공중 폭격 (메테오/얼음 폭풍)
             if(Math.random() < 0.1) {
-                let tx = this.x + rand(-500, 500);
-                let ty = this.y + rand(-500, 500);
+                let targets = entities.filter(e => !e.isDead && e.faction !== 'NEUTRAL' && !e.isBuilding);
+                let target = targets.length > 0 ? targets[Math.floor(Math.random()*targets.length)] : null;
+                let tx = target ? target.x : this.x + rand(-500, 500);
+                let ty = target ? target.y : this.y + rand(-500, 500);
+                
                 spawnAOE(tx, ty, 150, this.dtype==='red'?'#ef4444aa':'#38bdf8aa', 1.5);
                 setTimeout(() => {
                     if(this.isDead) return;
@@ -2478,7 +2570,7 @@ class EpicDragon extends Entity {
         }
 
         // 지상 패턴
-        let targets = entities.filter(e => e.type === 'hero' && !e.isDead && dist(this, e) <= 600);
+        let targets = entities.filter(e => !e.isDead && e.faction !== 'NEUTRAL' && dist(this, e) <= 600 && !e.isBuilding);
         let target = targets.sort((a,b) => dist(this,a) - dist(this,b))[0];
         
         this.roarTimer -= dt;
@@ -2507,8 +2599,13 @@ class EpicDragon extends Entity {
                 spawnParticles(bx, by, this.dtype==='red'?'#ef4444':'#38bdf8', 10, 250, 0.5);
                 if(Math.random()<0.2) {
                     targets.forEach(e => {
-                        e.applyRawDamage(this.atk * 0.5, this);
-                        spawnParticles(e.x, e.y, this.dtype==='red'?'#ef4444':'#38bdf8', 5, 50, 0.3);
+                        let ea = Math.atan2(e.y - this.y, e.x - this.x);
+                        let diff = ea - a;
+                        while(diff > Math.PI) diff -= Math.PI*2;
+                        while(diff < -Math.PI) diff += Math.PI*2;
+                        if(Math.abs(diff) < Math.PI/4 && dist(this, e) <= 300) {
+                            e.applyRawDamage(this.atk * 0.5, this);
+                        }
                     });
                 }
             }
@@ -2820,7 +2917,7 @@ class Projectile {
     constructor(x,y,target,dmg,attacker,isCrit,ptype='arrow'){
         this.x=x; this.y=y; this.target=target; this.dmg=dmg; this.attacker=attacker; this.isCrit=isCrit; this.ptype=ptype;
         this.speed=ptype==='tower'?550:500; this.isDead=false;
-        this.isSplash = attacker && attacker.type==='hero' && (attacker.heroKey==='JOKER' || attacker.heroKey==='DARKPRIEST');
+        this.isSplash = attacker && attacker.type==='hero' && (attacker.heroKey==='DARKPRIEST');
         
         if(attacker && attacker.type==='hero') {
             if(attacker.heroKey==='ICEBORN') this.ptype='ice';
@@ -2914,7 +3011,7 @@ function spawnChainEffect(x1,y1,x2,y2) {
 // ============ 입력 이벤트 & 줌 ============
 window.addEventListener('keydown',e=>{ 
     if(e.code === 'Tab') { e.preventDefault(); if(window.toggleStatusWindow) window.toggleStatusWindow(); return; }
-    let k=e.key.toLowerCase(); if(keys.hasOwnProperty(k)) keys[k]=true; if(k==='o'&&player&&!GS.autoSkill1) player.useSkill(1); if(k==='p'&&player&&!GS.autoSkill2) player.useSkill(2); 
+    let k=e.key.toLowerCase(); if(keys.hasOwnProperty(k)) keys[k]=true; if(k==='o'&&player) player.useSkill(1); if(k==='p'&&player) player.useSkill(2); 
 });
 window.addEventListener('keyup',e=>{ let k=e.key.toLowerCase(); if(keys.hasOwnProperty(k)) keys[k]=false; });
 window.addEventListener('wheel', e => { 
@@ -3071,13 +3168,16 @@ window.startGame=()=>{
     let allKeys=Object.keys(HERO_TMPL).filter(h=>h!==GS.hero); allKeys.sort(()=>Math.random()-0.5);
     let bc=0, rc=0;
     for(let i=0;i<9;i++){
-        let hk=allKeys[i%allKeys.length]; let f=bc<4?'BLUE':'RED';
+        let hk=allKeys[i%allKeys.length]; 
+        let f = bc < (GS.faction==='BLUE' ? 4 : 5) ? 'BLUE' : 'RED';
         let role = allRoles[Math.floor(Math.random()*allRoles.length)];
         if(f==='BLUE') bc++; else rc++;
         entities.push(new Hero(f==='BLUE'?300:2700, f==='BLUE'?2700:300, f, hk, false, role));
     }
     camera.x=player.x; camera.y=player.y; camera.zoom = getDefaultZoom();
-    GS.status='COUNTDOWN'; GS.countdownTimer=5.0; GS.lastFrame=performance.now();
+    GS.time=0; GS.heroLevel=1; GS.heroExp=0; 
+    GS.status='START_HOLD'; GS.countdownTimer=5.0; GS.lastFrame=performance.now();
+    GS.killLog=[];
     resizeCanvas();
     
     document.getElementById('hudHeroName').textContent=HERO_TMPL[GS.hero].name;
@@ -3138,7 +3238,7 @@ window.toggleEvolutionGuide = () => {
 window.renderEvolutionGuide = () => {
     const list = document.getElementById('evolutionGuideList');
     if (!list) return;
-    list.innerHTML = '';
+    let html = '';
     
     EVOLUTION_ITEMS.forEach(evo => {
         let reqItem = BASE_ITEMS.find(i => i.id === evo.reqItem);
@@ -3168,7 +3268,7 @@ window.renderEvolutionGuide = () => {
             bgClass = 'bg-emerald-900/40 border-emerald-500';
         }
         
-        list.innerHTML += `
+        html += `
             <div class="border rounded-xl p-3 flex flex-col gap-2 ${bgClass}">
                 <div class="flex items-center gap-2">
                     <span class="text-2xl">${evo.icon}</span>
@@ -3179,19 +3279,20 @@ window.renderEvolutionGuide = () => {
                     ${statusText}
                 </div>
                 <div class="flex items-center gap-2 mt-1">
-                    <div onclick="window.buyFromGuide('${reqItem?reqItem.id:''}')" class="flex-1 flex flex-col items-center bg-slate-900 rounded p-1 border ${itemMax?'border-emerald-500/50':'border-slate-700'} cursor-pointer hover:bg-slate-800 transition-colors title='클릭하여 구매'">
-                        <span class="text-xs text-slate-200">${reqItem?reqItem.icon:'?'} ${reqItem?reqItem.name:'?'}</span>
-                        <span class="text-[10px] ${itemMax?'text-emerald-400 font-bold':'text-slate-400'}">강화: ${itemLv}/7 <span class="text-amber-500">(${reqItem?reqItem.cost:0}G)</span></span>
+                    <div onclick="if(player) player.buyItem('${evo.reqItem}')" class="flex-1 flex flex-col items-center bg-slate-900 rounded p-1 border cursor-pointer hover:bg-slate-800 transition-colors ${itemMax?'border-emerald-500/50':'border-slate-700'}">
+                        <span class="text-xs">${reqItem?reqItem.icon:'?'} ${reqItem?reqItem.name:'?'}</span>
+                        <span class="text-[10px] ${itemMax?'text-emerald-400 font-bold':'text-slate-400'}">강화: ${itemLv}/7</span>
                     </div>
                     <div class="text-slate-500">+</div>
                     <div class="flex-1 flex flex-col items-center bg-slate-900 rounded p-1 border ${passMax?'border-emerald-500/50':'border-slate-700'}">
-                        <span class="text-xs text-slate-200">${reqPass?reqPass.icon:'?'} ${reqPass?reqPass.name:'?'}</span>
+                        <span class="text-xs">${reqPass?reqPass.icon:'?'} ${reqPass?reqPass.name:'?'}</span>
                         <span class="text-[10px] ${passMax?'text-emerald-400 font-bold':'text-slate-400'}">레벨: ${passLv}/${reqPass?reqPass.maxLv:0}</span>
                     </div>
                 </div>
             </div>
         `;
     });
+    list.innerHTML = html;
 };
 
 window.showEvolutionPopup = (name, icon, desc) => {
@@ -3211,42 +3312,25 @@ window.showEvolutionPopup = (name, icon, desc) => {
         setTimeout(() => popup.classList.add('hidden'), 500);
     }, 4000);
 };
-window.buyItemUI=id=>{ 
-    if(player) {
-        player.buyItem(id); 
-        let modal = document.getElementById('evolutionGuideModal');
-        if (modal && !modal.classList.contains('hidden')) renderEvolutionGuide();
-    }
-};
-window.buyFromGuide = (id) => {
-    if(!id || !player) return;
-    let b = BASE_ITEMS.find(i=>i.id===id);
-    if(b && player.gold >= b.cost) {
-        let slot = player.inventory.find(i => i.id === id);
-        if (slot || player.inventory.length < 10) {
-            player.buyItem(id);
-            renderEvolutionGuide();
-        }
-    }
-};
+window.buyItemUI=id=>{ if(player) player.buyItem(id); };
 window.triggerSkill=idx=>{ if(player&&!player.isDead) player.useSkill(idx); };
-
-// Active items removed
-window.toggleAutoSkill = (num) => {
-    if (num === 1) {
-        GS.autoSkill1 = !GS.autoSkill1;
-        let badge = document.getElementById('badgeAutoSkill1');
-        if (badge) {
-            badge.textContent = GS.autoSkill1 ? 'A' : 'M';
-            badge.className = GS.autoSkill1 ? 'absolute -top-1 -right-1 w-5 h-5 bg-amber-500 border border-amber-300 text-slate-900 text-[10px] rounded-full flex items-center justify-center font-black z-20 cursor-pointer hover:bg-amber-400 transition-colors pointer-events-auto' : 'absolute -top-1 -right-1 w-5 h-5 bg-slate-700 border border-slate-500 text-slate-300 text-[10px] rounded-full flex items-center justify-center font-black z-20 cursor-pointer hover:bg-slate-600 transition-colors pointer-events-auto';
-        }
-    } else if (num === 2) {
-        GS.autoSkill2 = !GS.autoSkill2;
-        let badge = document.getElementById('badgeAutoSkill2');
-        if (badge) {
-            badge.textContent = GS.autoSkill2 ? 'A' : 'M';
-            badge.className = GS.autoSkill2 ? 'absolute -top-1 -right-1 w-5 h-5 bg-amber-500 border border-amber-300 text-slate-900 text-[10px] rounded-full flex items-center justify-center font-black z-20 cursor-pointer hover:bg-amber-400 transition-colors pointer-events-auto' : 'absolute -top-1 -right-1 w-5 h-5 bg-slate-700 border border-slate-500 text-slate-300 text-[10px] rounded-full flex items-center justify-center font-black z-20 cursor-pointer hover:bg-slate-600 transition-colors pointer-events-auto';
-        }
+window.toggleAutoSkill=(idx)=>{
+    if(idx === 1) GS.autoSkill1 = !GS.autoSkill1;
+    else if(idx === 2) GS.autoSkill2 = !GS.autoSkill2;
+    
+    const btn1 = document.getElementById('btnAutoSkill1');
+    if (btn1) {
+        btn1.textContent = GS.autoSkill1 ? 'A' : 'M';
+        btn1.style.background = GS.autoSkill1 ? 'rgba(245,158,11,0.9)' : 'rgba(51,65,85,0.9)';
+        btn1.style.color = GS.autoSkill1 ? '#0f172a' : '#cbd5e1';
+        btn1.style.borderColor = GS.autoSkill1 ? 'rgba(217,119,6,0.8)' : 'rgba(71,85,105,0.8)';
+    }
+    const btn2 = document.getElementById('btnAutoSkill2');
+    if (btn2) {
+        btn2.textContent = GS.autoSkill2 ? 'A' : 'M';
+        btn2.style.background = GS.autoSkill2 ? 'rgba(245,158,11,0.9)' : 'rgba(51,65,85,0.9)';
+        btn2.style.color = GS.autoSkill2 ? '#0f172a' : '#cbd5e1';
+        btn2.style.borderColor = GS.autoSkill2 ? 'rgba(217,119,6,0.8)' : 'rgba(71,85,105,0.8)';
     }
 };
 
@@ -3255,7 +3339,7 @@ function renderShop(){
     if(!player) return; document.getElementById('hudGoldText').textContent=Math.floor(player.gold)+'G';
     BASE_ITEMS.forEach(i=>{
         let slot=player.inventory.find(inv=>inv.id===i.id); let lv=slot?'<span class="text-rose-400 font-bold">+'+slot.upgrade+'</span>':'';
-        let canBuy=player.gold>=i.cost&&(slot||player.inventory.length<10);
+        let canBuy=player.gold>=i.cost&&(slot||player.inventory.length<8);
         cont.innerHTML+=`
         <div class="bg-slate-800/80 hover:bg-slate-700/80 transition-colors border border-slate-700 rounded-lg p-1 md:p-2 flex flex-col items-center justify-between gap-0.5 md:gap-1 w-full relative group shadow-sm">
             <div class="text-2xl md:text-3xl mb-0.5 md:mb-1 mt-0.5 md:mt-1">${i.icon}</div>
@@ -3289,18 +3373,27 @@ window.addEventListener('orientationchange', () => { setTimeout(resizeCanvas, 30
 
 
 function gameLoop(now){
-    if(GS.status!=='PLAYING' && GS.status!=='COUNTDOWN') return;
-    // dt 클램프 완화: 프레임 드랍이 생겨도 최대 0.2초(5 FPS) 분량의 시간을 한 번에 처리해 현실 시간과 싱크를 맞춤
+    // 플레이 루프
+    if(GS.status!=='PLAYING' && GS.status!=='COUNTDOWN' && GS.status!=='START_HOLD') return;
+
     let dt=Math.min((now-GS.lastFrame)/1000, 0.2); GS.lastFrame=now;
+    if(!dt || dt>0.1) dt=1/60;
     
-    if(!GS.paused) {
-        if(GS.status === 'COUNTDOWN') {
-            GS.countdownTimer -= dt;
-            if(GS.countdownTimer <= 0) {
+    if(GS.status === 'START_HOLD' || GS.status === 'COUNTDOWN') {
+        GS.countdownTimer -= dt;
+        if(GS.countdownTimer <= 0) {
+            if(GS.status === 'START_HOLD') {
+                GS.status = 'COUNTDOWN';
+                GS.countdownTimer = 5.0;
+                showBanner('진격 개시! 라인으로 이동!', '🛡️');
+            } else {
                 GS.status = 'PLAYING';
-                showBanner('사냥 시작!', '⚔️', true);
+                showBanner('전투 시작! 교전 허가!', '⚔️');
             }
         }
+    }
+    
+    if(!GS.paused) {
         if(GS.status === 'PLAYING') {
             // Underdog Buff Logic
         if(GS.lastUnderdogCheck === undefined) GS.lastUnderdogCheck = 0;
@@ -3484,6 +3577,23 @@ function draw(){
                     ctx.font = '20px sans-serif'; ctx.fillText('🐢', e.x - 10, e.y - e.radius*2.5);
                 }
             }
+                if(e.emoji) {
+                    ctx.font = '28px sans-serif'; ctx.textAlign = 'center';
+                    ctx.fillText(e.emoji, e.x, e.y - e.radius*3.5);
+                }
+                if(e.speechText) {
+                    ctx.font = '12px sans-serif'; ctx.textAlign = 'center';
+                    let tw = ctx.measureText(e.speechText).width;
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+                    ctx.beginPath();
+                    ctx.roundRect(e.x - tw/2 - 6, e.y - e.radius*3 - 24, tw + 12, 18, 4);
+                    ctx.fill();
+                    ctx.fillStyle = '#0f172a';
+                    ctx.fillText(e.speechText, e.x, e.y - e.radius*3 - 11);
+                    // 꼬리표
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+                    ctx.beginPath(); ctx.moveTo(e.x - 4, e.y - e.radius*3 - 6); ctx.lineTo(e.x + 4, e.y - e.radius*3 - 6); ctx.lineTo(e.x, e.y - e.radius*3); ctx.fill();
+                }
             ctx.restore();
         } else {
             e.draw(ctx);
@@ -3494,11 +3604,11 @@ function draw(){
     entities.forEach(e => {
         if(e.type==='hero' && e.shadowClones) {
             e.shadowClones.forEach(c => {
-                ctx.globalAlpha = 0.5;
-                ctx.fillStyle = e.faction==='BLUE'?'#3b82f6':'#ef4444';
-                ctx.beginPath(); ctx.arc(c.x, c.y, 15, 0, Math.PI*2); ctx.fill();
-                ctx.fillStyle = '#c084fc'; ctx.beginPath(); ctx.arc(c.x, c.y, 10, 0, Math.PI*2); ctx.fill();
-                ctx.globalAlpha = 1;
+                ctx.save();
+                ctx.globalAlpha = 0.6;
+                ctx.filter = 'brightness(0) sepia(1) hue-rotate(240deg) saturate(3) invert(0.8)'; // 어두운 그림자 느낌
+                drawBlockyHero(ctx, c.x, c.y, e.radius, e.facingDir, e.faction, e.heroKey, 0, e);
+                ctx.restore();
             });
         }
         if(e.type==='hero' && e.poisonZones) {
@@ -3591,7 +3701,7 @@ function draw(){
 
     if(GS.platform==='MOBILE'&&joy.active){ ctx.restore(); ctx.save(); ctx.globalAlpha=0.4; ctx.strokeStyle='#fff'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(joy.ox,joy.oy,50,0,Math.PI*2); ctx.stroke(); ctx.globalAlpha=0.7; ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(joy.ox+joy.dx,joy.oy+joy.dy,20,0,Math.PI*2); ctx.fill(); ctx.globalAlpha=1; ctx.restore(); return; }
     ctx.restore(); 
-    if(GS.status === 'COUNTDOWN') {
+    if(GS.status === 'COUNTDOWN' || GS.status === 'START_HOLD') {
         ctx.fillStyle = 'rgba(0,0,0,0.5)';
         ctx.fillRect(0,0,canvas.width,canvas.height);
         ctx.fillStyle = '#fde047';
@@ -3601,7 +3711,11 @@ function draw(){
         ctx.fillText(cdNum > 0 ? cdNum : 'START!', canvas.width/2, canvas.height/2);
         ctx.font = 'bold 24px sans-serif';
         ctx.fillStyle = '#ffffff';
-        ctx.fillText("준비하세요! 카운트다운 동안 스킬 사용이 금지됩니다.", canvas.width/2, canvas.height/2 + 60);
+        if(GS.status === 'START_HOLD') {
+            ctx.fillText("진입 대기 중! 본진에서 벗어날 수 없습니다.", canvas.width/2, canvas.height/2 + 60);
+        } else {
+            ctx.fillText("준비하세요! 카운트다운 동안 스킬 사용이 금지됩니다.", canvas.width/2, canvas.height/2 + 60);
+        }
     }
     drawMinimap();
 }
@@ -3737,7 +3851,7 @@ function updateUI(){
     if(m1) { if(player.heroSkill1Timer>0){m1.classList.remove('hidden');m1.textContent=player.heroSkill1Timer.toFixed(1);}else m1.classList.add('hidden'); }
     if(m2) { if(player.heroSkill2Timer>0){m2.classList.remove('hidden');m2.textContent=player.heroSkill2Timer.toFixed(1);}else m2.classList.add('hidden'); }
     
-    // 액티브 아이템 표시 제거
+
     // 패시브 스킬 표시
     let pBar = document.getElementById('passiveSkillBar');
     if(pBar) {
@@ -4166,7 +4280,7 @@ window.saveAndReload = function() {
     let dominance = document.getElementById('dominanceResult').innerText;
     let kda = document.getElementById('kdaResult').innerText;
     
-    if(player && HERO_TMPL) {
+    if(window.player && window.HERO_TMPL) {
         let record = {
             name: name,
             hero: HERO_TMPL[player.heroKey].name,

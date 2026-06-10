@@ -271,24 +271,22 @@
                     <span class="text-amber-400 text-[10px] md:text-xs">💰</span>
                     <span id="hudGoldText" class="text-amber-300 font-black font-mono text-xs md:text-sm">0G</span>
                 </div>
-                <div class="flex flex-col gap-1 w-full mt-0.5 md:mt-1">
-                    <div class="flex flex-row gap-1 w-full justify-end">
-                        <button onclick="toggleStatusWindow()"
-                                class="flex-1 bg-gradient-to-r from-indigo-500 to-blue-500 text-white font-black text-[9px] md:text-[11px] px-1.5 py-1 md:px-3 md:py-1.5 rounded-lg md:rounded-xl shadow-lg flex flex-row items-center justify-center gap-0.5 border border-blue-300 active:scale-95 transition-transform whitespace-nowrap">
-                            📊 현황
-                        </button>
-                        <button onclick="toggleEvolutionGuide()"
-                                class="flex-1 bg-gradient-to-r from-amber-600 to-yellow-500 text-slate-950 font-black text-[9px] md:text-[11px] px-1.5 py-1 md:px-3 md:py-1.5 rounded-lg md:rounded-xl shadow-lg flex flex-row items-center justify-center gap-0.5 border border-amber-300 active:scale-95 transition-transform whitespace-nowrap">
-                            🌟 도감
-                        </button>
-                    </div>
+                <div class="grid grid-cols-2 md:flex md:flex-row gap-1 md:gap-1.5 mt-0.5 md:mt-1 w-[110px] md:w-auto">
+                    <button onclick="toggleStatusWindow()"
+                            class="col-span-1 bg-gradient-to-r from-indigo-500 to-blue-500 text-white font-black text-[9px] md:text-[11px] px-1.5 py-1 md:px-3 md:py-1.5 rounded-lg md:rounded-xl shadow-lg flex flex-row items-center justify-center gap-0.5 md:gap-1 border border-blue-300 active:scale-95 transition-transform whitespace-nowrap shrink-0">
+                        📊 현황
+                    </button>
+                    <button onclick="toggleEvolutionGuide()"
+                            class="col-span-1 bg-gradient-to-r from-amber-600 to-yellow-500 text-slate-950 font-black text-[9px] md:text-[11px] px-1.5 py-1 md:px-3 md:py-1.5 rounded-lg md:rounded-xl shadow-lg flex flex-row items-center justify-center gap-0.5 md:gap-1 border border-amber-300 active:scale-95 transition-transform whitespace-nowrap shrink-0">
+                        🌟 도감
+                    </button>
                     <button onclick="toggleShop()"
-                            class="w-full bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 font-black text-[9px] md:text-[11px] px-1.5 py-1 md:px-3 md:py-1.5 rounded-lg md:rounded-xl shadow-lg flex flex-row items-center justify-center gap-0.5 border border-amber-300 active:scale-95 transition-transform whitespace-nowrap">
+                            class="col-span-2 md:col-span-1 bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 font-black text-[9px] md:text-[11px] px-1.5 py-1 md:px-3 md:py-1.5 rounded-lg md:rounded-xl shadow-lg flex flex-row items-center justify-center gap-0.5 md:gap-1 border border-amber-300 active:scale-95 transition-transform whitespace-nowrap shrink-0">
                         🛒 상점
                     </button>
                 </div>
             </div>
-            <!-- 인벤토리 슬롯 (2x5 그리드 구조로 변경) -->
+            <!-- 인벤토리 슬롯 (2x5 그리드 구조로 변경하여 10칸) -->
             <div class="grid grid-cols-5 gap-0.5 md:gap-1 bg-slate-950/40 p-1 md:p-1.5 rounded-xl border border-slate-800/50 pointer-events-auto" id="inventorySlots">
                 <!-- JS가 채움 -->
             </div>
@@ -332,40 +330,30 @@
                         class="text-[12px] font-black px-2 py-0.5 rounded-full border transition-all active:scale-90 shadow-md text-emerald-400 border-slate-400 bg-slate-800/85">
                     🔊
                 </button>
-                <!-- AUTO 스킬 -->
-                <button onmousedown="toggleAutoSkill()" ontouchstart="toggleAutoSkill(); event.preventDefault();"
-                        id="btnAutoSkill"
-                        class="text-[9px] font-black px-2 py-0.5 rounded-full border transition-all active:scale-90 shadow-md"
-                        style="background:rgba(100,116,139,0.85); color:#fff; border-color:rgba(148,163,184,0.6);">
-                    <span id="txtAutoSkill">MANUAL</span>
+            </div>
+
+
+            <!-- 스킬 2 -->
+            <div class="relative mt-1">
+                <button onmousedown="toggleAutoSkill(2); event.stopPropagation();" ontouchstart="toggleAutoSkill(2); event.preventDefault(); event.stopPropagation();" id="btnAutoSkill2" class="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-slate-700 text-slate-300 border-2 border-slate-600 text-[10px] font-black z-30 shadow-md active:scale-90 transition-all flex items-center justify-center">M</button>
+                <button onmousedown="triggerSkill(2)" ontouchstart="triggerSkill(2); event.preventDefault();"
+                        class="relative overflow-hidden flex flex-col items-center justify-center active:scale-90 transition-transform shadow-lg"
+                        style="width:60px; height:60px; border-radius:50%; background:rgba(99,102,241,0.3); border:2px solid rgba(99,102,241,0.7); backdrop-filter:blur(4px);">
+                    <span id="txtSkill2Icon" class="text-2xl leading-none drop-shadow">💫</span>
+                    <div id="maskSkill2" class="hidden absolute inset-0 rounded-full flex items-center justify-center font-mono font-black text-amber-400 text-xs" style="background:rgba(15,23,42,0.75);"></div>
                 </button>
             </div>
 
-            <!-- 액티브 아이템 버튼 (기본 숨김) -->
-            <button id="btnActiveItem" onclick="triggerActiveItem()"
-                    class="hidden relative overflow-hidden flex flex-col items-center justify-center active:scale-90 transition-transform shadow-lg mb-1"
-                    style="width:50px; height:50px; border-radius:50%; background:rgba(234,179,8,0.3); border:2px solid rgba(234,179,8,0.7); backdrop-filter:blur(4px);">
-                <span id="txtActiveItemIcon" class="text-xl leading-none drop-shadow">⏳</span>
-                <div id="maskActiveItem" class="hidden absolute inset-0 rounded-full flex items-center justify-center font-mono font-black text-white text-xs" style="background:rgba(15,23,42,0.75);"></div>
-            </button>
-
-            <!-- 스킬 2 -->
-            <button onmousedown="triggerSkill(2)" ontouchstart="triggerSkill(2); event.preventDefault();"
-                    class="relative overflow-hidden flex flex-col items-center justify-center active:scale-90 transition-transform shadow-lg"
-                    style="width:60px; height:60px; border-radius:50%; background:rgba(99,102,241,0.3); border:2px solid rgba(99,102,241,0.7); backdrop-filter:blur(4px); overflow:visible;">
-                <span id="txtSkill2Icon" class="text-2xl leading-none drop-shadow">💫</span>
-                <div id="maskSkill2" class="hidden absolute inset-0 rounded-full flex items-center justify-center font-mono font-black text-amber-400 text-xs" style="background:rgba(15,23,42,0.75);"></div>
-                <div id="badgeAutoSkill2" onclick="toggleAutoSkill(2); event.stopPropagation();" class="absolute -top-1 -right-1 w-5 h-5 bg-slate-700 border border-slate-500 text-slate-300 text-[10px] rounded-full flex items-center justify-center font-black z-20 cursor-pointer hover:bg-slate-600 transition-colors pointer-events-auto">M</div>
-            </button>
-
             <!-- 스킬 1 -->
-            <button onmousedown="triggerSkill(1)" ontouchstart="triggerSkill(1); event.preventDefault();"
-                    class="relative overflow-hidden flex flex-col items-center justify-center active:scale-90 transition-transform shadow-lg"
-                    style="width:60px; height:60px; border-radius:50%; background:rgba(16,185,129,0.3); border:2px solid rgba(16,185,129,0.7); backdrop-filter:blur(4px); overflow:visible;">
-                <span id="txtSkill1Icon" class="text-2xl leading-none drop-shadow">✨</span>
-                <div id="maskSkill1" class="hidden absolute inset-0 rounded-full flex items-center justify-center font-mono font-black text-amber-400 text-xs" style="background:rgba(15,23,42,0.75);"></div>
-                <div id="badgeAutoSkill1" onclick="toggleAutoSkill(1); event.stopPropagation();" class="absolute -top-1 -right-1 w-5 h-5 bg-slate-700 border border-slate-500 text-slate-300 text-[10px] rounded-full flex items-center justify-center font-black z-20 cursor-pointer hover:bg-slate-600 transition-colors pointer-events-auto">M</div>
-            </button>
+            <div class="relative mt-1">
+                <button onmousedown="toggleAutoSkill(1); event.stopPropagation();" ontouchstart="toggleAutoSkill(1); event.preventDefault(); event.stopPropagation();" id="btnAutoSkill1" class="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-slate-700 text-slate-300 border-2 border-slate-600 text-[10px] font-black z-30 shadow-md active:scale-90 transition-all flex items-center justify-center">M</button>
+                <button onmousedown="triggerSkill(1)" ontouchstart="triggerSkill(1); event.preventDefault();"
+                        class="relative overflow-hidden flex flex-col items-center justify-center active:scale-90 transition-transform shadow-lg"
+                        style="width:60px; height:60px; border-radius:50%; background:rgba(16,185,129,0.3); border:2px solid rgba(16,185,129,0.7); backdrop-filter:blur(4px);">
+                    <span id="txtSkill1Icon" class="text-2xl leading-none drop-shadow">✨</span>
+                    <div id="maskSkill1" class="hidden absolute inset-0 rounded-full flex items-center justify-center font-mono font-black text-amber-400 text-xs" style="background:rgba(15,23,42,0.75);"></div>
+                </button>
+            </div>
         </div>
     </div>
 
@@ -480,7 +468,7 @@ window.onerror = function(msg, url, line, col, error) {
     console.error("자바스크립트 오류 발생: ", msg, "줄:", line, "컬럼:", col, "에러:", error);
 };
 </script>
-<script src="game.js?v=1008"></script>
+<script src="game.js?v=1015"></script>
 
     <!-- 명예의 전당 모달 -->
     <div id="hofScreen" class="hidden absolute inset-0 z-50 bg-black/80 flex items-center justify-center">
@@ -526,24 +514,10 @@ window.onerror = function(msg, url, line, col, error) {
             <h2 class="text-2xl md:text-3xl font-black text-amber-400 mb-6 border-b border-slate-700 pb-3 orbitron">📝 PATCH NOTES</h2>
             <div class="flex-1 overflow-y-auto pr-4 text-sm md:text-base text-slate-300 space-y-4 custom-scrollbar">
                 
-                <details class="bg-slate-700/50 rounded-lg border border-slate-600/50" open>
-                    <summary class="cursor-pointer p-3 font-bold text-amber-400 hover:text-amber-300 transition select-none flex justify-between items-center">
-                        v1009 - UX 개선 및 피드백 전면 반영
-                        <span class="text-xs text-slate-400 font-normal ml-2">최신</span>
-                    </summary>
-                    <div class="p-3 pt-0 text-sm text-slate-200 space-y-2 border-t border-slate-600/50 mt-1 pb-3 px-4">
-                        <ul class="list-disc pl-4 space-y-1">
-                            <li><span class="font-bold text-emerald-400">스킬/아이템:</span> 스킬 선택창 조합 도우미가 고도화되어 현재 아이템 소지 여부(보유/미보유)를 명확히 안내합니다.</li>
-                            <li><span class="font-bold text-emerald-400">이모지 팝업:</span> 전투 중 불필요한 이모지 스팸을 걷어내고, 킬 시 기쁨(🤣), 사망 시 슬픔(😭) 감정 표현을 3초간 표시합니다.</li>
-                            <li><span class="font-bold text-emerald-400">타워 철거 보상:</span> 라인 타워 철거 시 글로벌 배너 팝업을 띄우고 팀 전체 보상(+300G)과 막타 보상(+200G)을 명확하게 피드백합니다.</li>
-                            <li><span class="font-bold text-emerald-400">넥서스 무적 로직:</span> 아군 수호탑이 살아있을 경우 넥서스는 무적이 되며, 타겟팅 자체가 되지 않도록 수정했습니다.</li>
-                            <li><span class="font-bold text-emerald-400">버그 픽스:</span> 결과창에서 닉네임 기재 후 명예의 전당 저장 시 발생하는 오류를 완벽하게 고쳤습니다.</li>
-                        </ul>
-                    </div>
-                </details>
-                <details class="bg-slate-700/50 rounded-lg border border-slate-600/50">
-                    <summary class="cursor-pointer p-3 font-bold text-emerald-400 hover:text-emerald-300 transition select-none flex justify-between items-center">
-                        v1007 - 편의성 대개편 및 오류 수정 (핫픽스)
+                                <details class="bg-slate-700/50 rounded-lg border border-slate-600/50" open>
+                            <summary class="cursor-pointer p-3 font-bold text-amber-400 hover:text-amber-300 transition select-none flex justify-between items-center">
+                                v1007 - 편의성 대개편 및 오류 수정 (핫픽스)
+                                <span class="text-xs text-slate-400 font-normal ml-2">최신</span>
                             </summary>
                             <div class="p-3 pt-0 text-sm text-slate-200 space-y-2 border-t border-slate-600/50 mt-1 pb-3 px-4">
                                 <ul class="list-disc pl-4 space-y-1">
@@ -569,7 +543,7 @@ window.onerror = function(msg, url, line, col, error) {
                     </div>
                 </details>
 
-                <details class="group bg-slate-800/50 p-4 rounded-xl border border-slate-700">
+                <details open class="group bg-slate-800/50 p-4 rounded-xl border border-slate-700">
                     <summary class="font-bold text-lg text-emerald-400 flex items-center justify-between cursor-pointer list-none">
                         <span class="flex items-center gap-2"><span class="text-xl">✨</span> v1008 주요 업데이트</span>
                         <span class="text-slate-500 group-open:rotate-180 transition-transform">▼</span>
