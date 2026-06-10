@@ -169,6 +169,14 @@ const WARMOG_REGEN      = 0.10;    // 워모그 초당 10%
 
 // ============ 영웅 템플릿 (근접/원거리 밸런스 전면 수정) ============
 const HERO_TMPL = {
+    ARIEL: {
+        name:"아리엘", color:"#fef08a",
+        hp:2000, atk:45, aspd:1.3, move:170, range:390, type:"ranged", role_desc:"[서포터 / 치유·버프 / 광역 폭발]",
+        skill1: { name:"치유의 파동", cd:10, desc:"자신 주변 반경 250의 모든 아군(영웅, 미니언 포함)의 체력을 대폭 회복시킵니다." },
+        skill2: { name:"빛의 인도", cd:16, desc:"5초 동안 반경 300 내 모든 아군의 이동 속도 40%, 공격 속도 40%, 방어력 30을 증가시킵니다." },
+        draw:(ctx,x,y,r,dir,f,anim,ent) => drawBlockyHero(ctx,x,y,r,dir,f,'ariel',anim,ent)
+    },
+
     CRAG: {
         name:"크래그", color:"#4b5563",
         hp:4500, atk:55, aspd:0.85, move:160, range:100, type:"melee", role_desc:"[탱커 / 근거리 / 오버파워]",
@@ -307,7 +315,18 @@ window.addGold = function(hero, amount) {
         let tax = amount * 0.03;
         window.TEAM_VAULT.gold += tax;
         hero.gold += (amount - tax);
-    } else {
+    } 
+            else if(this.heroKey === 'CRAG') {
+                spawnSlash(this.x, this.y-this.radius, Math.random()*Math.PI*2, '#78716c', 100);
+                spawnParticles(target.x, target.y, '#57534e', 10, 80, 0.5);
+                let hitTargets = entities.filter(e=>e.faction!==this.faction && !e.isDead && dist(e, target) <= 100);
+                hitTargets.forEach(tgt => {
+                    let dealt=tgt.applyRawDamage(dmg, this); this.totalDmg+=dealt;
+                    this.triggerOnHitPassives(tgt);
+                });
+                if(this.isPlayer) playSFX('hit');
+            }
+ else {
         hero.gold += amount;
     }
 };
@@ -997,6 +1016,17 @@ class Entity {
         if(this.curseTimer>0) this.curseTimer-=dt;
         if(this.airborneTimer>0) this.airborneTimer-=dt;
         if(this.slowTimer > 0) this.slowTimer -= dt;
+        if(this.arielBuffTimer > 0) {
+            this.arielBuffTimer -= dt;
+            if(Math.random()<0.05) spawnParticles(this.x, this.y, '#fef08a', 1, 30, 0.3);
+            if(this.arielBuffTimer <= 0 && this.arielBuffActive) {
+                this.arielBuffActive = false;
+                this.moveSpd /= 1.4;
+                this.aspd /= 1.4;
+                this.defense -= 30;
+            }
+        }
+
         if(this.defBuffTimer > 0) this.defBuffTimer -= dt;
         if(this.stunTimer>0){ 
             this.stunTimer-=dt; 
@@ -1528,7 +1558,18 @@ class Hero extends Entity {
                     if(this.lifeSteal>0) this.hp=Math.min(this.maxHp, this.hp+dealt*this.lifeSteal);
                 });
                 if(this.isPlayer) playSFX('hit');
-            } else {
+            }
+            else if(this.heroKey === 'CRAG') {
+                spawnSlash(this.x, this.y-this.radius, Math.random()*Math.PI*2, '#78716c', 100);
+                spawnParticles(target.x, target.y, '#57534e', 10, 80, 0.5);
+                let hitTargets = entities.filter(e=>e.faction!==this.faction && !e.isDead && dist(e, target) <= 100);
+                hitTargets.forEach(tgt => {
+                    let dealt=tgt.applyRawDamage(dmg, this); this.totalDmg+=dealt;
+                    this.triggerOnHitPassives(tgt);
+                });
+                if(this.isPlayer) playSFX('hit');
+            }
+ else {
                 let dealt=target.applyRawDamage(dmg, this); this.totalDmg+=dealt;
                 let a = Math.atan2(target.y-this.y, target.x-this.x);
                 spawnSlash(this.x, this.y-this.radius, a, this.faction==='BLUE'?'#93c5fd':'#fca5a5', 30);
@@ -1841,7 +1882,37 @@ class Hero extends Entity {
                 this.emote = '🛡️'; this.emoteTimer = 1.0;
                 spawnRing(this.x, this.y, '#4ade80', 120, 1.0);
             }
-        } else if(k==='BERSERKER') {
+        } else 
+        } else if(k === 'ARIEL') {
+            if(idx === 1) { // 치유의 파동
+                this.emote = '💖'; this.emoteTimer = 1.0;
+                spawnAOE(this.x, this.y, 250, '#86efac88', 0.5);
+                let healAmount = 200 + this.atk * 2.0;
+                let allies = entities.filter(e=>e.faction===this.faction && !e.isDead && dist(e, this) <= 250);
+                allies.forEach(e => {
+                    e.hp = Math.min(e.maxHp, e.hp + healAmount);
+                    spawnParticles(e.x, e.y, '#4ade80', 10, 50, 0.6);
+                    addText(e.x, e.y - e.radius - 20, '➕', '#4ade80', 20); // 십자가 아이콘
+                });
+                playSFX('heal');
+            } else { // 빛의 인도
+                this.emote = '✨'; this.emoteTimer = 1.0;
+                spawnRing(this.x, this.y, '#fef08a', 300, 1.0);
+                let allies = entities.filter(e=>e.faction===this.faction && !e.isDead && dist(e, this) <= 300);
+                allies.forEach(e => {
+                    let prevActive = e.arielBuffActive;
+                    e.arielBuffTimer = 5.0;
+                    if(!prevActive) {
+                        e.arielBuffActive = true;
+                        e.moveSpd *= 1.4;
+                        e.aspd *= 1.4;
+                        e.defense += 30;
+                    }
+                    spawnParticles(e.x, e.y, '#fef08a', 20, 80, 0.8);
+                });
+            }
+
+        if(k==='BERSERKER') {
             if(idx===1) { // 소용돌이
                 spawnRing(this.x, this.y, '#ef4444', 150, 0.4);
                 nearEnemies(this.x,this.y,150).forEach(e=>{
@@ -3395,7 +3466,7 @@ class Projectile {
     constructor(x,y,target,dmg,attacker,isCrit,ptype='arrow'){
         this.x=x; this.y=y; this.target=target; this.dmg=dmg; this.attacker=attacker; this.isCrit=isCrit; this.ptype=ptype;
         this.speed=ptype==='tower'?550:500; this.isDead=false;
-        this.isSplash = attacker && attacker.type==='hero' && (attacker.heroKey==='JOKER' || attacker.heroKey==='DARKPRIEST');
+        this.isSplash = attacker && attacker.type==='hero' && (attacker.heroKey==='JOKER' || attacker.heroKey==='DARKPRIEST' || attacker.heroKey==='ARIEL');
         
         if(attacker && attacker.type==='hero') {
             if(attacker.heroKey==='ICEBORN') this.ptype='ice';
@@ -3404,6 +3475,7 @@ class Projectile {
             else if(attacker.heroKey==='NECROMANCER') this.ptype='skull';
             else if(attacker.heroKey==='MECHANIC') this.ptype='bullet';
             else if(attacker.heroKey==='VAMPIRE') this.ptype='blood';
+            else if(attacker.heroKey==='ARIEL') this.ptype='holy';
         }
     }
     update(dt){
@@ -3466,6 +3538,13 @@ class Projectile {
         else if(this.ptype==='bullet'){
             ctx.fillStyle='#fbbf24'; ctx.fillRect(-6,-2,12,4);
             ctx.fillStyle='#f59e0b'; ctx.beginPath(); ctx.arc(6,0,2,0,Math.PI*2); ctx.fill();
+        }
+        
+        else if(this.ptype==='holy'){
+            ctx.shadowColor='#fef08a'; ctx.shadowBlur=15; ctx.fillStyle='#fef08a';
+            ctx.beginPath(); ctx.moveTo(0, -6); ctx.lineTo(3, -2); ctx.lineTo(8, 0); ctx.lineTo(3, 2); ctx.lineTo(0, 6); ctx.lineTo(-3, 2); ctx.lineTo(-8, 0); ctx.lineTo(-3, -2); ctx.closePath(); ctx.fill();
+            ctx.fillStyle='#38bdf8'; ctx.beginPath(); ctx.arc(0,0,2,0,Math.PI*2); ctx.fill();
+            ctx.shadowBlur=0;
         }
         else if(this.ptype==='blood'){
             ctx.fillStyle='#e11d48'; ctx.beginPath(); ctx.moveTo(8,0); ctx.lineTo(-6,-5); ctx.lineTo(-4,0); ctx.lineTo(-6,5); ctx.fill();
