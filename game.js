@@ -775,40 +775,122 @@ function drawBlockyHero(ctx, x, y, r, dir, faction, type, attackAnimTimer = 0, e
         }
         ctx.restore();
         
-    } else if(type === 'ariel') {
-        drawBody('#fef08a', '#ffffff', '#e2e8f0', '#0ea5e9'); // 창백하고 빛나는 피부, 백색 드레스
-        
-        // 황금빛 후광 (Halo)
+    
+    } else if(type === 'crag') {
+        // 크래그: 거대한 바위 골렘
         ctx.save();
-        ctx.translate(x, y-r*1.3-breath);
-        ctx.rotate(t/1000); // 천천히 회전
-        ctx.shadowColor = '#fef08a'; ctx.shadowBlur = 15;
-        ctx.strokeStyle = '#facc15'; ctx.lineWidth = 3;
-        ctx.beginPath(); ctx.arc(0, 0, r*0.7, 0, Math.PI*2); ctx.stroke();
-        for(let i=0; i<8; i++) {
-            ctx.rotate(Math.PI/4);
-            ctx.beginPath(); ctx.moveTo(0, r*0.7); ctx.lineTo(0, r*1.0); ctx.stroke();
-        }
-        ctx.restore();
+        ctx.translate(x, y);
+        if(dir < 0) ctx.scale(-1, 1);
+        
+        // 어깨/등 바위 덩어리
+        ctx.fillStyle = '#44403c';
+        ctx.beginPath(); ctx.arc(0, -r*0.5, r*1.2, Math.PI, 0); ctx.fill();
+        ctx.fillStyle = '#292524';
+        ctx.beginPath(); ctx.arc(-r*0.4, -r*0.6, r*0.5, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(r*0.4, -r*0.4, r*0.6, 0, Math.PI*2); ctx.fill();
 
-        // 화려한 백색/황금 드레스 치마
-        ctx.fillStyle = '#ffffff';
-        ctx.beginPath(); ctx.moveTo(x-r*0.6, y+r*0.2-breath); ctx.lineTo(x+r*0.6, y+r*0.2-breath);
-        ctx.lineTo(x+r*1.2, y+r*1.5); ctx.lineTo(x-r*1.2, y+r*1.5); ctx.fill();
-        ctx.fillStyle = '#fef08a'; // 황금빛 마감
-        ctx.beginPath(); ctx.moveTo(x-r*1.2, y+r*1.5); ctx.lineTo(x+r*1.2, y+r*1.5); ctx.lineTo(x+r*1.0, y+r*1.2); ctx.lineTo(x-r*1.0, y+r*1.2); ctx.fill();
+        // 몸통 (단단한 바위 갑옷)
+        ctx.fillStyle = '#57534e';
+        ctx.fillRect(-r*0.9, -r*0.2, r*1.8, r*1.4);
+        
+        // 가슴 중앙 코어 (빛나는 노란색)
+        ctx.shadowColor = '#facc15'; ctx.shadowBlur = 15;
+        ctx.fillStyle = '#fef08a';
+        ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(r*0.3, r*0.4); ctx.lineTo(0, r*0.8); ctx.lineTo(-r*0.3, r*0.4); ctx.fill();
+        ctx.shadowBlur = 0;
 
-        // 거대한 황금 지팡이
+        // 머리 (작고 단단한 돌)
+        ctx.fillStyle = '#78716c';
+        ctx.fillRect(-r*0.4, -r*1.0-breath, r*0.8, r*0.8);
+        ctx.fillStyle = '#facc15'; // 빛나는 눈
+        ctx.fillRect(-r*0.2, -r*0.8-breath, r*0.4, r*0.15);
+
+        // 거대한 주먹
         ctx.save();
         if(isAttacking) {
-            ctx.translate(x+r*0.6, y); ctx.rotate(Math.PI * 0.25 * rotDir);
+            ctx.translate(r*1.2, r*0.5); ctx.rotate(Math.PI * 0.4);
+            ctx.fillStyle = '#44403c'; ctx.fillRect(-r*0.8, -r*0.8, r*1.6, r*1.6);
         } else {
-            ctx.translate(x+r*0.6, y-r*0.2-breath); ctx.rotate(Math.PI * 0.1 * rotDir);
+            ctx.translate(r*1.0, r*0.6-breath); ctx.rotate(Math.PI * 0.1);
+            ctx.fillStyle = '#44403c'; ctx.fillRect(-r*0.6, -r*0.6, r*1.2, r*1.2);
         }
-        ctx.fillStyle = '#facc15'; ctx.fillRect(-2, -r*1.5, 4, r*3.0); // 지팡이 대
-        // 푸른 보석 머리
+        ctx.restore();
+        
+        // 뒷손
+        ctx.save();
+        ctx.translate(-r*1.0, r*0.5+breath); ctx.rotate(-Math.PI * 0.1);
+        ctx.fillStyle = '#292524'; ctx.fillRect(-r*0.6, -r*0.6, r*1.2, r*1.2);
+        ctx.restore();
+        
+        ctx.restore();
+
+
+    } else if(type === 'ariel') {
+        // 아리엘: 여신, 화려한 디테일
+        ctx.save();
+        ctx.translate(x, y);
+        if(dir < 0) ctx.scale(-1, 1);
+        
+        // 등 뒤 황금빛 날개/후광
+        ctx.shadowColor = '#fef08a'; ctx.shadowBlur = 20;
+        ctx.fillStyle = '#facc15';
+        for(let i=0; i<6; i++) {
+            ctx.save();
+            ctx.rotate((Math.PI/6) * (i-2.5) + Math.sin(t/500)*0.1);
+            ctx.beginPath(); ctx.moveTo(0, -r*0.5); ctx.lineTo(r*1.5, -r*1.8); ctx.lineTo(r*0.5, -r*0.5); ctx.fill();
+            ctx.restore();
+        }
+        ctx.shadowBlur = 0;
+
+        // 드레스 겹겹이 표현 (다각형 기하학 무늬)
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath(); ctx.moveTo(0, -r*0.2); ctx.lineTo(r*1.2, r*1.5); ctx.lineTo(-r*1.2, r*1.5); ctx.fill();
+        ctx.fillStyle = '#fef08a';
+        ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(r*0.8, r*1.6); ctx.lineTo(-r*0.8, r*1.6); ctx.fill();
+        ctx.fillStyle = '#fde047';
+        ctx.beginPath(); ctx.moveTo(0, r*0.3); ctx.lineTo(r*0.5, r*1.7); ctx.lineTo(-r*0.5, r*1.7); ctx.fill();
+
+        // 상체와 팔
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(-r*0.4, -r*0.6, r*0.8, r*0.8);
+        ctx.fillStyle = '#fef08a'; // 어깨 장식
+        ctx.beginPath(); ctx.moveTo(-r*0.6, -r*0.6); ctx.lineTo(r*0.6, -r*0.6); ctx.lineTo(0, -r*0.2); ctx.fill();
+
+        // 머리카락 (눈부신 금발)
+        ctx.fillStyle = '#fde047';
+        ctx.beginPath(); ctx.arc(0, -r*0.9-breath, r*0.55, Math.PI, 0); ctx.fill();
+        ctx.fillRect(-r*0.55, -r*0.9-breath, r*0.3, r*1.2); // 좌측 긴 머리
+        ctx.fillRect(r*0.25, -r*0.9-breath, r*0.3, r*1.2); // 우측 긴 머리
+
+        // 얼굴
+        ctx.fillStyle = '#ffedd5';
+        ctx.beginPath(); ctx.arc(0, -r*0.9-breath, r*0.4, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = '#0ea5e9'; // 신비로운 푸른 눈
+        ctx.fillRect(-r*0.2, -r*1.0-breath, r*0.15, r*0.1);
+        ctx.fillRect(r*0.05, -r*1.0-breath, r*0.15, r*0.1);
+
+        // 태양빛 왕관
+        ctx.strokeStyle = '#eab308'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(0, -r*1.2-breath, r*0.3, Math.PI, 0); ctx.stroke();
+        for(let i=-2; i<=2; i++) {
+            let a = -Math.PI/2 + i*(Math.PI/6);
+            ctx.beginPath(); ctx.moveTo(Math.cos(a)*r*0.3, -r*1.2-breath + Math.sin(a)*r*0.3);
+            ctx.lineTo(Math.cos(a)*r*0.6, -r*1.2-breath + Math.sin(a)*r*0.6); ctx.stroke();
+        }
+
+        // 지팡이 들고 있는 앞 손
+        ctx.save();
+        if(isAttacking) {
+            ctx.translate(r*0.5, -r*0.2); ctx.rotate(Math.PI * 0.3);
+        } else {
+            ctx.translate(r*0.5, -r*0.2-breath); ctx.rotate(Math.PI * 0.1);
+        }
+        ctx.fillStyle = '#facc15'; ctx.fillRect(-r*0.1, -r*1.5, r*0.2, r*2.5); // 얇고 긴 지팡이
         ctx.shadowColor = '#38bdf8'; ctx.shadowBlur = 15; ctx.fillStyle = '#38bdf8';
-        ctx.beginPath(); ctx.moveTo(0, -r*1.8); ctx.lineTo(6, -r*1.5); ctx.lineTo(0, -r*1.2); ctx.lineTo(-6, -r*1.5); ctx.fill();
+        ctx.beginPath(); ctx.moveTo(0, -r*1.8); ctx.lineTo(r*0.4, -r*1.5); ctx.lineTo(0, -r*1.2); ctx.lineTo(-r*0.4, -r*1.5); ctx.fill(); // 푸른 보석
+        ctx.shadowBlur = 0;
+        ctx.restore();
+
         ctx.restore();
 
     } else if (type === 'darkpriest') {
