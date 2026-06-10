@@ -324,42 +324,35 @@
         <!-- 패시브 스킬 표시 영역 (하단 중앙) -->
         <div id="passiveSkillBar" class="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1 flex-wrap pointer-events-none z-10 justify-center w-full max-w-[200px]"></div>
 
-        <!-- 스킬 버튼 (우하단 플로팅) -->
-        <div id="uiSkillBar" class="pointer-events-auto absolute bottom-4 right-4 flex flex-col items-center gap-2 z-20">
-            <div class="flex gap-2">
-                <!-- SFX 토글 -->
-                <button onclick="toggleSFX()" id="btnToggleSFX"
-                        class="text-[12px] font-black px-2 py-0.5 rounded-full border transition-all active:scale-90 shadow-md text-emerald-400 border-slate-400 bg-slate-800/85">
-                    🔊
-                </button>
-
-
-            <!-- 액티브 아이템 버튼 (기본 숨김) -->
-            <button id="btnActiveItem" onclick="triggerActiveItem()"
-                    class="hidden relative overflow-hidden flex flex-col items-center justify-center active:scale-90 transition-transform shadow-lg mb-1"
-                    style="width:50px; height:50px; border-radius:50%; background:rgba(234,179,8,0.3); border:2px solid rgba(234,179,8,0.7); backdrop-filter:blur(4px);">
-                <span id="txtActiveItemIcon" class="text-xl leading-none drop-shadow">⏳</span>
-                <div id="maskActiveItem" class="hidden absolute inset-0 rounded-full flex items-center justify-center font-mono font-black text-white text-xs" style="background:rgba(15,23,42,0.75);"></div>
+        <!-- 스킬 버튼 (우하단 플로팅, MOBA 스타일 아치형 배치) -->
+        <div id="uiSkillBar" class="pointer-events-auto fixed z-30 flex items-end justify-end gap-3 md:gap-5" 
+             style="bottom: max(24px, env(safe-area-inset-bottom)); right: max(24px, env(safe-area-inset-right));">
+            
+            <!-- SFX 토글 (제일 왼쪽, 아래쪽) -->
+            <button onclick="toggleSFX()" id="btnToggleSFX"
+                    class="text-xs md:text-sm font-black px-2 py-1 md:px-3 md:py-2 rounded-full border transition-all active:scale-90 shadow-md text-emerald-400 border-slate-400 bg-slate-800/85 mb-1 md:mb-2 opacity-80 hover:opacity-100">
+                🔊
             </button>
 
+            <!-- 스킬 2 (중간, 위로 솟아오름) -->
             <button onmousedown="triggerSkill(2)" ontouchstart="triggerSkill(2); event.preventDefault();"
-                    class="relative overflow-hidden flex flex-col items-center justify-center active:scale-90 transition-transform shadow-lg w-[60px] h-[60px] md:w-[120px] md:h-[120px]"
+                    class="relative overflow-hidden flex flex-col items-center justify-center active:scale-90 transition-transform shadow-lg w-[55px] h-[55px] md:w-[90px] md:h-[90px] mb-10 md:mb-16"
                     style="border-radius:50%; background:rgba(99,102,241,0.3); border:2px solid rgba(99,102,241,0.7); backdrop-filter:blur(4px); overflow:visible;">
-                <span id="txtSkill2Icon" class="text-2xl md:text-5xl leading-none drop-shadow">💫</span>
+                <span id="txtSkill2Icon" class="text-2xl md:text-4xl leading-none drop-shadow">💫</span>
                 <div id="maskSkill2" class="hidden absolute inset-0 rounded-full flex items-center justify-center font-mono font-black text-amber-400 text-xs md:text-xl" style="background:rgba(15,23,42,0.75);"></div>
                 <div id="badgeAutoSkill2" onclick="toggleAutoSkill(2); event.stopPropagation();" ontouchstart="toggleAutoSkill(2); event.stopPropagation(); event.preventDefault();" class="absolute -top-1 -right-1 md:-top-2 md:-right-2 w-5 h-5 md:w-8 md:h-8 bg-slate-700 border border-slate-500 text-slate-300 text-[10px] md:text-sm rounded-full flex items-center justify-center font-black z-20 cursor-pointer hover:bg-slate-600 transition-colors pointer-events-auto">M</div>
             </button>
 
-            <!-- 스킬 1 -->
+            <!-- 스킬 1 (제일 오른쪽, 크고 듬직하게) -->
             <button onmousedown="triggerSkill(1)" ontouchstart="triggerSkill(1); event.preventDefault();"
-                    class="relative overflow-hidden flex flex-col items-center justify-center active:scale-90 transition-transform shadow-lg w-[60px] h-[60px] md:w-[120px] md:h-[120px]"
+                    class="relative overflow-hidden flex flex-col items-center justify-center active:scale-90 transition-transform shadow-xl w-[70px] h-[70px] md:w-[110px] md:h-[110px]"
                     style="border-radius:50%; background:rgba(16,185,129,0.3); border:2px solid rgba(16,185,129,0.7); backdrop-filter:blur(4px); overflow:visible;">
-                <span id="txtSkill1Icon" class="text-2xl md:text-5xl leading-none drop-shadow">✨</span>
+                <span id="txtSkill1Icon" class="text-3xl md:text-5xl leading-none drop-shadow">✨</span>
                 <div id="maskSkill1" class="hidden absolute inset-0 rounded-full flex items-center justify-center font-mono font-black text-amber-400 text-xs md:text-xl" style="background:rgba(15,23,42,0.75);"></div>
                 <div id="badgeAutoSkill1" onclick="toggleAutoSkill(1); event.stopPropagation();" ontouchstart="toggleAutoSkill(1); event.stopPropagation(); event.preventDefault();" class="absolute -top-1 -right-1 md:-top-2 md:-right-2 w-5 h-5 md:w-8 md:h-8 bg-slate-700 border border-slate-500 text-slate-300 text-[10px] md:text-sm rounded-full flex items-center justify-center font-black z-20 cursor-pointer hover:bg-slate-600 transition-colors pointer-events-auto">M</div>
             </button>
+
         </div>
-    </div>
 </div>
 </div>
 
