@@ -2327,8 +2327,7 @@ class Hero extends Entity {
                 '<div class="text-[10px] font-bold ' + lvClass + '">' + lvText + '</div>' +
                 evoText;
             card.setAttribute('data-skill-id', skill.id);
-            card.onmousedown = function(e) { e.stopPropagation(); player.selectPassiveSkill(skill.id); };
-            card.ontouchstart = function(e) { e.preventDefault(); e.stopPropagation(); player.selectPassiveSkill(skill.id); };
+            card.onclick = function(e) { e.stopPropagation(); player.selectPassiveSkill(skill.id); };
             container.appendChild(card);
         }
     }
@@ -3292,6 +3291,7 @@ window.startGame=()=>{
     // 완벽한 초기화
     entities=[]; projectiles=[]; particles=[]; floatingTexts=[]; slashEffects=[]; aoeEffects=[];
     GS.scoreBlue=0; GS.scoreRed=0; GS.time=0; GS.paused=false; minionTimer=MINION_INTERVAL-2;
+    midBossSpawned = [false, false, false]; suddenDeathTriggered = false; goblinSpawned = false;
     document.getElementById('scoreBlue').textContent='0'; document.getElementById('scoreRed').textContent='0';
 
     // 건물 세팅 (3라인 + 수호타워)
