@@ -1261,7 +1261,7 @@ class Hero extends Entity {
         this.aiUpdateTimer -= dt;
         if (this.aiUpdateTimer <= 0) {
             this.aiUpdateTimer = 0.2 + Math.random()*0.1;
-            this.nearEnemiesCache = entities.filter(e=>e.faction!==this.faction && !e.isDead && dist(this,e)<600);
+            this.nearEnemiesCache = entities.filter(e=>e.faction!==this.faction && !e.isDead && dist(this,e)<600 && e.type!=='tower' && e.type!=='nexus_turret' && e.type!=='nexus');
         }
         let nearEnemies = (this.nearEnemiesCache || []).filter(e => !e.isDead);
         
@@ -1310,11 +1310,14 @@ class Hero extends Entity {
         switch(this.aiState) {
             case 'RETREAT':
                 tx = myBase.x; ty = myBase.y;
-                let underEnemyTower1 = entities.some(t=>(t.type==='tower'||t.type==='nexus_turret') && t.faction!==this.faction && !t.isDead && dist(this,t)<t.range+50);
-                if (underEnemyTower1 && hpRatio < 0.7) {
-                    let a = Math.atan2(myBase.y-this.y, myBase.x-this.x);
-                    this.vx = Math.cos(a)*this.moveSpd; this.vy = Math.sin(a)*this.moveSpd;
-                    break;
+                let enemyTower1 = entities.find(t=>(t.type==='tower'||t.type==='nexus_turret') && t.faction!==this.faction && !t.isDead && dist(this,t)<t.range+50);
+                if (enemyTower1) {
+                    let hasFriendlyMinion1 = entities.some(m => m.faction === this.faction && m.type === 'minion' && !m.isDead && dist(m, enemyTower1) < enemyTower1.range);
+                    if ((!hasFriendlyMinion1 && GS.time < 300) || hpRatio < 0.7) {
+                        let a = Math.atan2(myBase.y-this.y, myBase.x-this.x);
+                        this.vx = Math.cos(a)*this.moveSpd; this.vy = Math.sin(a)*this.moveSpd;
+                        break;
+                    }
                 }
                 if(dist(this, myBase) < 150) { this.vx=0; this.vy=0; } // 힐링
                 else {
@@ -1335,31 +1338,35 @@ class Hero extends Entity {
             case 'LANE':
             default:
                 if(this.laneRole === 'top') { tx = 300; ty = 300; }
-                else if(this.laneRole === 'bot') { tx = 2700; ty = 2700; }
+                else if(this.laneRole === 'bot' || this.laneRole === 'support') { tx = 2700; ty = 2700; }
+                else if(this.laneRole === 'mid') { tx = 1500; ty = 1500; }
                 else if(this.laneRole === 'jungle') {
                     let jg = entities.filter(e=>e.type==='jungle' && !e.isDead).sort((a,b)=>dist(this,a)-dist(this,b))[0];
                     if(jg) { tx = jg.x; ty = jg.y; }
                     else { tx = 1500; ty = 1500; }
                 }
                 
-                if(this.laneRole !== 'jungle' && dist(this, {x:tx, y:ty}) < 400) {
+                if(this.laneRole !== 'jungle' && dist(this, {x:tx, y:ty}) < 200) {
                     let enemyBase = this.faction==='BLUE'?{x:2700,y:300}:{x:300,y:2700};
                     tx = enemyBase.x; ty = enemyBase.y;
                 }
                 
                 let possibleEnemies = entities.filter(e=>e.faction!==this.faction && !e.isDead && dist(this,e)<this.range);
                 possibleEnemies = possibleEnemies.filter(e => !(e.type==='nexus' && entities.some(t=>t.type==='nexus_turret' && t.faction===e.faction && !t.isDead)));
-                let targetEnemy = possibleEnemies.find(e=>e.type==='tower'||e.type==='nexus_turret'||e.type==='nexus') || possibleEnemies.sort((a,b)=>dist(this,a)-dist(this,b))[0];
+                let targetEnemy = possibleEnemies.find(e=>e.type==='hero') || possibleEnemies.find(e=>e.type==='minion'||e.type==='jungle') || possibleEnemies.find(e=>e.type==='tower'||e.type==='nexus_turret'||e.type==='nexus') || possibleEnemies.sort((a,b)=>dist(this,a)-dist(this,b))[0];
                 if(targetEnemy) {
                     this.vx=0; this.vy=0;
                     this.facingDir = targetEnemy.x < this.x ? -1 : 1;
                     if(this.heroSkill1Timer <= 0) this.useSkill(1);
                 } else {
-                    let underEnemyTower = entities.some(t=>(t.type==='tower'||t.type==='nexus_turret') && t.faction!==this.faction && !t.isDead && dist(this,t)<t.range+50);
-                    if (underEnemyTower && hpRatio < 0.7) {
-                        let a = Math.atan2(myBase.y-this.y, myBase.x-this.x);
-                        this.vx = Math.cos(a)*this.moveSpd; this.vy = Math.sin(a)*this.moveSpd;
-                        break;
+                    let enemyTower = entities.find(t=>(t.type==='tower'||t.type==='nexus_turret') && t.faction!==this.faction && !t.isDead && dist(this,t)<t.range+50);
+                    if (enemyTower) {
+                        let hasFriendlyMinion = entities.some(m => m.faction === this.faction && m.type === 'minion' && !m.isDead && dist(m, enemyTower) < enemyTower.range);
+                        if ((!hasFriendlyMinion && GS.time < 300) || hpRatio < 0.7) {
+                            let a = Math.atan2(myBase.y-this.y, myBase.x-this.x);
+                            this.vx = Math.cos(a)*this.moveSpd; this.vy = Math.sin(a)*this.moveSpd;
+                            break;
+                        }
                     }
 
                     // 목표 방향 이동 (히스테리시스 적용)
@@ -1376,22 +1383,27 @@ class Hero extends Entity {
     }
     autoAttack(){
         if(this.attackTimer>0) return;
-        let target=null, minD=this.range;
-        let priorityTarget=null;
+        let target=null;
+        let targetHero = null, targetMinion = null, targetBuilding = null;
+        let distHero = Infinity, distMinion = Infinity, distBuilding = Infinity;
+        
         entities.forEach(e=>{
             if(e.faction!==this.faction&&!e.isDead){
                 if(e.type==='nexus' && entities.some(t=>t.type==='nexus_turret' && t.faction===e.faction && !t.isDead)) return;
                 let d=dist(this,e); 
                 if(d<=this.range) {
-                    if(e.type === 'tower' || e.type === 'nexus_turret' || e.type === 'nexus') {
-                        if(!priorityTarget || d<dist(this, priorityTarget)) priorityTarget = e;
-                    } else if (!priorityTarget && d<minD) {
-                        minD=d; target=e;
+                    if (e.type === 'hero') {
+                        if (d < distHero) { distHero = d; targetHero = e; }
+                    } else if (e.type === 'minion' || e.type === 'jungle') {
+                        if (d < distMinion) { distMinion = d; targetMinion = e; }
+                    } else if (e.type === 'tower' || e.type === 'nexus_turret' || e.type === 'nexus') {
+                        if (d < distBuilding) { distBuilding = d; targetBuilding = e; }
                     }
                 }
             }
         });
-        if(priorityTarget) target = priorityTarget;
+        
+        target = targetHero || targetMinion || targetBuilding;
         if(!target) return;
 
         this.attackTimer=1.0/this.aspd;
