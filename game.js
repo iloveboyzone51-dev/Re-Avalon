@@ -1688,7 +1688,7 @@ class Hero extends Entity {
         if(idx === 1 && k === 'grrr') {
             this.grrrGiantTimer = cd * 0.66;
             this.emote = '🦍'; this.emoteTimer = 2.0;
-            addText(this.x, this.y-50, '거대화! 포효하라!', '#fcd34d', 24);
+
             spawnRing(this.x, this.y, '#f59e0b', 150, 0.8);
             for(let i=0; i<3; i++) setTimeout(() => spawnParticles(this.x, this.y, '#b45309', 15, 100, 0.6), i*200);
             return;
@@ -1697,14 +1697,14 @@ class Hero extends Entity {
             this.emote = '🤬'; this.emoteTimer = 2.0;
             let tgts = nearEnemies(this.x, this.y, 125);
             tgts.forEach(e => { e.applyRawDamage(this.atk*2.0, this); e.stunTimer = 2.0; });
-            addText(this.x, this.y-50, '대지 분쇄!', '#ef4444', 28);
+
             // 바닥 갈라짐 + 흙먼지 이펙트
             for(let i=0; i<5; i++) spawnSlash(this.x, this.y, Math.random()*Math.PI*2, '#78350f', 125);
             spawnParticles(this.x, this.y, '#d97706', 40, 125, 0.8);
             return;
         }
         
-        addText(this.x, this.y-50, idx===1 ? HERO_TMPL[k].skill1.name : HERO_TMPL[k].skill2.name, HERO_TMPL[k].color, 24);
+
 
         if(k==='BERSERKER') {
             if(idx===1) { // 소용돌이
@@ -1749,7 +1749,7 @@ class Hero extends Entity {
                 spawnParticles(this.x, this.y, '#6ee7b7', 30, 100, 0.5);
                 spawnRing(this.x, this.y, '#10b981', 75, 0.3);
                 this.atkSpdBuffTimer = 4; this.atkSpdBuffRate = 2.0;
-                addText(this.x, this.y-30, '질풍!', '#4ade80', 20);
+
             }
         } else if(k==='NECROMANCER') {
             if(idx===1) { // 해골 군단 소환
@@ -1875,15 +1875,15 @@ class Hero extends Entity {
                                 spawnParticles(e.x, e.y, '#ef4444', 5, 50, 0.4);
                             });
                             spawnRing(this.x, this.y, '#ef4444', 200, 0.5);
-                            addText(this.x, this.y-30, '♥️ 데미지!', '#ef4444', 18);
+
                         } else if(eff < 0.66) {
                             this.defBuffTimer = 4.0; this.defBuffAmount = this.maxHp * 0.2;
                             spawnRing(this.x, this.y, '#3b82f6', 100, 0.5);
-                            addText(this.x, this.y-30, '♠️ 방어!', '#3b82f6', 18);
+
                         } else {
                             this.atkSpdBuffTimer = 4.0; this.atkSpdBuffRate = 1.8;
                             spawnRing(this.x, this.y, '#10b981', 100, 0.5);
-                            addText(this.x, this.y-30, '♣️ 가속!', '#10b981', 18);
+
                         }
                     }, i*250);
                 }
@@ -1892,7 +1892,7 @@ class Hero extends Entity {
                 this.gold -= bet;
                 if(Math.random() < 0.6) { // 60% 확률 당첨!
                     this.gold += bet * 2;
-                    addText(this.x, this.y-70, '🃏 잭팟!! +'+bet+'G', '#fbbf24', 32);
+
                     spawnRing(this.x, this.y, '#fbbf24', 250, 0.8);
                     spawnAOE(this.x, this.y, 250, '#fcd34d66', 0.8);
                     for(let i=0; i<20; i++) setTimeout(()=>spawnParticles(this.x+rand(-150,150), this.y+rand(-150,150), '#ffffff', 5, 75, 0.5), i*50);
@@ -1901,7 +1901,7 @@ class Hero extends Entity {
                         e.stunTimer = 1.5; e.airborneTimer = 0.5;
                     });
                 } else {
-                    addText(this.x, this.y-70, '꽝... ' + bet + 'G 증발', '#9ca3af', 20);
+
                     spawnRing(this.x, this.y, '#6b7280', 150, 0.4);
                     nearEnemies(this.x, this.y, 150).forEach(e => {
                         e.applyRawDamage(skillDmg * 1.0, this);
@@ -1919,22 +1919,22 @@ class Hero extends Entity {
                         let drain = sacrifice.maxHp * 0.2;
                         sacrifice.hp = Math.max(1, sacrifice.hp - drain);
                         for(let i=0; i<5; i++) setTimeout(()=>spawnBeam(sacrifice.x, sacrifice.y, this.x, this.y, '#9333ea', 0.2), i*100);
-                        addText(sacrifice.x, sacrifice.y-40, '💜 제물!', '#9333ea', 20);
+
                         boostedDmg *= 1.8;
                     }
                     
                     projectiles.push(new Projectile(this.x, this.y, t, boostedDmg, this, false));
                     spawnSpecial(this.x, this.y, '#4c1d95', 'star', 16, 200, 0.5);
-                    addText(this.x, this.y-50, '💀 영혼 파괴!', '#7c3aed', 24);
+
                 } else {
-                    addText(this.x, this.y-40, '대상 없음', '#64748b', 12);
+
                 }
             } else { // 파멸의 낙인
                 if(t) {
                     t.curseTimer = 15.0; // 저주 15초
                     spawnAOE(t.x, t.y, 75, '#4c1d9599', 1.5);
                     spawnRing(t.x, t.y, '#a855f7', 75, 1.0);
-                    addText(t.x, t.y-50, '파멸의 낙인!', '#c084fc', 28);
+
                     for(let i=0; i<8; i++) spawnSlash(t.x, t.y, (Math.PI/4)*i, '#581c87', 75);
                 }
             }
@@ -1956,7 +1956,7 @@ class Hero extends Entity {
                     e.applyRawDamage(skillDmg * 2.5, this);
                     e.stunTimer = 0.5;
                 });
-                addText(tg.x, tg.y-60, '사이어닉 스톰!', '#ffffff', 24);
+
             } else { // 마엘스톰 (갈색 구체 완전 마비)
                 let tg = t || this;
                 let duration = 3.0;
@@ -1969,7 +1969,7 @@ class Hero extends Entity {
                     e.stunTimer = duration; // 완전 마비
                     spawnParticles(e.x, e.y, '#b45309', 20, 100, duration);
                 });
-                addText(tg.x, tg.y-60, '마엘스톰!', '#b45309', 24);
+
                 
                 // 소용돌이 이펙트 추가 생성
                 for(let i=0; i<8; i++) {
@@ -1982,7 +1982,7 @@ class Hero extends Entity {
                 this.x = tg.x; this.y = tg.y; // 점프 이동
                 spawnAOE(this.x, this.y, 200, '#00000088', 0.6);
                 spawnRing(this.x, this.y, '#ea580c', 200, 0.6);
-                addText(this.x, this.y-60, '점프 샷!!', '#ea580c', 24);
+
                 
                 // 거대한 지형 균열(Slash) 이펙트를 여러 겹으로
                 for(let i=0; i<12; i++) spawnSlash(this.x, this.y, (Math.PI/6)*i, '#451a03', 250);
@@ -2004,7 +2004,7 @@ class Hero extends Entity {
                     let a = Math.atan2(tg.y - this.y, tg.x - this.x);
                     this.vx = Math.cos(a)*600; this.vy = Math.sin(a)*600; // 돌진!
                 }
-                addText(this.x, this.y-60, '휠윈드!!', '#f97316', 24);
+
                 spawnRing(this.x, this.y, '#fdba74', 150, 3.0);
                 playSFX('skill_burst');
             }
@@ -2046,7 +2046,7 @@ class Hero extends Entity {
             if(this.passiveTimers.shadowClone >= 10) {
                 this.passiveTimers.shadowClone = 0;
                 for(let i=0;i<scLv;i++) this.shadowClones.push({x:this.x+rand(-50,50),y:this.y+rand(-50,50),life:5+(scLv-1)*2,atk:this.atk*0.3,animPhase:Math.random()*Math.PI*2});
-                addText(this.x,this.y-50,'분신 소환!','#a78bfa',16);
+
             }
         }
 
@@ -2156,7 +2156,7 @@ class Hero extends Entity {
                 a.warAnthemTimer = 5.0;
             });
             spawnAOE(this.x, this.y, 600, '#fef08a66', 0.3);
-            addText(this.x, this.y-60, '전장의 찬가!', '#fef08a', 20);
+
             playSFX('heal');
         }
     }
@@ -2192,7 +2192,7 @@ class Hero extends Entity {
         if(this.inventory.some(i => i.id === 'avalon_sword')) {
             this.invincibleTimer = 3.0;
             spawnParticles(this.x, this.y, '#fcd34d', 20, 150, 3.0);
-            addText(this.x, this.y-50, '아발론 수호!', '#fcd34d', 20);
+
         }
         let shLv=this.passiveSkills['soulHarvest']||0;
         if(shLv>0) {
@@ -3990,8 +3990,8 @@ window.AIChat = {
             if(window.addText) {
                 let kEmoji = this.patterns.emojis.killer[Math.floor(Math.random()*this.patterns.emojis.killer.length)];
                 let vEmoji = this.patterns.emojis.victim[Math.floor(Math.random()*this.patterns.emojis.victim.length)];
-                addText(killer.x, killer.y - 60, kEmoji, '#ffffff', 28);
-                addText(victim.x, victim.y - 60, vEmoji, '#ffffff', 28);
+                killer.emote = kEmoji; killer.emoteTimer = 3.0;
+                victim.emote = vEmoji; victim.emoteTimer = 3.0;
             }
             
             // 닉네임 입력 전당 등록을 위해 KDA 및 딜량 데이터 세팅
@@ -4041,7 +4041,7 @@ window.AIChat = {
                     let nearEnemies = currentHeroes.filter(e => e.faction !== h.faction && dist(e, h) < 300);
                     if(nearEnemies.length > 0) {
                         let hEmoji = ['🤬', '👿', '🖕', '💢'][Math.floor(Math.random()*4)];
-                        addText(h.x, h.y - 70, hEmoji, '#fff', 28);
+                        h.emote = hEmoji; h.emoteTimer = 3.0;
                     }
                 }
             }
