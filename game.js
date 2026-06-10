@@ -298,9 +298,9 @@ window.addGold = function(hero, amount) {
     if(hero.faction === player?.faction) {
         let tax = amount * 0.03;
         window.TEAM_VAULT.gold += tax;
-        window.addGold(hero, (amount - tax));
+        hero.gold += (amount - tax);
     } else {
-        window.addGold(hero, amount);
+        hero.gold += amount;
     }
 };
 let entities = [];
