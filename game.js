@@ -1910,6 +1910,7 @@ class Hero extends Entity {
                     spawnParticles(e.x, e.y, '#fef08a', 20, 80, 0.8);
                 });
             }
+        }
 
         if(k==='BERSERKER') {
             if(idx===1) { // 소용돌이
