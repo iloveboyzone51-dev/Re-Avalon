@@ -165,6 +165,18 @@
                         class="py-2 px-1 rounded-xl border-2 border-transparent bg-slate-800/60 flex flex-col items-center transition-all active:scale-90">
                     <span class="text-lg">🪓</span><span class="text-[10px] font-bold text-orange-400 mt-0.5">바바리안</span>
                 </button>
+                <button id="btnHeroZEROS" onclick="selectHero('ZEROS')"
+                        class="py-2 px-1 rounded-xl border-2 border-transparent bg-slate-800/60 flex flex-col items-center transition-all active:scale-90">
+                    <span class="text-lg">🗡️</span><span class="text-[10px] font-bold text-red-500 mt-0.5">제로스</span>
+                </button>
+                <button id="btnHeroSYLVIA" onclick="selectHero('SYLVIA')"
+                        class="py-2 px-1 rounded-xl border-2 border-transparent bg-slate-800/60 flex flex-col items-center transition-all active:scale-90">
+                    <span class="text-lg">🎯</span><span class="text-[10px] font-bold text-teal-400 mt-0.5">실비아</span>
+                </button>
+                <button id="btnHeroZEPHYR" onclick="selectHero('ZEPHYR')"
+                        class="py-2 px-1 rounded-xl border-2 border-transparent bg-slate-800/60 flex flex-col items-center transition-all active:scale-90">
+                    <span class="text-lg">🌪️</span><span class="text-[10px] font-bold text-green-400 mt-0.5">제피르</span>
+                </button>
             </div>
             <div class="mt-3 p-2.5 bg-slate-950/60 rounded-xl text-left border border-slate-800 h-28 overflow-y-auto custom-scrollbar">
                 <div id="heroDescription" class="text-[11px] text-slate-300 leading-relaxed"></div>
@@ -527,155 +539,83 @@ window.onerror = function(msg, url, line, col, error) {
             <button onclick="document.getElementById('patchNotesModal').classList.add('hidden')" class="absolute top-4 right-4 text-slate-400 hover:text-white text-3xl font-bold">&times;</button>
             <h2 class="text-2xl md:text-3xl font-black text-amber-400 mb-6 border-b border-slate-700 pb-3 orbitron">📝 PATCH NOTES</h2>
             <div class="flex-1 overflow-y-auto pr-4 text-sm md:text-base text-slate-300 space-y-4 custom-scrollbar">
-                <details class="bg-slate-700/50 rounded-lg border border-slate-600/50" open>
-                    <summary class="cursor-pointer p-3 font-bold text-emerald-400 hover:text-emerald-300 transition select-none flex justify-between items-center">
-                        v1013 - 대규모 밸런스 및 크리처 경제 개편
-                        <span class="text-xs text-slate-400 font-normal ml-2 text-emerald-400 font-bold">NEW</span>
+                <!-- v1.0.14 -->
+                <details class="bg-slate-800/80 rounded-xl border border-amber-500/50 shadow-lg overflow-hidden" open>
+                    <summary class="cursor-pointer p-4 font-black text-amber-400 hover:bg-slate-700/50 transition select-none flex justify-between items-center">
+                        <div class="flex items-center gap-2"><span class="text-xl">✨</span> v1.0.14 - 신규 영웅 3종 출시 및 UI/UX 대개편</div>
+                        <span class="px-2 py-0.5 bg-amber-500/20 text-amber-400 text-[10px] rounded-full border border-amber-500/30">LATEST</span>
                     </summary>
-                    <div class="p-3 pt-0 text-sm text-slate-200 space-y-2 border-t border-slate-600/50 mt-1 pb-3 px-4">
-                        <ul class="list-disc pl-4 space-y-1">
-                            <li><span class="font-bold text-sky-400">자원 최적화:</span> 불필요한 필드 재화(Souls)를 삭제하고 오직 공용 골드(Gold)만 사용되도록 시스템을 정비했습니다.</li>
-                            <li><span class="font-bold text-amber-400">크리처 군단 소환:</span> 이제 6분마다 공용 자원(1마리당 450G)을 소모하여 크리처를 출격시킵니다. (보유 골드에 따라 최대 3마리 스폰, 골드 부족 시 스킵)</li>
-                            <li><span class="font-bold text-rose-400">보스 및 크리처 특성 부여:</span> 
-                                <br>- <b>화룡:</b> 광역 평타 및 지속 화염 장판 패시브
-                                <br>- <b>에메랄드 골렘:</b> 체력 대폭 상향 및 <b>모든 스킬 데미지 면역</b>
-                                <br>- <b>황금 마수:</b> 받는 데미지 상시 25% 감소 및 6초마다 주변 기절 포효
-                            </li>
-                            <li><span class="font-bold text-purple-400">수호신 밸런스:</span> 수호신의 공격속도가 2배로 증가했으며, 사거리가 150 이상이거나 스킬 공격에 대해 데미지를 70% 감소시키는 철벽 패시브가 추가되었습니다.</li>
-                        </ul>
-                    </div>
-                </details>
-
-                <details class="bg-slate-700/50 rounded-lg border border-slate-600/50" open>
-                    <summary class="cursor-pointer p-3 font-bold text-sky-400 hover:text-sky-300 transition select-none flex justify-between items-center">
-                        v1012 - 개선 작업 V4 적용 (전투 대격변)
-                        <span class="text-xs text-slate-400 font-normal ml-2">최신</span>
-                    </summary>
-                    <div class="p-3 pt-0 text-sm text-slate-200 space-y-2 border-t border-slate-600/50 mt-1 pb-3 px-4">
-                        <ul class="list-disc pl-4 space-y-1">
-                            <li><span class="font-bold text-sky-400">전장 흐름 최적화:</span> 크리처 진영 분리 소환 정상화 및 미니언 젠 주기를 18초에서 9초로 대폭 단축하여 속도감을 높였습니다.</li>
-                            <li><span class="font-bold text-amber-400">수호신 및 타워 강화:</span> 수호신의 AI가 정상화되어 800px 내 침입자를 적극 섬멸하고 아군을 치유합니다. 타워에 '가열(Heating)' 시스템이 추가되어 다이브 시 피해가 점증(최대 200%)합니다.</li>
-                            <li><span class="font-bold text-rose-400">드래곤 가치 상향:</span> 에픽 드래곤에 '연옥의 장판(초당 2.5% 고정 마법 피해)'이 추가되고, 사냥 성공 시 부여되는 팀 스탯 버프 효과가 기존 1.5배로 상향되었습니다.</li>
-                            <li><span class="font-bold text-purple-400">전설 장비 시너지 활성화:</span> 수호천사(쿨감 및 부활 1.5초 무적+공격력 폭증)와 시공의 모래시계(기절 충격파)가 떡상했습니다! 또한 지옥불 오라(범위 1.5배, 데미지 250%, 힐밴) 및 정적 장막(아군 방어력 2배, 피해 20% 감소) 시너지 효과가 열렸습니다.</li>
-                        </ul>
-                    </div>
-                </details>
-                                <details class="bg-slate-700/50 rounded-lg border border-slate-600/50" open>
-                    <summary class="cursor-pointer p-3 font-bold text-rose-400 hover:text-rose-300 transition select-none flex justify-between items-center">
-                        v1011 - 신규 아이템 대격변 및 리밸런싱
-                        <span class="text-xs text-slate-400 font-normal ml-2">최신</span>
-                    </summary>
-                    <div class="p-3 pt-0 text-sm text-slate-200 space-y-2 border-t border-slate-600/50 mt-1 pb-3 px-4">
-                        <ul class="list-disc pl-4 space-y-1">
-                            <li><span class="font-bold text-rose-400">신규 아이템 5종:</span> 티아맷의 도끼(근접 광역 피해), 서리불꽃 건틀릿(공격 시 둔화), 괴수의 뼈갑옷(근접 뎀감 및 강인함), 수호천사의 은총(사망 시 부활), 헤르메스의 장화(비전투 폭발적 기동성) 추가!</li>
-                            <li><span class="font-bold text-amber-400">기존 아이템 리밸런싱:</span> 거인 학살자(체력 차 비례 추뎀), 몰락한 왕의 검(퍼뎀 5% 하향 + 피흡 5% 부여), 워모그의 갑옷(최대 체력 4% 회복) 전면 개편.</li>
-                            <li><span class="font-bold text-purple-400">히든 시너지:</span> 얼어붙은 학살자(건틀릿+몰락검) 및 불사조의 분노(수호천사+티아맷) 장착 시 초강력 스탯 제공 시너지 발동!</li>
-                        </ul>
-                    </div>
-                </details>
-                <details class="bg-slate-700/50 rounded-lg border border-slate-600/50">
-                    <summary class="cursor-pointer p-3 font-bold text-amber-400 hover:text-amber-300 transition select-none flex justify-between items-center">
-                        v1010 - 신규 영웅 & 대형 크리쳐(수호신) 업데이트
-                        <span class="text-xs text-slate-400 font-normal ml-2">과거</span>
-                    </summary>
-                    <div class="p-3 pt-0 text-sm text-slate-200 space-y-2 border-t border-slate-600/50 mt-1 pb-3 px-4">
-                        <ul class="list-disc pl-4 space-y-1">
-                            <li><span class="font-bold text-amber-400">신규 영웅 (크래그):</span> 거대한 바위 골렘 '크래그'가 추가되었습니다! 대지 강타로 지진 균열을 일으키며 적을 스턴시키고, 바위 갑옷으로 황금빛 오라를 뿜어내며 엄청난 탱킹력을 자랑합니다.</li>
-                            <li><span class="font-bold text-amber-400">신규 영웅 (아리엘):</span> 아군 치유 전담 서포터 '아리엘'이 추가되었습니다! 넓은 범위에 치유의 파동을 뿜어내며, 십자가 이펙트와 함께 아군을 극적으로 생존시킵니다.</li>
-                            <li><span class="font-bold text-emerald-400">대형 크리쳐 (수호신):</span> 넥서스를 지키던 수호신이 생명력을 가진 거대한 크리쳐로 재탄생했습니다! 적이 다가오면 당당하게 걸어나가 거대한 창을 시원하게 횡으로 휘둘러 무자비하게 적을 쓸어버립니다.</li>
-                            <li><span class="font-bold text-blue-400">시각 및 전투 피드백:</span> 강력한 스킬(대지 강타 등) 사용 시 엄청난 화면 흔들림(Screen Shake) 효과가 추가되어 타격감이 대폭 개선되었습니다.</li>
-                        </ul>
-                    </div>
-                </details>
-                
-                <details class="bg-slate-700/50 rounded-lg border border-slate-600/50">
-                    <summary class="cursor-pointer p-3 font-bold text-amber-400 hover:text-amber-300 transition select-none flex justify-between items-center">
-                        v1009 - UX 개선 및 피드백 전면 반영
-                        <span class="text-xs text-slate-400 font-normal ml-2">과거</span>
-                    </summary>
-                    <div class="p-3 pt-0 text-sm text-slate-200 space-y-2 border-t border-slate-600/50 mt-1 pb-3 px-4">
-                        <ul class="list-disc pl-4 space-y-1">
-                            <li><span class="font-bold text-emerald-400">스킬/아이템:</span> 스킬 선택창 조합 도우미가 고도화되어 현재 아이템 소지 여부(보유/미보유)를 명확히 안내합니다.</li>
-                            <li><span class="font-bold text-emerald-400">이모지 팝업:</span> 전투 중 불필요한 이모지 스팸을 걷어내고, 킬 시 기쁨(🤣), 사망 시 슬픔(😭) 감정 표현을 3초간 표시합니다.</li>
-                            <li><span class="font-bold text-emerald-400">타워 철거 보상:</span> 라인 타워 철거 시 글로벌 배너 팝업을 띄우고 팀 전체 보상(+300G)과 막타 보상(+200G)을 명확하게 피드백합니다.</li>
-                            <li><span class="font-bold text-emerald-400">넥서스 무적 로직:</span> 아군 수호탑이 살아있을 경우 넥서스는 무적이 되며, 타겟팅 자체가 되지 않도록 수정했습니다.</li>
-                            <li><span class="font-bold text-emerald-400">버그 픽스:</span> 결과창에서 닉네임 기재 후 명예의 전당 저장 시 발생하는 오류를 완벽하게 고쳤습니다.</li>
-                        </ul>
-                    </div>
-                </details>
-                <details class="bg-slate-700/50 rounded-lg border border-slate-600/50">
-                    <summary class="cursor-pointer p-3 font-bold text-emerald-400 hover:text-emerald-300 transition select-none flex justify-between items-center">
-                        v1007 - 편의성 대개편 및 오류 수정 (핫픽스)
-                            </summary>
-                            <div class="p-3 pt-0 text-sm text-slate-200 space-y-2 border-t border-slate-600/50 mt-1 pb-3 px-4">
-                                <ul class="list-disc pl-4 space-y-1">
-                                    <li><span class="font-bold text-emerald-400">버그 픽스:</span> 필드몹/미니언 무적 및 체력바 미표기(검은색) 버그 완전 수정.</li>
-                                    <li><span class="font-bold text-emerald-400">AI 개선:</span> 네크로맨서 소환수가 미니언처럼 행동하며 센터로 달려가던 문제 수정.</li>
-                                    <li><span class="font-bold text-emerald-400">디자인 개선:</span> 네크로맨서 소환수의 그래픽이 검은 연기를 내뿜는 독립적인 개체로 변경.</li>
-                                    <li><span class="font-bold text-emerald-400">UI/UX:</span> PC 환경 상점 아이템 배열을 2열 격자 구조로 변경하여 가독성 강화.</li>
-                                    <li><span class="font-bold text-emerald-400">UI/UX:</span> 모든 상점 아이템에 직관적인 설명을 추가 및 일부 아이템 아이콘 재매칭.</li>
-                                </ul>
-                            </div>
-                        </details>
-                        <details class="bg-slate-700/50 rounded-lg border border-slate-600/50">
-                    <summary class="font-bold text-lg text-emerald-400 flex items-center justify-between cursor-pointer list-none">
-                        <span class="flex items-center gap-2"><span class="text-xl">✨</span> v1005 패치노트 개선 및 영웅 썸네일</span>
-                        <span class="text-slate-500 group-open:rotate-180 transition-transform">▼</span>
-                    </summary>
-                    <div class="mt-4 border-t border-slate-700/50 pt-3">
+                    <div class="p-4 pt-2 text-sm text-slate-300 space-y-3 bg-slate-900/50">
                         <ul class="list-disc pl-5 space-y-2">
-                            <li><strong class="text-white">패치노트 UI 개선:</strong> 최신 패치노트 2개만 기본으로 펼쳐져 있고, 이전 패치는 접힌 채로 제공되도록 변경했습니다.</li>
-                            <li><strong class="text-white">영웅 선택창 개편:</strong> 영웅 선택 시 해당 영웅의 기본 공격 범위(단일/광역) 및 공격 사거리(근/중/원)를 텍스트로 명확히 표시합니다.</li>
-                            <li><strong class="text-white">영웅 썸네일 미리보기:</strong> 영웅 선택 설명란 좌측에 캐릭터의 실제 인게임 외형(미리보기) 캔버스를 추가하여 생김새를 직관적으로 확인할 수 있습니다.</li>
+                            <li><span class="font-bold text-amber-400">[신규 영웅]</span> <b>제로스(암살자), 실비아(저격수), 제피르(바람마법사)</b> 3종이 새롭게 참전합니다! 각 영웅의 고유한 컨셉과 화려한 캔버스 렌더링을 경험해 보세요.</li>
+                            <li><span class="font-bold text-emerald-400">[UX 개편]</span> 모든 영웅(15종)의 하단 스킬 1, 스킬 2 버튼에 각 스킬을 대표하는 고유 아이콘(이모지)이 적용되어 가독성이 대폭 상승했습니다.</li>
+                            <li><span class="font-bold text-sky-400">[시스템 개선]</span> 타워/수호 타워가 동일한 적을 연속 공격할 때 데미지가 누적(15%~25%)되어 증가하는 로직이 추가되었습니다. 무리한 다이브나 라인 푸시가 더 위험해졌습니다.</li>
+                            <li><span class="font-bold text-rose-400">[영웅 폴리싱]</span> 실비아의 공격 사거리 인디케이터 시각화 및 제로스의 흑염참/그림자 습격 무기 잔상 효과, 제피르의 3갈래 다단히트 회오리가 추가되었습니다.</li>
                         </ul>
                     </div>
                 </details>
 
-                <details class="group bg-slate-800/50 p-4 rounded-xl border border-slate-700">
-                    <summary class="font-bold text-lg text-emerald-400 flex items-center justify-between cursor-pointer list-none">
-                        <span class="flex items-center gap-2"><span class="text-xl">✨</span> v1008 주요 업데이트</span>
-                        <span class="text-slate-500 group-open:rotate-180 transition-transform">▼</span>
+                <!-- v1.0.13 -->
+                <details class="bg-slate-800/50 rounded-xl border border-slate-700 overflow-hidden">
+                    <summary class="cursor-pointer p-4 font-bold text-emerald-400 hover:bg-slate-700/50 transition select-none flex justify-between items-center">
+                        <div class="flex items-center gap-2"><span class="text-lg">🔥</span> v1.0.13 - 대규모 밸런스 및 크리처 경제 개편</div>
+                        <span class="text-slate-500 text-xs">▼</span>
                     </summary>
-                    <div class="mt-4 border-t border-slate-700/50 pt-3">
-                        <ul class="list-disc pl-5 space-y-2">
-                            <li><strong class="text-white">버그 대거 수정:</strong> 존야, 오라클 부활 등 치명적 아이템 결함을 완전히 고치고 타이머 버그를 없앴습니다.</li>
-                            <li><strong class="text-white">서든데스 & 황금 고블린:</strong> 18분이 지나면 넥서스 체력이 깎이는 서든데스 모드와 8분경 황금 고블린 등장 이벤트가 생겼습니다.</li>
-                            <li><strong class="text-white">진화 시스템 완화:</strong> 무기 진화 요구 수치가 9강에서 7강으로 대폭 줄고, 진화 시 알림이 강화되었습니다.</li>
-                            <li><strong class="text-white">통계창 및 밸런스 패치:</strong> 게임 종료 후 기여도와 KDA가 제공되며, 밸런스 하향과 스탯 상한선이 도입되었습니다.</li>
+                    <div class="p-4 pt-2 text-sm text-slate-300 space-y-2 bg-slate-900/30">
+                        <ul class="list-disc pl-5 space-y-1">
+                            <li><span class="font-bold text-sky-400">자원 최적화:</span> 불필요한 필드 재화(Souls) 삭제, 공용 골드(Gold)만 사용되도록 정비</li>
+                            <li><span class="font-bold text-amber-400">크리처 소환:</span> 6분마다 공용 자원을 소모하여 보스급 크리처를 출격시킵니다.</li>
+                            <li><span class="font-bold text-rose-400">보스 특성:</span> 화룡 광역 화염, 에메랄드 골렘 스킬 데미지 50% 감면, 황금 마수 뎀감 및 기절 포효 추가</li>
+                            <li><span class="font-bold text-purple-400">수호신 밸런스:</span> 수호신의 공격속도 2배 증가, 원거리 공격에 대한 데미지 70% 감소 철벽 패시브 추가</li>
                         </ul>
                     </div>
                 </details>
 
-                <details class="group bg-slate-800/50 p-4 rounded-xl border border-slate-700">
-                    <summary class="font-bold text-lg text-blue-400 flex items-center justify-between cursor-pointer list-none">
-                        <span class="flex items-center gap-2"><span class="text-xl">✨</span> 이전 주요 업데이트 (v1004)</span>
-                        <span class="text-slate-500 group-open:rotate-180 transition-transform">▼</span>
+                <!-- v1.0.12 & v1.0.11 -->
+                <details class="bg-slate-800/50 rounded-xl border border-slate-700 overflow-hidden">
+                    <summary class="cursor-pointer p-4 font-bold text-sky-400 hover:bg-slate-700/50 transition select-none flex justify-between items-center">
+                        <div class="flex items-center gap-2"><span class="text-lg">⚔️</span> v1.0.11 ~ v1.0.12 - 전투 대격변 및 아이템 대규모 추가</div>
+                        <span class="text-slate-500 text-xs">▼</span>
                     </summary>
-                    <div class="mt-4 border-t border-slate-700/50 pt-3">
-                        <ul class="list-disc pl-5 space-y-2">
-                            <li><strong class="text-white">미니맵 정상화:</strong> 맵이 까맣게 나오던 렌더링 오류를 수정하여 정상 표기되도록 해결했습니다.</li>
-                            <li><strong class="text-white">상태 이상 시각적 연출:</strong> 기절(💫), 둔화(🐢), 에어본(띄워짐), 빙결(🧊) 상태의 그래픽 효과를 추가했습니다.</li>
-                            <li><strong class="text-white">조커 & 암흑사제 상향:</strong> 기본 공격 투사체 적중 시 주변에 광역(스플래시) 피해를 입히도록 상향 조정했습니다.</li>
-                            <li><strong class="text-white">결과창 닉네임 입력 수정:</strong> 게임 종료 후 명예의 전당 저장을 위한 닉네임 기재란을 추가했습니다.</li>
+                    <div class="p-4 pt-2 text-sm text-slate-300 space-y-2 bg-slate-900/30">
+                        <ul class="list-disc pl-5 space-y-1">
+                            <li><span class="font-bold text-sky-400">전장 템포:</span> 미니언 젠 주기를 18초에서 9초로 대폭 단축, 드래곤 팀 스탯 버프 1.5배 상향</li>
+                            <li><span class="font-bold text-rose-400">신규 아이템:</span> 티아맷의 도끼, 서리불꽃 건틀릿, 괴수의 뼈갑옷, 수호천사의 은총, 헤르메스의 장화 추가</li>
+                            <li><span class="font-bold text-purple-400">시너지 활성화:</span> 얼어붙은 학살자, 불사조의 분노 등 특정 전설 장비 조합 시 초강력 히든 시너지 발동</li>
                         </ul>
                     </div>
                 </details>
 
-                <details class="group bg-slate-800/50 p-4 rounded-xl border border-slate-700">
-                    <summary class="font-bold text-lg text-blue-400 flex items-center justify-between cursor-pointer list-none">
-                        <span class="flex items-center gap-2"><span class="text-xl">✨</span> 이전 업데이트 (v1003)</span>
-                        <span class="text-slate-500 group-open:rotate-180 transition-transform">▼</span>
+                <!-- v1.0.08 ~ v1.0.10 -->
+                <details class="bg-slate-800/50 rounded-xl border border-slate-700 overflow-hidden">
+                    <summary class="cursor-pointer p-4 font-bold text-indigo-400 hover:bg-slate-700/50 transition select-none flex justify-between items-center">
+                        <div class="flex items-center gap-2"><span class="text-lg">🛡️</span> v1.0.08 ~ v1.0.10 - 신규 영웅 및 서든데스 모드</div>
+                        <span class="text-slate-500 text-xs">▼</span>
                     </summary>
-                    <div class="mt-4 border-t border-slate-700/50 pt-3">
-                        <ul class="list-disc pl-5 space-y-2">
-                            <li><strong class="text-white">영웅 스킬 설명 추가:</strong> 영웅 선택 화면에서 각 영웅의 역할군(포지션)과 2종류 고유 스킬의 상세 효과를 표기했습니다.</li>
-                            <li><strong class="text-white">신규 영웅 공속 버프:</strong> 신규 영웅 3종의 평타 속도가 30% 증가했습니다.</li>
-                            <li><strong class="text-white">이스버그 중거리 전환:</strong> 이스버그가 사거리 220의 중거리 딜러로 포지션 변경되었습니다.</li>
-                            <li><strong class="text-white">네크로맨서 소환수 개편:</strong> 해골 미니언이 일반 미니언과 구별되도록 칠흑색 바디와 보라색 눈, 검은 연기 이펙트를 탑재했습니다.</li>
+                    <div class="p-4 pt-2 text-sm text-slate-300 space-y-2 bg-slate-900/30">
+                        <ul class="list-disc pl-5 space-y-1">
+                            <li><span class="font-bold text-amber-400">영웅 및 크리처:</span> 크래그(골렘 탱커), 아리엘(전담 힐러) 추가. 넥서스 수호신 재탄생</li>
+                            <li><span class="font-bold text-rose-400">서든데스 & 이벤트:</span> 18분 서든데스(넥서스 체력 감소), 8분 황금 고블린 이벤트 추가</li>
+                            <li><span class="font-bold text-emerald-400">UI/UX:</span> 타워 철거 글로벌 배너 알림, 이모지 스팸 방지 및 상황별 이모지 출력, 무기 진화 수치 완화(9강->7강)</li>
                         </ul>
                     </div>
                 </details>
 
+                <!-- v1.0.03 ~ v1.0.07 -->
+                <details class="bg-slate-800/50 rounded-xl border border-slate-700 overflow-hidden">
+                    <summary class="cursor-pointer p-4 font-bold text-slate-400 hover:bg-slate-700/50 transition select-none flex justify-between items-center">
+                        <div class="flex items-center gap-2"><span class="text-lg">📜</span> 이전 업데이트 내역 (v1.0.03 ~ v1.0.07)</div>
+                        <span class="text-slate-500 text-xs">▼</span>
+                    </summary>
+                    <div class="p-4 pt-2 text-sm text-slate-400 space-y-2 bg-slate-900/30">
+                        <ul class="list-disc pl-5 space-y-1">
+                            <li>미니맵 정상화, 상태 이상(기절/둔화/빙결) 그래픽 렌더링 연출 도입</li>
+                            <li>영웅 썸네일 미리보기 추가 및 로비 화면 스킬 상세 정보 제공</li>
+                            <li>상점 아이템 배열 2열 격자 구조 변경 및 설명 보강</li>
+                            <li>결과창 닉네임 입력 및 명예의 전당 기능 구현, 치명적인 무적/체력 버그 핫픽스</li>
+                        </ul>
+                    </div>
+                </details>
             </div>
             <button onclick="document.getElementById('patchNotesModal').classList.add('hidden')" class="mt-6 w-full py-3 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl active:scale-95 transition">확인했습니다</button>
         </div>

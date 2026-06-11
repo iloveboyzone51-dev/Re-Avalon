@@ -162,7 +162,7 @@ const SUDDEN_DEATH_TIME = 18 * 60; // 18분 (서든데스 단축)
 const DRAGON_SPAWN_TIME = 5 * 60;  // 5분마다
 const GOLD_GOBLIN_TIME  = 8 * 60;  // 8분
 const MID_BOSS_TIMES    = [5*60, 10*60, 15*60]; // 5, 10, 15분 중간보스
-const MINION_INTERVAL   = 18;      // 18초마다 (미니언 간격 완화)
+const MINION_INTERVAL   = 9;       // 9초마다 (미니언 소환 속도 2배)
 const REGEN_DELAY       = 5.0;     // 5초 비전투 후
 const REGEN_RATE        = 0.05;    // 초당 5%
 const WARMOG_REGEN      = 0.10;    // 워모그 초당 10%
@@ -238,6 +238,28 @@ const HERO_TMPL = {
         skill1: { name:"영혼 착취", cd:10, desc:"주변 아군 한 명의 체력을 일부 깎는 대신, 적에게 2.5배 강력한 레이저 공격을 뿜어냅니다." },
         skill2: { name:"저주의 낙인", cd:14, desc:"대상 적에게 10초간 낙인 부여. 아군의 모든 공격이 대상에게 30% 추가 피해" },
         draw:(ctx,x,y,r,dir,f,anim) => drawBlockyHero(ctx,x,y,r,dir,f,'darkpriest',anim)
+    },
+    ZEROS: {
+        name:"제로스", color:"#7f1d1d",
+        hp:2500, atk:65, aspd:1.4, move:185, range:120, type:"melee", role_desc:"[마검사 / 암살자 / 광역 딜러]",
+        skill1: { name:"흑염참", cd:8, desc:"전방 부채꼴 범위의 적에게 데미지를 주고 이속 50% 감소 및 시야가려짐(블라인드) 부여" },
+        skill2: { name:"그림자 습격", cd:14, desc:"멀리 있는 적에게 순간이동 후 치명타. 주변 적 1.5초 공포" },
+        draw:(ctx,x,y,r,dir,f,anim,ent) => drawBlockyHero(ctx,x,y,r,dir,f,'zeros',anim,ent)
+    },
+    SYLVIA: {
+        name:"실비아", color:"#2dd4bf",
+        hp:1600, atk:90, aspd:0.6, move:165, range:450, type:"ranged", role_desc:"[초장거리 스나이퍼 / 퓨어 딜러]",
+        critChance:0.2,
+        skill1: { name:"관통하는 섬광", cd:10, desc:"1초 정신집중 후 전방 일직선 두꺼운 트루데미지 레이저 발사" },
+        skill2: { name:"전술 회피", cd:15, desc:"발밑에 지뢰를 깔고 뒤로 크게 백대쉬. 지뢰 폭발 시 적 2초 기절" },
+        draw:(ctx,x,y,r,dir,f,anim,ent) => drawBlockyHero(ctx,x,y,r,dir,f,'sylvia',anim,ent)
+    },
+    ZEPHYR: {
+        name:"제피르", color:"#4ade80",
+        hp:1800, atk:40, aspd:1.6, move:175, range:380, type:"ranged", role_desc:"[바람 마법사 / 다단히트 DPS]",
+        skill1: { name:"Tornado Blast", cd:9, desc:"주변으로 소형 회오리 여러 개가 팽창하며 적 다단히트 및 넉백" },
+        skill2: { name:"Gale Squall", cd:16, desc:"거대하고 느린 폭풍을 발사하여 닿은 적 에어본 및 둔화" },
+        draw:(ctx,x,y,r,dir,f,anim,ent) => drawBlockyHero(ctx,x,y,r,dir,f,'zephyr',anim,ent)
     }
 };
 
@@ -321,6 +343,17 @@ window.addGold = function(hero, amount) {
         window.TEAM_VAULT.gold += tax;
         hero.gold += (amount - tax);
     } 
+            else if(this.heroKey === 'ZEROS') {
+                let a = Math.atan2(target.y-this.y, target.x-this.x);
+                spawnSlash(this.x, this.y-this.radius, a, '#7f1d1d', 120); // 흑염검
+                let hitTargets = entities.filter(e=>e.faction!==this.faction && !e.isDead && dist(e, this) <= this.range + 20);
+                hitTargets.forEach(tgt => {
+                    let dealt=tgt.applyRawDamage(dmg, this); this.totalDmg+=dealt;
+                    this.triggerOnHitPassives(tgt);
+                    if(this.lifeSteal>0) this.hp=Math.min(this.maxHp, this.hp+dealt*this.lifeSteal);
+                });
+                if(this.isPlayer) playSFX('hit');
+            }
             else if(this.heroKey === 'CRAG') {
                 spawnSlash(this.x, this.y-this.radius, Math.random()*Math.PI*2, '#78716c', 100);
                 spawnParticles(target.x, target.y, '#57534e', 10, 80, 0.5);
@@ -1100,6 +1133,90 @@ function drawBlockyHero(ctx, x, y, r, dir, faction, type, attackAnimTimer = 0, e
         ctx.restore();
         
         ctx.restore(); // 휠윈드 회전 종료
+    } else if(type === 'zeros') {
+        drawBody('#000000', '#3f3f46', '#27272a', '#dc2626'); // 검은 피부, 다크 브라운 아머, 빨간 눈
+        // 다크 레드 망토
+        ctx.fillStyle = '#7f1d1d';
+        ctx.beginPath(); ctx.moveTo(x-r*0.5, y-r*0.3-breath); ctx.lineTo(x+r*0.5, y-r*0.3-breath); ctx.lineTo(x+r*0.8, y+r*1.0-breath); ctx.lineTo(x-r*0.8, y+r*1.0-breath); ctx.fill();
+        
+        ctx.save();
+        if(isAttacking) {
+            ctx.translate(x+r*0.6, y); ctx.rotate((Math.PI/2.5) * rotDir);
+            ctx.shadowColor = '#000000'; ctx.shadowBlur = 15;
+            ctx.strokeStyle = 'rgba(127, 29, 29, 0.5)'; ctx.lineWidth = r*0.4;
+            ctx.beginPath(); ctx.arc(-r*0.5, -r*0.5, r*1.5, -Math.PI*0.8, 0); ctx.stroke();
+            ctx.shadowBlur = 0;
+        } else {
+            ctx.translate(x+r*0.5, y-r*0.1); ctx.rotate(Math.PI*0.1);
+        }
+        // 거대한 흑염검
+        ctx.fillStyle = '#1c1917'; ctx.fillRect(-r*0.1, -r*2.0, r*0.3, r*2.5); // 자루 및 칼등
+        
+        // 은은한 붉은색 오라(Aura)가 도는 검 테두리
+        ctx.shadowColor = '#ef4444'; ctx.shadowBlur = 15;
+        ctx.fillStyle = '#000000'; ctx.beginPath(); ctx.moveTo(-r*0.1, -r*2.0); ctx.lineTo(r*0.3, -r*2.5); ctx.lineTo(r*0.5, -r*1.5); ctx.lineTo(r*0.2, r*0); ctx.closePath(); ctx.fill(); 
+        ctx.strokeStyle = 'rgba(239, 68, 68, 0.8)'; ctx.lineWidth = 2; ctx.stroke();
+        ctx.shadowBlur = 0;
+        ctx.restore();
+        
+    } else if(type === 'sylvia') {
+        if(entity && entity.isPlayer) {
+            ctx.save();
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+            ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.arc(x, y, 450, 0, Math.PI*2); ctx.stroke();
+            ctx.restore();
+        }
+        drawBody('#fef08a', '#cffafe', '#f0fdf4', '#06b6d4'); // Cream white + Cyan
+        // 헥스테크 후드
+        ctx.fillStyle = '#fef08a'; ctx.beginPath(); ctx.moveTo(x-r*0.5, y-r*0.5-breath); ctx.lineTo(x+r*0.5, y-r*0.5-breath); ctx.lineTo(x, y-r*1.3-breath); ctx.fill();
+        
+        ctx.save();
+        if (isAttacking) {
+            ctx.translate(x+r*0.6, y); ctx.rotate(Math.PI * 0.1); 
+        } else {
+            ctx.translate(x+r*0.4, y+r*0.2); ctx.rotate(Math.PI * 0.4); 
+        }
+        // 초장거리 저격총
+        ctx.fillStyle = '#1e293b'; ctx.fillRect(-r*0.2, -r*0.2, r*2.2, r*0.3); // 총열
+        ctx.fillStyle = '#06b6d4'; ctx.fillRect(r*0.5, -r*0.25, r*0.8, r*0.4); // 헥스테크 장식
+        ctx.fillStyle = '#fef08a'; ctx.fillRect(r*2.0, -r*0.15, r*0.4, r*0.2); // 골드 장식
+        
+        // 레이저 포인터 이펙트
+        if(!isAttacking) {
+            ctx.shadowColor = '#ef4444'; ctx.shadowBlur = 5;
+            ctx.strokeStyle = 'rgba(239, 68, 68, 0.5)'; ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.moveTo(r*2.4, -r*0.05); ctx.lineTo(r*10.0, -r*0.05); ctx.stroke();
+            ctx.shadowBlur = 0;
+        }
+        ctx.restore();
+        
+    } else if(type === 'zephyr') {
+        drawBody('#fef08a', '#10b981', '#ffffff', '#4ade80', true); // Green, White, Light green aura
+        // 동양풍 골드 장식 로브
+        ctx.fillStyle = '#facc15'; ctx.fillRect(x-r*0.4, y+r*0.3-breath, r*0.8, r*0.2); 
+        ctx.strokeStyle = '#facc15'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x, y-r*0.3-breath); ctx.lineTo(x, y+r*0.5-breath); ctx.stroke();
+
+        // 양손 거대한 옥색 부채
+        const drawFan = (offsetX, angle) => {
+            ctx.save();
+            ctx.translate(x+offsetX, y); ctx.rotate(angle);
+            ctx.shadowColor = '#4ade80'; ctx.shadowBlur = 10;
+            ctx.fillStyle = '#10b981'; 
+            ctx.beginPath(); ctx.moveTo(0,0); ctx.arc(0, 0, r*1.2, -Math.PI*0.3, Math.PI*0.3); ctx.fill();
+            ctx.fillStyle = '#ffffff'; 
+            ctx.beginPath(); ctx.moveTo(0,0); ctx.arc(0, 0, r*1.1, -Math.PI*0.25, Math.PI*0.25); ctx.fill();
+            ctx.shadowBlur = 0;
+            ctx.restore();
+        };
+
+        if(isAttacking) {
+            drawFan(r*0.6, Math.PI*0.2 * rotDir);
+            drawFan(-r*0.6, -Math.PI*0.2 * rotDir);
+        } else {
+            drawFan(r*0.5, Math.PI*0.4);
+            drawFan(-r*0.5, Math.PI*0.6);
+        }
     }
     
     ctx.restore();
@@ -1445,6 +1562,7 @@ class Hero extends Entity {
             this.respawnTimer-=dt;
             if(this.respawnTimer<=0){
                 this.isDead=false; this.hp=this.maxHp;
+                this.invincibleTimer = 5.0; // 5초 무적
                 let sp=this.faction==='BLUE'?{x:300,y:2700}:{x:2700,y:300};
                 this.x=sp.x+rand(-60,60); this.y=sp.y+rand(-60,60);
                 if(this.isPlayer){ document.getElementById('respawnOverlay').classList.add('hidden'); }
@@ -1687,7 +1805,7 @@ class Hero extends Entity {
                 if(d<=this.range) {
                     if (e.type === 'hero') {
                         if (d < distHero) { distHero = d; targetHero = e; }
-                    } else if (e.type === 'minion' || e.type === 'jungle') {
+                    } else if (e.type === 'minion' || e.type === 'creature' || e.type === 'jungle') {
                         if (d < distMinion) { distMinion = d; targetMinion = e; }
                     } else if (e.type === 'tower' || e.type === 'nexus_turret' || e.type === 'nexus') {
                         if (d < distBuilding) { distBuilding = d; targetBuilding = e; }
@@ -1721,6 +1839,13 @@ class Hero extends Entity {
                     this.triggerOnHitPassives(tgt);
                 });
                 if(this.isPlayer) playSFX('shoot');
+            } else if(this.heroKey === 'ZEPHYR') {
+                let a = Math.atan2(target.y - this.y, target.x - this.x);
+                for(let i = -1; i <= 1; i++) {
+                    let pa = a + i * 0.15; // 약간씩 퍼지는 3갈래
+                    projectiles.push(new Projectile(this.x, this.y-this.radius, {x:this.x+Math.cos(pa)*800, y:this.y+Math.sin(pa)*800, isDead:false}, dmg*0.7, this, isCrit, 'tornado'));
+                }
+                if(this.isPlayer) playSFX('shoot');
             } else {
                 projectiles.push(new Projectile(this.x, this.y-this.radius, target, dmg, this, isCrit));
                 if(this.isPlayer) playSFX('shoot');
@@ -1732,6 +1857,17 @@ class Hero extends Entity {
                 spawnSlash(this.x, this.y-this.radius, a + 0.3, '#94a3b8', 60); // 오른손 도끼
                 spawnSlash(this.x, this.y-this.radius, a - 0.3, '#94a3b8', 60); // 왼손 도끼
                 let hitTargets = entities.filter(e=>e.faction!==this.faction && !e.isDead && dist(e, this) <= this.range + 30);
+                hitTargets.forEach(tgt => {
+                    let dealt=tgt.applyRawDamage(dmg, this); this.totalDmg+=dealt;
+                    this.triggerOnHitPassives(tgt);
+                    if(this.lifeSteal>0) this.hp=Math.min(this.maxHp, this.hp+dealt*this.lifeSteal);
+                });
+                if(this.isPlayer) playSFX('hit');
+            }
+            else if(this.heroKey === 'ZEROS') {
+                let a = Math.atan2(target.y-this.y, target.x-this.x);
+                spawnSlash(this.x, this.y-this.radius, a, '#7f1d1d', 120); // 흑염검
+                let hitTargets = entities.filter(e=>e.faction!==this.faction && !e.isDead && dist(e, this) <= this.range + 20);
                 hitTargets.forEach(tgt => {
                     let dealt=tgt.applyRawDamage(dmg, this); this.totalDmg+=dealt;
                     this.triggerOnHitPassives(tgt);
@@ -1838,6 +1974,7 @@ class Hero extends Entity {
             if (this.isPlayer) {
                 this.pendingSkillLevels = (this.pendingSkillLevels || 0) + leveledUp;
                 if (!this.pendingLevelUp) {
+                    this.pendingLevelUp = true;
                     setTimeout(() => this.showSkillSelection(), 500);
                 }
             } else {
@@ -2389,6 +2526,127 @@ class Hero extends Entity {
                     for(let i=0; i<8; i++) spawnSlash(t.x, t.y, (Math.PI/4)*i, '#581c87', 75);
                 }
             }
+        } else if(k==='ZEROS') {
+            if(idx===1) { // 흑염참
+                let a = this.facingDir > 0 ? 0 : Math.PI;
+                if(t) a = Math.atan2(t.y - this.y, t.x - this.x);
+                this.attackAnimTimer = 0.5;
+                spawnAOE(this.x + Math.cos(a)*100, this.y + Math.sin(a)*100, 200, '#7f1d1dAA', 0.8);
+                // 거대한 무기 휘두름 및 잔상 이펙트
+                for(let i=-2; i<=2; i++) {
+                    setTimeout(() => spawnSlash(this.x, this.y, a + i*0.15, '#000000', 250), (i+2)*50);
+                    setTimeout(() => spawnSlash(this.x, this.y, a + i*0.15, '#dc2626', 220), (i+2)*50 + 20);
+                }
+                nearEnemies(this.x, this.y, 250).forEach(e => {
+                    let ea = Math.atan2(e.y - this.y, e.x - this.x);
+                    let diff = ea - a;
+                    while(diff > Math.PI) diff -= Math.PI*2;
+                    while(diff < -Math.PI) diff += Math.PI*2;
+                    if(Math.abs(diff) < Math.PI/2) {
+                        e.applyRawDamage(skillDmg * 1.8, this, true, true);
+                        e.slowTimer = 3.0; e.slowRate = 0.5;
+                        spawnParticles(e.x, e.y, '#000000', 10, 80, 0.5);
+                    }
+                });
+                playSFX('skill_burst');
+            } else { // 그림자 습격
+                let tgts = nearEnemies(this.x, this.y, 600);
+                if(tgts.length > 0) {
+                    let target = tgts.sort((a,b)=>a.hp-b.hp)[0];
+                    let a = Math.atan2(target.y - this.y, target.x - this.x);
+                    let startX = this.x; let startY = this.y;
+                    this.x = target.x + Math.cos(a)*40;
+                    this.y = target.y + Math.sin(a)*40;
+                    
+                    // 돌진 경로에 멋진 붉은/검은 잔상 추가 (1초 후 사라짐)
+                    if(typeof laserEffects !== 'undefined') {
+                        laserEffects.push({x1:startX, y1:startY, x2:this.x, y2:this.y, color:'#7f1d1d', life:1.0, maxLife:1.0, width:40});
+                        laserEffects.push({x1:startX, y1:startY, x2:this.x, y2:this.y, color:'#000000', life:0.8, maxLife:0.8, width:20});
+                    }
+                    for(let i=0; i<8; i++) {
+                        let tx = startX + (this.x - startX)*(i/8);
+                        let ty = startY + (this.y - startY)*(i/8);
+                        spawnParticles(tx, ty, '#dc2626', 10, 80, 1.0);
+                    }
+                    
+                    target.applyRawDamage(skillDmg * 3.5, this, true, true);
+                    spawnSlash(this.x, this.y, a+Math.PI, '#000000', 150);
+                    spawnAOE(this.x, this.y, 100, '#00000088', 0.8);
+                    
+                    nearEnemies(this.x, this.y, 100).forEach(e => {
+                        e.stunTimer = e.type==='hero' && e.inventory && e.inventory.some(i=>i.id==='behemoth_armor') && HERO_TMPL[e.heroKey] && HERO_TMPL[e.heroKey].type==='melee' ? (1.5)*0.7 : (1.5);
+                    });
+                    playSFX('skill_burst');
+                }
+            }
+        } else if(k==='SYLVIA') {
+            if(idx===1) { // 관통하는 섬광
+                this.attackAnimTimer = 1.0;
+                let a = this.facingDir > 0 ? 0 : Math.PI;
+                if(t) a = Math.atan2(t.y - this.y, t.x - this.x);
+                
+                spawnBeam(this.x, this.y-this.radius, this.x + Math.cos(a)*800, this.y-this.radius + Math.sin(a)*800, '#ef4444', 1.0);
+                
+                setTimeout(() => {
+                    if(this.isDead || typeof GS === 'undefined' || GS.status !== 'PLAYING') return;
+                    spawnBeam(this.x, this.y-this.radius, this.x + Math.cos(a)*1000, this.y-this.radius + Math.sin(a)*1000, '#06b6d4', 0.4, 40);
+                    spawnBeam(this.x, this.y-this.radius, this.x + Math.cos(a)*1000, this.y-this.radius + Math.sin(a)*1000, '#ffffff', 0.2, 20);
+                    if(typeof playSFX !== 'undefined') playSFX('skill_burst');
+                    
+                    nearEnemies(this.x, this.y, 1000).forEach(e => {
+                        let ea = Math.atan2(e.y - this.y, e.x - this.x);
+                        let diff = Math.abs(ea - a);
+                        while(diff > Math.PI) diff -= Math.PI*2;
+                        if(Math.abs(diff) < 0.1) {
+                            let oldDef = e.defense;
+                            e.defense = 0; 
+                            e.applyRawDamage(skillDmg * 2.5, this, true, true);
+                            e.defense = oldDef;
+                            spawnParticles(e.x, e.y, '#06b6d4', 15, 100, 0.4);
+                        }
+                    });
+                }, 1000);
+            } else { // 전술 회피
+                let a = this.facingDir > 0 ? 0 : Math.PI;
+                if(t) a = Math.atan2(t.y - this.y, t.x - this.x);
+                let mineX = this.x, mineY = this.y;
+                
+                // 백덤블링 애니메이션 모션
+                this.attackAnimTimer = 0.5; 
+                this.x -= Math.cos(a)*250;
+                this.y -= Math.sin(a)*250;
+                this.invincibleTimer = 0.5;
+                
+                // 지뢰 렌더링을 위해 파티클 남기기
+                spawnRing(mineX, mineY, '#ef4444', 30, 0.5);
+                
+                setTimeout(() => {
+                    if(typeof GS === 'undefined' || GS.status !== 'PLAYING') return;
+                    spawnAOE(mineX, mineY, 150, '#f59e0bAA', 0.5);
+                    spawnRing(mineX, mineY, '#fbbf24', 150, 0.5);
+                    if(typeof playSFX !== 'undefined') playSFX('skill_burst');
+                    nearEnemies(mineX, mineY, 150).forEach(e => {
+                        e.applyRawDamage(skillDmg * 1.5, this, true, true);
+                        e.stunTimer = e.type==='hero' && e.inventory && e.inventory.some(i=>i.id==='behemoth_armor') && HERO_TMPL[e.heroKey] && HERO_TMPL[e.heroKey].type==='melee' ? (2.0)*0.7 : (2.0);
+                    });
+                }, 500);
+            }
+        } else if(k==='ZEPHYR') {
+            if(idx===1) { // Tornado Blast
+                for(let i=0; i<6; i++) {
+                    let a = (Math.PI*2/6)*i;
+                    projectiles.push(new Projectile(this.x + Math.cos(a)*30, this.y + Math.sin(a)*30, {x:this.x + Math.cos(a)*400, y:this.y + Math.sin(a)*400, isDead:false}, skillDmg*0.8, this, false, 'tornado'));
+                }
+                playSFX('skill_magic');
+            } else { // Gale Squall
+                let a = this.facingDir > 0 ? 0 : Math.PI;
+                if(t) a = Math.atan2(t.y - this.y, t.x - this.x);
+                let p = new Projectile(this.x, this.y, {x:this.x+Math.cos(a)*800, y:this.y+Math.sin(a)*800, isDead:false}, skillDmg*1.2, this, false, 'tornado');
+                p.speed = 100; p.life = 4.0;
+                p.isMega = true; // 대형 회오리
+                projectiles.push(p);
+                playSFX('skill_magic');
+            }
         } else if(k==='ARCHON') {
             if(idx===1) { // 사이어닉 스톰 (하얀색 번개비)
                 let tg = t || this;
@@ -2826,7 +3084,7 @@ class Building extends Entity {
         super.update(dt);
         if(this.atk > 0 && this.attackTimer<=0){
             let target=null, minD=this.range;
-            for(let ptype of ['minion','hero','jungle']){
+            for(let ptype of ['creature','minion','hero','jungle']){
                 entities.forEach(e=>{if(e.faction!==this.faction&&!e.isDead){
                     if(e.type==='nexus' && entities.some(t=>t.type==='nexus_turret' && t.faction===e.faction && !t.isDead)) return;
                     let d=dist(this,e);if(d<=this.range&&d<minD&&e.type===ptype){minD=d;target=e;}
@@ -2834,8 +3092,15 @@ class Building extends Entity {
                 if(target) break;
             }
             if(target){
+                if(this.currentTarget !== target) {
+                    this.currentTarget = target;
+                    this.consecutiveHits = 0;
+                }
+                this.consecutiveHits++;
                 this.attackTimer=1/this.aspd;
-                let dmg = this.atk;
+                let dmg = this.atk * (1 + this.consecutiveHits * 0.15); // 연속 타격 시 데미지 15%씩 누적 증가
+                if(this.type === 'nexus_turret') dmg = this.atk * (1 + this.consecutiveHits * 0.25); // 수호 타워는 25%씩 강력하게 누적
+
                 if(target.type==='hero' && GS.time < 180) dmg = Math.floor(dmg * 0.3); // 초반 3분간 영웅에게 70% 감소
                 if(target.type === 'jungle') dmg = Math.floor(dmg * 0.4); 
                 // 쌍발 투사체 (9번 요구사항)
@@ -2900,8 +3165,8 @@ class EpicDragon extends Entity {
         this.mtype = 'boss_epic_dragon';
         this.dtype = dtype; // 'red' or 'blue'
         this.radius = 60; // 5배 크기 (기본 영웅 12)
-        this.maxHp = 45000 * scale; this.hp = this.maxHp;
-        this.atk = 450 * scale;
+        this.maxHp = 27000 * scale; this.hp = this.maxHp;
+        this.atk = 270 * scale;
         this.defense = 75 * scale;
         this.moveSpd = 80;
         this.range = 150;
@@ -2938,7 +3203,7 @@ class EpicDragon extends Entity {
                     if(this.isDead) return;
                     spawnSpecial(tx, ty, this.dtype==='red'?'#fca5a5':'#e0f2fe', 'star', 20, 150, 0.5);
                     entities.filter(e=>!e.isDead && e.type==='hero' && dist({x:tx,y:ty},e)<=150).forEach(e => {
-                        e.applyRawDamage(this.atk * 15.0, this, true, true);
+                        e.applyRawDamage(this.atk * 2.0, this, true, true);
                         e.stunTimer = e.type==='hero' && e.inventory && e.inventory.some(i=>i.id==='behemoth_armor') && HERO_TMPL[e.heroKey] && HERO_TMPL[e.heroKey].type==='melee' ? (1.0)*0.7 : (1.0);
                     });
                 }, 1000);
@@ -2957,7 +3222,7 @@ class EpicDragon extends Entity {
             playSFX('skill_burst');
             targets.forEach(e => {
                 if(dist(this, e) <= 500) {
-                    e.applyRawDamage(this.atk * 10.0, this, true, true);
+                    e.applyRawDamage(this.atk * 1.5, this, true, true);
                     e.stunTimer = e.type==='hero' && e.inventory && e.inventory.some(i=>i.id==='behemoth_armor') && HERO_TMPL[e.heroKey] && HERO_TMPL[e.heroKey].type==='melee' ? (1.5)*0.7 : (1.5);
                     let a = Math.atan2(e.y - this.y, e.x - this.x);
                     e.vx += Math.cos(a) * 800; e.vy += Math.sin(a) * 800; // 넉백
@@ -2976,7 +3241,7 @@ class EpicDragon extends Entity {
                 spawnParticles(bx, by, this.dtype==='red'?'#ef4444':'#38bdf8', 10, 250, 0.5);
                 if(Math.random()<0.2) {
                     targets.forEach(e => {
-                        e.applyRawDamage(this.atk * 5.0, this, true, true);
+                        e.applyRawDamage(this.atk * 0.8, this, true, true);
                         spawnParticles(e.x, e.y, this.dtype==='red'?'#ef4444':'#38bdf8', 5, 50, 0.3);
                     });
                 }
@@ -3158,7 +3423,7 @@ class Minion extends Entity {
             const d = dist(this, e);
             if((e.type==='tower' || e.type==='nexus_turret' || e.type==='nexus') && d < dB) {
                 dB = d; closestBuilding = e;
-            } else if(e.type === 'minion' && d < dM) {
+            } else if((e.type === 'minion' || e.type === 'creature') && d < dM) {
                 dM = d; closestMinion = e;
             } else if(e.type === 'hero' && d < dH) {
                 dH = d; closestHero = e;
@@ -3241,22 +3506,23 @@ class Guardian extends Entity {
     }
     applyRawDamage(dmg, attacker, triggerEffects=true, isSkill=false) {
         if(isSkill || (attacker && attacker.range > 150)) dmg *= 0.3;
-        return super.applyRawDamage(dmg * 0.5, attacker, triggerEffects, isSkill);
-    }
-    applyStun(duration) { } // Immune to CC
-    
-    applyRawDamage(dmg, attacker, triggerEffects=true, isSkill=false) {
-        if(isSkill || (attacker && attacker.range > 150)) dmg *= 0.3;
         let d = super.applyRawDamage(dmg * 0.5, attacker, triggerEffects, isSkill);
         this.hitStopTimer = 0; // 완전한 상태이상/경직 면역
         return d;
     }
-    applyStun(duration) { } // Immune to CC
-    applySlow(amount, duration) { } // Immune to CC
+    applyStun(duration) { }
+    applySlow(amount, duration) { }
     
     update(dt) {
         if(this.isDead) return;
         super.update(dt);
+        this.stunTimer = 0;
+        this.airborneTimer = 0;
+        this.isFrozen = false;
+        this.slowTimer = 0;
+        this.hitStopTimer = 0;
+        this.vx = 0;
+        this.vy = 0;
         
         let target = null;
         let minDist = 800; // 수호신의 어그로 범위 (상당히 넓음)
@@ -3482,18 +3748,31 @@ class Creature extends Minion {
         let scale = 1 + (window.GS ? window.GS.time / 360 : 0);
         
         if (ctype === 'dragon') {
-            this.maxHp = 30000 * scale; this.hp = this.maxHp;
-            this.atk = 600 * scale; this.moveSpd = 120; this.radius = 36; this.aspd = 0.6; this.range = 80;
+            this.maxHp = 50000 * scale; this.hp = this.maxHp;
+            this.atk = 600 * scale; this.moveSpd = 120; this.radius = 54; this.aspd = 0.6; this.range = 80;
         } else if (ctype === 'golem') {
             this.maxHp = 60000 * scale; this.hp = this.maxHp;
-            this.atk = 200 * scale; this.moveSpd = 100; this.radius = 45; this.aspd = 0.5; this.range = 90;
+            this.atk = 200 * scale; this.moveSpd = 100; this.radius = 67; this.aspd = 0.5; this.range = 90;
         } else { // beast
-            this.maxHp = 24000 * scale; this.hp = this.maxHp;
-            this.atk = 800 * scale; this.moveSpd = 250; this.radius = 30; this.aspd = 1.5; this.range = 70;
+            this.maxHp = 50000 * scale; this.hp = this.maxHp;
+            this.atk = 800 * scale; this.moveSpd = 250; this.radius = 45; this.aspd = 1.5; this.range = 70;
             this.beastStunTimer = 6.0;
         }
+        
+        // Spawn Aura Effect
+        this.auraTimer = 5.0; // 오라 유지 시간
     }
 
+    applyRawDamage(dmg, attacker, triggerEffects=true, isSkill=false) {
+        if (this.ctype === 'golem') {
+            if (isSkill || (attacker && attacker.range > 150)) {
+                dmg *= 0.5; // 50% 감면
+            } else {
+                dmg *= 0.75; // 25% 감소
+            }
+        }
+        return super.applyRawDamage(dmg, attacker, triggerEffects, isSkill);
+    }
     
     draw(ctx) {
         if(this.isDead) return;
@@ -3503,6 +3782,24 @@ class Creature extends Minion {
         let maxAtkTime = 1 / this.aspd;
         if(this.attackTimer > maxAtkTime - 0.2) {
             atkAnim = (this.attackTimer - (maxAtkTime - 0.2)) / 0.2; // 1 -> 0
+        }
+
+        // 등장 위용 오라 이펙트
+        if (this.auraTimer > 0) {
+            this.auraTimer -= 1/60;
+            ctx.save();
+            ctx.translate(this.x, this.y);
+            let auraScale = 1.0 + Math.sin(Date.now() / 150) * 0.1;
+            ctx.scale(auraScale, auraScale);
+            let grad = ctx.createRadialGradient(0, 0, r*0.5, 0, 0, r*2.5);
+            grad.addColorStop(0, 'rgba(255, 215, 0, 0.8)');
+            grad.addColorStop(0.5, 'rgba(255, 140, 0, 0.4)');
+            grad.addColorStop(1, 'rgba(255, 69, 0, 0)');
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.arc(0, 0, r*2.5, 0, Math.PI*2);
+            ctx.fill();
+            ctx.restore();
         }
 
         // 그림자
@@ -3842,7 +4139,7 @@ class Projectile {
     constructor(x,y,target,dmg,attacker,isCrit,ptype='arrow'){
         this.x=x; this.y=y; this.target=target; this.dmg=dmg; this.attacker=attacker; this.isCrit=isCrit; this.ptype=ptype;
         this.speed=ptype==='tower'?550:500; this.isDead=false;
-        this.isSplash = attacker && attacker.type==='hero' && (attacker.heroKey==='JOKER' || attacker.heroKey==='DARKPRIEST' || attacker.heroKey==='ARIEL');
+        this.isSplash = attacker && attacker.type==='hero' && (attacker.heroKey==='DARKPRIEST' || attacker.heroKey==='ARIEL');
         
         if(attacker && attacker.type==='hero') {
             if(attacker.heroKey==='ICEBORN') this.ptype='ice';
@@ -3852,9 +4149,31 @@ class Projectile {
             else if(attacker.heroKey==='MECHANIC') this.ptype='bullet';
             else if(attacker.heroKey==='VAMPIRE') this.ptype='blood';
             else if(attacker.heroKey==='ARIEL') this.ptype='holy';
+            else if(attacker.heroKey==='SYLVIA') this.ptype='snipe_bullet';
+            else if(attacker.heroKey==='ZEPHYR') { this.ptype='tornado'; this.speed=250; this.hitSet = new Set(); this.life = 1.5; }
+        }
+        if(this.ptype==='tornado') {
+            let a = Math.atan2(target.y-y, target.x-x);
+            this.vx = Math.cos(a) * this.speed;
+            this.vy = Math.sin(a) * this.speed;
         }
     }
     update(dt){
+        if(this.ptype==='tornado') {
+            this.life -= dt;
+            if(this.life <= 0 || this.x < 0 || this.x > 3000 || this.y < 0 || this.y > 3000) { this.isDead = true; return; }
+            this.x += this.vx * dt; this.y += this.vy * dt;
+            entities.forEach(e => {
+                if(e.faction !== this.attacker.faction && !e.isDead && dist(this, e) < 50 && !this.hitSet.has(e)) {
+                    this.hitSet.add(e);
+                    let dealt = e.applyRawDamage(this.dmg, this.attacker, true, true);
+                    if(this.attacker && this.attacker.type === 'hero') this.attacker.totalDmg += (dealt || this.dmg);
+                    if(this.attacker && this.attacker.triggerOnHitPassives) this.attacker.triggerOnHitPassives(e);
+                    spawnParticles(e.x, e.y, '#4ade80', 5, 50, 0.3);
+                }
+            });
+            return;
+        }
         if(this.target.isDead){this.isDead=true;return;}
         if(dist(this,this.target)<15 || (this.isSplash && dist(this,this.target)<40)){
             let hitTargets = this.isSplash ? entities.filter(e => e.faction!==this.attacker.faction && !e.isDead && dist(e, this.target) <= 120) : [this.target];
@@ -3924,6 +4243,18 @@ class Projectile {
         }
         else if(this.ptype==='blood'){
             ctx.fillStyle='#e11d48'; ctx.beginPath(); ctx.moveTo(8,0); ctx.lineTo(-6,-5); ctx.lineTo(-4,0); ctx.lineTo(-6,5); ctx.fill();
+        }
+        else if(this.ptype==='snipe_bullet'){
+            ctx.fillStyle='#06b6d4'; ctx.fillRect(-10,-2,20,4);
+            ctx.fillStyle='#fef08a'; ctx.beginPath(); ctx.arc(10,0,2,0,Math.PI*2); ctx.fill();
+        }
+        else if(this.ptype==='tornado'){
+            ctx.rotate(performance.now()/50);
+            let scale = this.isMega ? 3 : 1;
+            ctx.shadowColor='#4ade80'; ctx.shadowBlur=10 * scale; ctx.strokeStyle='#86efac'; ctx.lineWidth=2 * scale;
+            ctx.beginPath(); ctx.arc(0,0,14 * scale,0,Math.PI*2); ctx.stroke();
+            ctx.beginPath(); ctx.arc(0,0,7 * scale,0,Math.PI*2); ctx.stroke();
+            ctx.shadowBlur=0;
         }
         else { 
             ctx.shadowColor='#fbbf24'; ctx.shadowBlur=10; ctx.fillStyle='#fbbf24'; ctx.beginPath(); ctx.arc(0,0,6,0,Math.PI*2); ctx.fill(); ctx.shadowBlur=0; 
@@ -4026,7 +4357,7 @@ window.selectHero=h=>{ GS.hero=h; Object.keys(HERO_TMPL).forEach(hk=>{ let btn=d
     else if (t.range <= 250) rangeTypeStr = "중거리";
     else rangeTypeStr = "원거리";
     
-    let aoeStr = (h === 'JOKER' || h === 'DARKPRIEST' || h === 'THOR') ? '범위(스플래시)' : '단일 타겟';
+    let aoeStr = (h === 'DARKPRIEST' || h === 'THOR') ? '범위(스플래시)' : '단일 타겟';
 
     document.getElementById('heroDescription').innerHTML='<div class="flex flex-row gap-3 items-start"><div class="w-16 h-20 shrink-0 bg-slate-800 rounded flex items-center justify-center border border-slate-600 relative overflow-hidden"><canvas id="heroPreviewCanvas" width="64" height="80"></canvas></div>' +
         '<div class="flex-1 text-left"><div class="text-amber-400 font-bold mb-0.5 text-sm">['+t.name+'] <span class="text-[10px] text-white bg-slate-700 px-1 py-0.5 rounded ml-1">'+ (t.role_desc||'') +'</span></div>' +
@@ -4370,8 +4701,8 @@ function gameLoop(now){
             const types = ['dragon', 'golem', 'beast'];
             let spawnedAny = false;
             
-            // BLUE 팀 스폰 로직
-            let blueCount = Math.min(3, Math.floor(window.TEAM_VAULT.gold / 450));
+            // BLUE 팀 스폰 로직 (제한 없음)
+            let blueCount = Math.floor(window.TEAM_VAULT.gold / 450);
             if(blueCount > 0) {
                 window.TEAM_VAULT.gold -= blueCount * 450;
                 for(let i=0; i<blueCount; i++) {
@@ -4858,6 +5189,8 @@ function updateUI(){
     document.getElementById('hudLevelBadge').textContent='Lv.'+player.level; document.getElementById('hudKDA').textContent='K:'+player.kills+' / D:'+player.deaths;
     document.getElementById('hudHpBar').style.width=(player.hp/player.maxHp)*100+'%'; document.getElementById('hudHpText').textContent=Math.floor(player.hp)+' / '+Math.floor(player.maxHp); document.getElementById('hudXpBar').style.width=(player.exp/player.maxExp)*100+'%';
     document.getElementById('hudGoldText').textContent=Math.floor(player.gold)+'G';
+    const vaultGoldEl = document.getElementById('hudVaultGold');
+    if (vaultGoldEl && window.TEAM_VAULT) vaultGoldEl.textContent = Math.floor(window.TEAM_VAULT.gold);
     
     const inv=document.getElementById('inventorySlots'); 
     let newInvHtml='';
@@ -4868,6 +5201,17 @@ function updateUI(){
         newInvHtml+='<div class="relative w-7 h-7 md:w-10 md:h-10 rounded-lg bg-slate-900 border border-slate-700 flex items-center justify-center shadow-inner">'+content+'</div>'; 
     }
     if (inv.lastHtml !== newInvHtml) { inv.innerHTML = newInvHtml; inv.lastHtml = newInvHtml; }
+    // 스킬 아이콘 동적 업데이트
+    let t = HERO_TMPL[player.heroKey];
+    if(t) {
+        let s1Icon = t.skill1 && t.skill1.icon ? t.skill1.icon : '✨';
+        let s2Icon = t.skill2 && t.skill2.icon ? t.skill2.icon : '💫';
+        let s1El = document.getElementById('txtSkill1Icon');
+        let s2El = document.getElementById('txtSkill2Icon');
+        if(s1El && s1El.textContent !== s1Icon) s1El.textContent = s1Icon;
+        if(s2El && s2El.textContent !== s2Icon) s2El.textContent = s2Icon;
+    }
+
     // 히어로 패시브 쿨다운 표시
     let m1=document.getElementById('maskSkill1'), m2=document.getElementById('maskSkill2');
     if(m1) { if(player.heroSkill1Timer>0){m1.classList.remove('hidden');m1.textContent=player.heroSkill1Timer.toFixed(1);}else m1.classList.add('hidden'); }
@@ -5341,3 +5685,28 @@ window.showHoF = function() {
     
     document.getElementById('hofScreen').classList.remove('hidden');
 };
+
+// 영웅별 스킬 아이콘 매핑
+const HERO_ICONS = {
+    CRAG: { s1: '🛡️', s2: '⛰️' },
+    BERSERKER: { s1: '🪓', s2: '🩸' },
+    ARCHER: { s1: '🏹', s2: '🎯' },
+    NECROMANCER: { s1: '💀', s2: '👻' },
+    grrr: { s1: '🐾', s2: '🦁' },
+    VAMPIRE: { s1: '🦇', s2: '🧛' },
+    THOR: { s1: '⚡', s2: '🔨' },
+    ICEBORN: { s1: '❄️', s2: '⛄' },
+    JOKER: { s1: '🃏', s2: '💰' },
+    DARKPRIEST: { s1: '🔮', s2: '👁️' },
+    ARCHON: { s1: '⚡', s2: '🌀' },
+    BARBARIAN: { s1: '⚔️', s2: '😡' },
+    ZEROS: { s1: '🗡️', s2: '👣' },
+    SYLVIA: { s1: '🔫', s2: '💣' },
+    ZEPHYR: { s1: '🌪️', s2: '🌀' }
+};
+Object.keys(HERO_ICONS).forEach(k => {
+    if(HERO_TMPL[k]) {
+        if(HERO_TMPL[k].skill1) HERO_TMPL[k].skill1.icon = HERO_ICONS[k].s1;
+        if(HERO_TMPL[k].skill2) HERO_TMPL[k].skill2.icon = HERO_ICONS[k].s2;
+    }
+});
