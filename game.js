@@ -4371,9 +4371,9 @@ function gameLoop(now){
             let spawnedAny = false;
             
             // BLUE 팀 스폰 로직
-            let blueCount = Math.min(3, Math.floor(window.TEAM_VAULT.gold / 600));
+            let blueCount = Math.min(3, Math.floor(window.TEAM_VAULT.gold / 450));
             if(blueCount > 0) {
-                window.TEAM_VAULT.gold -= blueCount * 600;
+                window.TEAM_VAULT.gold -= blueCount * 450;
                 for(let i=0; i<blueCount; i++) {
                     let lane = lanes[Math.floor(Math.random() * lanes.length)];
                     let ctype = types[Math.floor(Math.random() * types.length)];
