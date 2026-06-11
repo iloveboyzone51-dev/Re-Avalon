@@ -437,6 +437,7 @@ const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
 
 function addText(x,y,text,color,size=16){ floatingTexts.push({x,y,text,color,size,life:1.0,vy:-60}); }
 function spawnParticles(x,y,color,n=8,spd=120,life=0.4, shape='circle'){
+    if (particles.length > 150) particles.splice(0, n); // 하드캡: 오래된 파티클 제거
     for(let i=0;i<n;i++){ let a=rand(0,Math.PI*2); particles.push({x,y,vx:Math.cos(a)*rand(spd*0.3,spd),vy:Math.sin(a)*rand(spd*0.3,spd),life,maxLife:life,color,size:rand(2,5),shape}); }
 }
 function spawnSlash(x,y,angle,color,r=60){ slashEffects.push({x,y,angle,color,r,life:0.25,maxLife:0.25}); }
@@ -551,12 +552,10 @@ function drawBlockyHero(ctx, x, y, r, dir, faction, type, attackAnimTimer = 0, e
     
     // 팀 식별 아우라 (희미하게)
     let fCol = faction === 'BLUE' ? '#3b82f6' : '#ef4444';
-    ctx.shadowColor = fCol; ctx.shadowBlur = 10;
-    
     // 공통 바디 그리기 함수 (더 디테일하게)
     const drawBody = (skin, shirt, pants, eyeColor='#1e293b', hasAura=false) => {
         ctx.save();
-        if(hasAura) { ctx.shadowColor = skin; ctx.shadowBlur = 15; }
+        if(hasAura) { }
         
         // 상체 회전 (공격 시)
         if(isAttacking && type !== 'vampire' && type !== 'thor' && type !== 'grrr') {
@@ -581,11 +580,9 @@ function drawBlockyHero(ctx, x, y, r, dir, faction, type, attackAnimTimer = 0, e
         ctx.fillStyle = eyeColor;
         ctx.fillRect(x-r*0.2, y-r*0.7-breath, r*0.15, r*0.12); ctx.fillRect(x+r*0.1, y-r*0.7-breath, r*0.15, r*0.12);
         if(eyeColor !== '#1e293b') { // 빛나는 눈 효과
-            ctx.shadowColor = eyeColor; ctx.shadowBlur = 8;
             ctx.fillStyle = '#ffffff'; 
             ctx.fillRect(x-r*0.18, y-r*0.68-breath, r*0.08, r*0.08); ctx.fillRect(x+r*0.12, y-r*0.68-breath, r*0.08, r*0.08);
-            ctx.shadowBlur = 0;
-        }
+            }
         
         // 팀 뱃지
         ctx.fillStyle = fCol; ctx.beginPath(); ctx.arc(x, y-r*0.1-breath, r*0.15, 0, Math.PI*2); ctx.fill();
@@ -606,11 +603,9 @@ function drawBlockyHero(ctx, x, y, r, dir, faction, type, attackAnimTimer = 0, e
         if(isAttacking) {
             ctx.translate(x+r*0.8, y+r*0.4); ctx.rotate(Math.PI * 0.8 * rotDir); // 거대한 회전 내리치기
             // 붉은 궤적 이펙트
-            ctx.shadowColor = '#dc2626'; ctx.shadowBlur = 15;
             ctx.strokeStyle = 'rgba(239, 68, 68, 0.6)'; ctx.lineWidth = r*0.5;
             ctx.beginPath(); ctx.arc(-r*0.8, -r*0.5, r*1.5, -Math.PI, 0); ctx.stroke();
-            ctx.shadowBlur = 0;
-        } else {
+            } else {
             ctx.translate(x+r*0.5, y-r*0.2); ctx.rotate(-Math.PI * 0.15 * rotDir);
         }
         // 거대 피 묻은 양날 대검
@@ -636,29 +631,24 @@ function drawBlockyHero(ctx, x, y, r, dir, faction, type, attackAnimTimer = 0, e
         }
         
         // 거대한 디테일 장궁
-        ctx.shadowColor = '#fbbf24'; ctx.shadowBlur = 5;
         ctx.strokeStyle = '#78350f'; ctx.lineWidth = 4; ctx.lineCap = 'round';
         ctx.beginPath(); ctx.arc(0, 0, r*0.9, -Math.PI*0.45, Math.PI*0.45); ctx.stroke(); // 활대
         
         let pull = isAttacking ? r*1.2 : 0; // 뒤로 팽팽하게 당김
-        ctx.shadowBlur = 0;
         ctx.strokeStyle = 'rgba(255,255,255,0.8)'; ctx.lineWidth = 1;
         ctx.beginPath(); ctx.moveTo(Math.cos(-Math.PI*0.45)*r*0.9, Math.sin(-Math.PI*0.45)*r*0.9); ctx.lineTo(-pull, 0); ctx.lineTo(Math.cos(Math.PI*0.45)*r*0.9, Math.sin(Math.PI*0.45)*r*0.9); ctx.stroke(); // 활시위
         
         if(isAttacking) { // 기 모으는 화살
-            ctx.shadowColor = '#4ade80'; ctx.shadowBlur = 15;
             ctx.fillStyle = '#4ade80'; ctx.fillRect(-pull, -1, r*1.6, 2);
             ctx.beginPath(); ctx.moveTo(-pull+r*1.6, -3); ctx.lineTo(-pull+r*1.9, 0); ctx.lineTo(-pull+r*1.6, 3); ctx.fill(); // 화살촉
-            ctx.shadowBlur = 0;
-        }
+            }
         ctx.restore();
         
     } else if(type === 'mechanic') {
         drawBody('#fed7aa', '#b45309', '#78350f');
         // 등에 거대한 코어 백팩
         ctx.fillStyle = '#334155'; ctx.fillRect(x-r*0.8, y-r*0.5-breath, r*0.5, r*1.0);
-        ctx.shadowColor = '#38bdf8'; ctx.shadowBlur = 10; ctx.fillStyle = '#0ea5e9'; ctx.beginPath(); ctx.arc(x-r*0.55, y-breath, r*0.2, 0, Math.PI*2); ctx.fill(); ctx.shadowBlur = 0;
-        // 고글
+        ctx.fillStyle = '#0ea5e9'; ctx.beginPath(); ctx.arc(x-r*0.55, y-breath, r*0.2, 0, Math.PI*2); ctx.fill(); // 고글
         ctx.fillStyle = '#0f172a'; ctx.fillRect(x-r*0.4, y-r*0.75-breath, r*0.8, r*0.25);
         ctx.fillStyle = '#38bdf8'; ctx.fillRect(x-r*0.25, y-r*0.72-breath, r*0.2, r*0.15); ctx.fillRect(x+r*0.1, y-r*0.72-breath, r*0.2, r*0.15);
         
@@ -675,10 +665,8 @@ function drawBlockyHero(ctx, x, y, r, dir, faction, type, attackAnimTimer = 0, e
         ctx.fillStyle = '#cbd5e1'; ctx.fillRect(r*1.1, -r*0.25, r*0.2, r*0.7); // 총구 링
         
         if(isAttacking) { // 총구 화염 매우 화려하게
-            ctx.shadowColor = '#f59e0b'; ctx.shadowBlur = 20;
             ctx.fillStyle = '#fcd34d'; ctx.beginPath(); ctx.moveTo(r*1.3, r*0.1); ctx.lineTo(r*2.0, -r*0.3); ctx.lineTo(r*1.8, r*0.1); ctx.lineTo(r*2.2, r*0.2); ctx.lineTo(r*1.8, r*0.3); ctx.lineTo(r*2.0, r*0.7); ctx.closePath(); ctx.fill();
-            ctx.shadowBlur = 0;
-        }
+            }
         ctx.restore();
         
     } else if(type === 'vampire') {
@@ -701,7 +689,6 @@ function drawBlockyHero(ctx, x, y, r, dir, faction, type, attackAnimTimer = 0, e
         if(isAttacking) {
             ctx.save();
             ctx.translate(x+r*0.8, y);
-            ctx.shadowColor = '#e11d48'; ctx.shadowBlur = 15;
             ctx.strokeStyle = '#f43f5e'; ctx.lineWidth = r*0.15; ctx.lineCap = 'round';
             for(let i=0; i<3; i++) { // 3갈래 손톱 자국
                 ctx.beginPath(); 
@@ -736,7 +723,6 @@ function drawBlockyHero(ctx, x, y, r, dir, faction, type, attackAnimTimer = 0, e
         if(isAttacking) {
             ctx.save();
             ctx.translate(x + r*1.2*rotDir, y+r*0.5); // 아래쪽으로 강하게
-            ctx.shadowColor = '#f59e0b'; ctx.shadowBlur = 10;
             ctx.fillStyle = '#d97706'; ctx.beginPath(); ctx.arc(0, 0, r*0.7, 0, Math.PI*2); ctx.fill();
             // 맹수의 날카로운 발톱
             ctx.fillStyle = '#fef3c7';
@@ -764,15 +750,12 @@ function drawBlockyHero(ctx, x, y, r, dir, faction, type, attackAnimTimer = 0, e
         ctx.fillStyle = '#fcd34d'; ctx.fillRect(x-r*0.4, y-r*0.4-breath, r*0.8, r*0.3);
         
         // 몸 주변 상시 노란색 뇌전 효과 (스파크)
-        ctx.strokeStyle = '#fde047'; ctx.lineWidth = 2; ctx.shadowColor = '#fde047'; ctx.shadowBlur = 10;
-        for(let i=0; i<3; i++) {
+        ctx.strokeStyle = '#fde047'; ctx.lineWidth = 2; for(let i=0; i<3; i++) {
             if(Math.random()<0.3) {
                 ctx.beginPath(); ctx.moveTo(x+(Math.random()-0.5)*r*2, y+(Math.random()-0.5)*r*2);
                 ctx.lineTo(x+(Math.random()-0.5)*r*3, y+(Math.random()-0.5)*r*3); ctx.stroke();
             }
         }
-        ctx.shadowBlur = 0;
-
         // 거대한 묠니르
         ctx.save();
         if(isAttacking) {
@@ -787,7 +770,6 @@ function drawBlockyHero(ctx, x, y, r, dir, faction, type, attackAnimTimer = 0, e
         ctx.fillStyle = '#94a3b8'; ctx.fillRect(-r*0.4, -r*1.3, r*0.8, r*0.5); // 하이라이트
         
         if(isAttacking) { // 망치 타격 뇌전 폭발
-            ctx.shadowColor = '#fde047'; ctx.shadowBlur = 30;
             ctx.fillStyle = 'rgba(253, 224, 71, 0.8)';
             ctx.beginPath(); ctx.arc(0, -r*1.0, r*1.5, 0, Math.PI*2); ctx.fill(); // 코어 폭발
             ctx.strokeStyle = '#ffffff'; ctx.lineWidth = Math.random()*3+2;
@@ -795,8 +777,7 @@ function drawBlockyHero(ctx, x, y, r, dir, faction, type, attackAnimTimer = 0, e
                 ctx.beginPath(); ctx.moveTo(0, -r*1.0); 
                 ctx.lineTo((Math.random()-0.5)*r*5, -r*1.0 + (Math.random()-0.5)*r*5); ctx.stroke();
             }
-            ctx.shadowBlur = 0;
-        }
+            }
         ctx.restore();
         
     } else if (type === 'iceborn') {
@@ -817,7 +798,6 @@ function drawBlockyHero(ctx, x, y, r, dir, faction, type, attackAnimTimer = 0, e
             ctx.translate(x+r*0.6, y-r*0.2); ctx.rotate(Math.PI * 0.1);
         }
         // 거대한 얼음 창
-        ctx.shadowColor = '#38bdf8'; ctx.shadowBlur = 10;
         ctx.fillStyle = '#0ea5e9'; ctx.fillRect(-r*0.05, -r*2.0, r*0.1, r*4.0); // 긴 창대
         ctx.fillStyle = '#bae6fd'; 
         ctx.beginPath(); ctx.moveTo(-r*0.3, -r*2.0); ctx.lineTo(r*0.3, -r*2.0); ctx.lineTo(0, -r*3.5); ctx.closePath(); ctx.fill(); // 날카로운 창 끝
@@ -826,7 +806,6 @@ function drawBlockyHero(ctx, x, y, r, dir, faction, type, attackAnimTimer = 0, e
         ctx.translate(-r*1.0, r*1.0); // 창 반대쪽 위치
         ctx.fillStyle = 'rgba(125, 211, 252, 0.7)';
         ctx.beginPath(); ctx.moveTo(0, -r*0.8); ctx.lineTo(r*0.6, 0); ctx.lineTo(0, r*0.8); ctx.lineTo(-r*0.6, 0); ctx.fill(); // 마름모 방패
-        ctx.shadowBlur = 0;
         ctx.restore();
         
     } else if (type === 'joker') {
@@ -886,11 +865,8 @@ function drawBlockyHero(ctx, x, y, r, dir, faction, type, attackAnimTimer = 0, e
         ctx.fillRect(-r*0.9, -r*0.2, r*1.8, r*1.4);
         
         // 가슴 중앙 코어 (빛나는 노란색)
-        ctx.shadowColor = '#facc15'; ctx.shadowBlur = 15;
         ctx.fillStyle = '#fef08a';
         ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(r*0.3, r*0.4); ctx.lineTo(0, r*0.8); ctx.lineTo(-r*0.3, r*0.4); ctx.fill();
-        ctx.shadowBlur = 0;
-
         // 머리 (작고 단단한 돌)
         ctx.fillStyle = '#78716c';
         ctx.fillRect(-r*0.4, -r*1.0-breath, r*0.8, r*0.8);
@@ -924,7 +900,6 @@ function drawBlockyHero(ctx, x, y, r, dir, faction, type, attackAnimTimer = 0, e
         if(dir < 0) ctx.scale(-1, 1);
         
         // 등 뒤 황금빛 날개/후광
-        ctx.shadowColor = '#fef08a'; ctx.shadowBlur = 20;
         ctx.fillStyle = '#facc15';
         for(let i=0; i<6; i++) {
             ctx.save();
@@ -932,8 +907,6 @@ function drawBlockyHero(ctx, x, y, r, dir, faction, type, attackAnimTimer = 0, e
             ctx.beginPath(); ctx.moveTo(0, -r*0.5); ctx.lineTo(r*1.5, -r*1.8); ctx.lineTo(r*0.5, -r*0.5); ctx.fill();
             ctx.restore();
         }
-        ctx.shadowBlur = 0;
-
         // 드레스 겹겹이 표현 (다각형 기하학 무늬)
         ctx.fillStyle = '#ffffff';
         ctx.beginPath(); ctx.moveTo(0, -r*0.2); ctx.lineTo(r*1.2, r*1.5); ctx.lineTo(-r*1.2, r*1.5); ctx.fill();
@@ -978,9 +951,8 @@ function drawBlockyHero(ctx, x, y, r, dir, faction, type, attackAnimTimer = 0, e
             ctx.translate(r*0.5, -r*0.2-breath); ctx.rotate(Math.PI * 0.1);
         }
         ctx.fillStyle = '#facc15'; ctx.fillRect(-r*0.1, -r*1.5, r*0.2, r*2.5); // 얇고 긴 지팡이
-        ctx.shadowColor = '#38bdf8'; ctx.shadowBlur = 15; ctx.fillStyle = '#38bdf8';
+        ctx.fillStyle = '#38bdf8';
         ctx.beginPath(); ctx.moveTo(0, -r*1.8); ctx.lineTo(r*0.4, -r*1.5); ctx.lineTo(0, -r*1.2); ctx.lineTo(-r*0.4, -r*1.5); ctx.fill(); // 푸른 보석
-        ctx.shadowBlur = 0;
         ctx.restore();
 
         ctx.restore();
@@ -993,14 +965,11 @@ function drawBlockyHero(ctx, x, y, r, dir, faction, type, attackAnimTimer = 0, e
         ctx.beginPath(); ctx.arc(x, y-r*0.8-breath, r*0.6, Math.PI, 0); ctx.fill(); // 둥근 윗부분
         ctx.fillRect(x-r*0.6, y-r*0.8-breath, r*1.2, r*0.5); // 볼 옆으로 내려오는 천
         
-        ctx.shadowColor = '#6d28d9'; ctx.shadowBlur = 15;
         // 등 뒤에 떠다니는 거대한 공허 구체(Dark Orb)
         ctx.fillStyle = '#000000';
         ctx.beginPath(); ctx.arc(x-dir*r*0.8, y-r*1.2+Math.sin(t/200)*r*0.2, r*0.6, 0, Math.PI*2); ctx.fill();
         ctx.strokeStyle = '#8b5cf6'; ctx.lineWidth=2; 
         ctx.beginPath(); ctx.arc(x-dir*r*0.8, y-r*1.2+Math.sin(t/200)*r*0.2, r*0.7, 0, Math.PI*2); ctx.stroke(); // 오라 링
-        ctx.shadowBlur = 0;
-
         ctx.save();
         if(isAttacking) {
             ctx.translate(x+r*1.0, y-r*0.5); ctx.rotate(Math.PI * 0.2 * rotDir); // 손을 뻗어 마법 발사
@@ -1017,15 +986,11 @@ function drawBlockyHero(ctx, x, y, r, dir, faction, type, attackAnimTimer = 0, e
         ctx.beginPath(); ctx.moveTo(-r*0.2, -r*0.3); ctx.lineTo(r*0.2, -r*0.3); ctx.lineTo(0, -r*0.8); ctx.fill();
         
         if(isAttacking) { // 시전 이펙트
-            ctx.shadowColor = '#a855f7'; ctx.shadowBlur = 20;
             ctx.fillStyle = '#c084fc'; ctx.beginPath(); ctx.arc(r*0.8, 0, r*0.5, 0, Math.PI*2); ctx.fill();
-            ctx.shadowBlur = 0;
-        }
+            }
         ctx.restore();
     } else if (type === 'archon') {
         // 아칸 (로우폴리 크리스탈 & 에너지 구체 모티브)
-        ctx.shadowColor = '#3b82f6'; ctx.shadowBlur = 20;
-        
         // 다면체(로우폴리) 크리스탈 코어
         ctx.fillStyle = '#eff6ff';
         ctx.beginPath();
@@ -1074,9 +1039,7 @@ function drawBlockyHero(ctx, x, y, r, dir, faction, type, attackAnimTimer = 0, e
             ctx.beginPath(); ctx.moveTo(-r*0.4, r*0.2); ctx.lineTo(-r*0.9, r*0.4); ctx.lineTo(-r*0.7, r*0.6); ctx.lineTo(-r*0.3, r*0.5); ctx.closePath(); ctx.fill();
         }
         ctx.restore();
-        ctx.shadowBlur = 0;
-        
-    } else if (type === 'barbarian') {
+        } else if (type === 'barbarian') {
         // 바바리안 (로우폴리 바이킹 / 디아블로 감성)
         
         // 다리 (가죽 부츠 & 장갑)
@@ -1159,21 +1122,17 @@ function drawBlockyHero(ctx, x, y, r, dir, faction, type, attackAnimTimer = 0, e
         ctx.save();
         if(isAttacking) {
             ctx.translate(x+r*0.6, y); ctx.rotate((Math.PI/2.5) * rotDir);
-            ctx.shadowColor = '#000000'; ctx.shadowBlur = 15;
             ctx.strokeStyle = 'rgba(127, 29, 29, 0.5)'; ctx.lineWidth = r*0.4;
             ctx.beginPath(); ctx.arc(-r*0.5, -r*0.5, r*1.5, -Math.PI*0.8, 0); ctx.stroke();
-            ctx.shadowBlur = 0;
-        } else {
+            } else {
             ctx.translate(x+r*0.5, y-r*0.1); ctx.rotate(Math.PI*0.1);
         }
         // 거대한 흑염검
         ctx.fillStyle = '#1c1917'; ctx.fillRect(-r*0.1, -r*2.0, r*0.3, r*2.5); // 자루 및 칼등
         
         // 은은한 붉은색 오라(Aura)가 도는 검 테두리
-        ctx.shadowColor = '#ef4444'; ctx.shadowBlur = 15;
         ctx.fillStyle = '#000000'; ctx.beginPath(); ctx.moveTo(-r*0.1, -r*2.0); ctx.lineTo(r*0.3, -r*2.5); ctx.lineTo(r*0.5, -r*1.5); ctx.lineTo(r*0.2, r*0); ctx.closePath(); ctx.fill(); 
         ctx.strokeStyle = 'rgba(239, 68, 68, 0.8)'; ctx.lineWidth = 2; ctx.stroke();
-        ctx.shadowBlur = 0;
         ctx.restore();
         
     } else if(type === 'sylvia') {
@@ -1201,11 +1160,9 @@ function drawBlockyHero(ctx, x, y, r, dir, faction, type, attackAnimTimer = 0, e
         
         // 레이저 포인터 이펙트
         if(!isAttacking) {
-            ctx.shadowColor = '#ef4444'; ctx.shadowBlur = 5;
             ctx.strokeStyle = 'rgba(239, 68, 68, 0.5)'; ctx.lineWidth = 1;
             ctx.beginPath(); ctx.moveTo(r*2.4, -r*0.05); ctx.lineTo(r*10.0, -r*0.05); ctx.stroke();
-            ctx.shadowBlur = 0;
-        }
+            }
         ctx.restore();
         
     } else if(type === 'zephyr') {
@@ -1218,12 +1175,10 @@ function drawBlockyHero(ctx, x, y, r, dir, faction, type, attackAnimTimer = 0, e
         const drawFan = (offsetX, angle) => {
             ctx.save();
             ctx.translate(x+offsetX, y); ctx.rotate(angle);
-            ctx.shadowColor = '#4ade80'; ctx.shadowBlur = 10;
             ctx.fillStyle = '#10b981'; 
             ctx.beginPath(); ctx.moveTo(0,0); ctx.arc(0, 0, r*1.2, -Math.PI*0.3, Math.PI*0.3); ctx.fill();
             ctx.fillStyle = '#ffffff'; 
             ctx.beginPath(); ctx.moveTo(0,0); ctx.arc(0, 0, r*1.1, -Math.PI*0.25, Math.PI*0.25); ctx.fill();
-            ctx.shadowBlur = 0;
             ctx.restore();
         };
 
@@ -1427,7 +1382,10 @@ class Entity {
             return 0;
         }
         
-        this.lastAttackedTimer=REGEN_DELAY+0.5; this.nonCombatTimer=0;
+        this.lastAttackedTimer=REGEN_DELAY+0.5;
+        if(attacker && (attacker.type === 'hero' || attacker.type === 'tower' || attacker.isBuilding)) {
+            this.nonCombatTimer = 0; // 적 영웅/포탑에게 피격 시에만 초기화
+        }
         
         let dmg = amount;
         if(this.type === 'hero') {
@@ -3181,9 +3139,8 @@ class Building extends Entity {
         ctx.fillStyle='rgba(0,0,0,0.4)'; ctx.beginPath(); ctx.ellipse(this.x,this.y+this.radius*0.5,this.radius*1.5,this.radius*0.5,0,0,Math.PI*2); ctx.fill();
         
         if(this.type==='nexus'){
-            ctx.shadowColor=cl; ctx.shadowBlur=20; ctx.fillStyle=c; ctx.fillRect(this.x-this.radius,this.y-this.radius*1.2,this.radius*2,this.radius*1.5);
-            ctx.fillStyle=cl; ctx.beginPath(); ctx.moveTo(this.x, this.y-this.radius*2); ctx.lineTo(this.x-this.radius*0.8, this.y-this.radius*1.2); ctx.lineTo(this.x+this.radius*0.8, this.y-this.radius*1.2); ctx.closePath(); ctx.fill(); ctx.shadowBlur=0;
-        } else {
+            ctx.fillStyle=c; ctx.fillRect(this.x-this.radius,this.y-this.radius*1.2,this.radius*2,this.radius*1.5);
+            ctx.fillStyle=cl; ctx.beginPath(); ctx.moveTo(this.x, this.y-this.radius*2); ctx.lineTo(this.x-this.radius*0.8, this.y-this.radius*1.2); ctx.lineTo(this.x+this.radius*0.8, this.y-this.radius*1.2); ctx.closePath(); ctx.fill(); } else {
             ctx.fillStyle=c; ctx.fillRect(this.x-this.radius*0.7,this.y-this.radius*1.5,this.radius*1.4,this.radius*1.8);
             ctx.fillStyle=cl; ctx.beginPath(); ctx.moveTo(this.x, this.y-this.radius*2.2); ctx.lineTo(this.x-this.radius*0.8, this.y-this.radius*1.5); ctx.lineTo(this.x+this.radius*0.8, this.y-this.radius*1.5); ctx.closePath(); ctx.fill();
             if(this.type==='nexus_turret') { ctx.fillStyle='#fcd34d'; ctx.beginPath(); ctx.arc(this.x, this.y-this.radius*2.2, 5, 0, Math.PI*2); ctx.fill(); }
@@ -4026,9 +3983,7 @@ class Monster extends Entity {
 
         // 피격 시 흰색 번쩍임 플래시 효과
         if (this.hitFlashTimer > 0) {
-            ctx.shadowColor = '#ffffff';
-            ctx.shadowBlur = 15;
-        }
+            }
 
         // 2. 몬스터 타입별 개성 있는 외형 렌더링
         if (this.mtype === 'summon') {
@@ -4105,14 +4060,11 @@ class Monster extends Entity {
             ctx.moveTo(this.x - this.radius * 0.5, this.y - this.radius * 0.5);
             ctx.lineTo(this.x + this.radius * 0.3, this.y + this.radius * 0.2);
             ctx.stroke();
-            ctx.shadowColor = '#a855f7'; ctx.shadowBlur = 10;
             ctx.fillStyle = '#d8b4fe';
             ctx.beginPath();
             ctx.arc(this.x, this.y - this.radius * 0.9, 6, 0, Math.PI * 2);
             ctx.fill();
-            ctx.shadowBlur = 0;
-
-        } else if (this.mtype === 'skeleton') {
+            } else if (this.mtype === 'skeleton') {
             // [해골 전사] - 갈비뼈 상자 구조
             ctx.fillStyle = '#e2e8f0';
             ctx.fillRect(this.x - this.radius * 0.4, this.y - this.radius * 1.4 + anim, this.radius * 0.8, this.radius * 1.8);
@@ -4261,9 +4213,8 @@ class Projectile {
             ctx.fillStyle='#ef4444'; ctx.fillRect(-14,-2,4,4);
         }
         else if(this.ptype==='ice'){
-            ctx.shadowColor='#38bdf8'; ctx.shadowBlur=10; ctx.fillStyle='#e0f2fe';
-            ctx.beginPath(); ctx.moveTo(-10, -5); ctx.lineTo(10, 0); ctx.lineTo(-10, 5); ctx.closePath(); ctx.fill(); ctx.shadowBlur=0;
-        }
+            ctx.fillStyle='#e0f2fe';
+            ctx.beginPath(); ctx.moveTo(-10, -5); ctx.lineTo(10, 0); ctx.lineTo(-10, 5); ctx.closePath(); ctx.fill(); }
         else if(this.ptype==='card'){
             ctx.rotate(performance.now()/50); // Spinning card
             ctx.fillStyle='#ffffff'; ctx.fillRect(-6,-8,12,16);
@@ -4271,22 +4222,20 @@ class Projectile {
             ctx.strokeStyle='#1e293b'; ctx.lineWidth=1; ctx.strokeRect(-6,-8,12,16);
         }
         else if(this.ptype==='darkorb' || this.ptype==='skull'){
-            ctx.shadowColor='#7c3aed'; ctx.shadowBlur=15; ctx.fillStyle='#4c1d95';
+            ctx.fillStyle='#4c1d95';
             ctx.beginPath(); ctx.arc(0,0,8,0,Math.PI*2); ctx.fill();
             ctx.fillStyle='#c084fc'; ctx.beginPath(); ctx.arc(2,-3,3,0,Math.PI*2); ctx.fill(); // eye
-            ctx.shadowBlur=0;
-        }
+            }
         else if(this.ptype==='bullet'){
             ctx.fillStyle='#fbbf24'; ctx.fillRect(-6,-2,12,4);
             ctx.fillStyle='#f59e0b'; ctx.beginPath(); ctx.arc(6,0,2,0,Math.PI*2); ctx.fill();
         }
         
         else if(this.ptype==='holy'){
-            ctx.shadowColor='#fef08a'; ctx.shadowBlur=15; ctx.fillStyle='#fef08a';
+            ctx.fillStyle='#fef08a';
             ctx.beginPath(); ctx.moveTo(0, -6); ctx.lineTo(3, -2); ctx.lineTo(8, 0); ctx.lineTo(3, 2); ctx.lineTo(0, 6); ctx.lineTo(-3, 2); ctx.lineTo(-8, 0); ctx.lineTo(-3, -2); ctx.closePath(); ctx.fill();
             ctx.fillStyle='#38bdf8'; ctx.beginPath(); ctx.arc(0,0,2,0,Math.PI*2); ctx.fill();
-            ctx.shadowBlur=0;
-        }
+            }
         else if(this.ptype==='blood'){
             ctx.fillStyle='#e11d48'; ctx.beginPath(); ctx.moveTo(8,0); ctx.lineTo(-6,-5); ctx.lineTo(-4,0); ctx.lineTo(-6,5); ctx.fill();
         }
@@ -4297,14 +4246,12 @@ class Projectile {
         else if(this.ptype==='tornado'){
             ctx.rotate(performance.now()/50);
             let scale = this.isMega ? 3 : 1;
-            ctx.shadowColor='#4ade80'; ctx.shadowBlur=10 * scale; ctx.strokeStyle='#86efac'; ctx.lineWidth=2 * scale;
+            ctx.strokeStyle='#86efac'; ctx.lineWidth=2 * scale;
             ctx.beginPath(); ctx.arc(0,0,14 * scale,0,Math.PI*2); ctx.stroke();
             ctx.beginPath(); ctx.arc(0,0,7 * scale,0,Math.PI*2); ctx.stroke();
-            ctx.shadowBlur=0;
-        }
+            }
         else { 
-            ctx.shadowColor='#fbbf24'; ctx.shadowBlur=10; ctx.fillStyle='#fbbf24'; ctx.beginPath(); ctx.arc(0,0,6,0,Math.PI*2); ctx.fill(); ctx.shadowBlur=0; 
-        }
+            ctx.fillStyle='#fbbf24'; ctx.beginPath(); ctx.arc(0,0,6,0,Math.PI*2); ctx.fill(); }
         ctx.restore();
     }
 }
@@ -4880,6 +4827,13 @@ function gameLoop(now){
         } // End of PLAYING block
 
         entities.forEach(e=>e.update(dt)); projectiles.forEach(p=>p.update(dt));
+        
+        // Garbage Collection: 사망한 미니언/몬스터/투사체 영구 삭제 (프레임 방어)
+        entities = entities.filter(e => {
+            if (e.isDead && e.type !== 'hero' && e.type !== 'building') return false;
+            return true;
+        });
+        projectiles = projectiles.filter(p => !p.isDead);
         for(let i=particles.length-1;i>=0;i--){let p=particles[i];p.x+=p.vx*dt;p.y+=p.vy*dt;p.life-=dt;if(p.life<=0)particles.splice(i,1);}
         for(let i=floatingTexts.length-1;i>=0;i--){let ft=floatingTexts[i];ft.y+=ft.vy*dt;ft.life-=dt;if(ft.life<=0)floatingTexts.splice(i,1);}
         for(let i=slashEffects.length-1;i>=0;i--){slashEffects[i].life-=dt;if(slashEffects[i].life<=0)slashEffects.splice(i,1);}
@@ -4994,8 +4948,6 @@ function draw(){
         let alpha = eff.life / eff.maxLife;
         ctx.globalAlpha = alpha;
         ctx.save(); ctx.translate(eff.x, eff.y);
-        ctx.shadowColor = eff.color; ctx.shadowBlur = 15;
-        
         // 안쪽 어두운 균열 배경
         ctx.strokeStyle = '#292524'; ctx.lineWidth = 8 * alpha + 2;
         eff.lines.forEach(line => {
@@ -5064,16 +5016,14 @@ function draw(){
         ctx.strokeStyle = be.color;
         ctx.lineWidth = be.width;
         ctx.lineCap = 'round';
-        ctx.shadowColor = be.color; ctx.shadowBlur = 15;
         ctx.beginPath(); ctx.moveTo(be.x1, be.y1); ctx.lineTo(be.x2, be.y2); ctx.stroke();
-        ctx.shadowBlur=0; ctx.globalAlpha=1; ctx.lineCap='butt';
+        ctx.globalAlpha=1; ctx.lineCap='butt';
     });
     beamEffects.forEach(be => {
         let alpha = (be.life / be.maxLife);
         ctx.globalAlpha = alpha;
         ctx.strokeStyle = be.color;
         ctx.lineWidth = 3 * alpha + 1;
-        ctx.shadowColor = be.color; ctx.shadowBlur = 10;
         ctx.beginPath(); ctx.moveTo(be.x1, be.y1);
         let dx = be.x2-be.x1, dy = be.y2-be.y1;
         be.segments.forEach((seg,i) => {
@@ -5081,7 +5031,7 @@ function draw(){
             ctx.lineTo(be.x1+dx*t+seg.ox, be.y1+dy*t+seg.oy);
         });
         ctx.lineTo(be.x2, be.y2); ctx.stroke();
-        ctx.shadowBlur=0; ctx.globalAlpha=1;
+        ctx.globalAlpha=1;
     });
     particles.forEach(p=>{
         ctx.globalAlpha=Math.max(0,p.life/p.maxLife); ctx.fillStyle=p.color;
