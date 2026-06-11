@@ -169,92 +169,134 @@ const WARMOG_REGEN      = 0.10;    // 워모그 초당 10%
 
 // ============ 영웅 템플릿 (근접/원거리 밸런스 전면 수정) ============
 const HERO_TMPL = {
+    // ── 서포터 / 치유 ──
     ARIEL: {
         name:"아리엘", color:"#fef08a",
         hp:2000, atk:45, aspd:1.3, move:170, range:390, type:"ranged", role_desc:"[서포터 / 치유·버프 / 광역 폭발]",
-        skill1: { name:"치유의 파동", cd:10, desc:"자신 주변 반경 250의 모든 아군(영웅, 미니언 포함)의 체력을 대폭 회복시킵니다." },
-        skill2: { name:"빛의 인도", cd:16, desc:"5초 동안 반경 300 내 모든 아군의 이동 속도 40%, 공격 속도 40%, 방어력 30을 증가시킵니다." },
+        // 치유 스킬: 15초(최저 7.5s), 팀버프: 24초(최저 12s) - 서포터는 쿨이 길어야 균형
+        skill1: { name:"치유의 파동", cd:15, desc:"자신 주변 반경 250의 모든 아군(영웅, 미니언 포함)의 체력을 대폭 회복시킵니다." },
+        skill2: { name:"빛의 인도",   cd:24, desc:"5초 동안 반경 300 내 모든 아군의 이동 속도 40%, 공격 속도 40%, 방어력 30을 증가시킵니다." },
         draw:(ctx,x,y,r,dir,f,anim,ent) => drawBlockyHero(ctx,x,y,r,dir,f,'ariel',anim,ent)
     },
 
+    // ── 탱커 / 근거리 ──
     CRAG: {
         name:"크래그", color:"#4b5563",
         hp:4500, atk:55, aspd:0.85, move:160, range:100, type:"melee", role_desc:"[탱커 / 근거리 / 오버파워]",
-        skill1: { name:"대지 강타", cd:8, desc:"주변 반경 150의 모든 적에게 강한 마법 피해를 입히고 1.5초 기절시킵니다." },
-        skill2: { name:"바위 갑옷", cd:15, desc:"5초 동안 최대 체력의 30% 방어막을 얻고 방어력이 대폭 상승합니다." },
+        // 탱커형: AoE 기절 12초(최저 6s), 방어막 20초(최저 10s)
+        skill1: { name:"대지 강타", cd:12, desc:"주변 반경 150의 모든 적에게 강한 마법 피해를 입히고 1.5초 기절시킵니다." },
+        skill2: { name:"바위 갑옷", cd:20, desc:"5초 동안 최대 체력의 30% 방어막을 얻고 방어력이 대폭 상승합니다." },
         draw:(ctx,x,y,r,dir,f,anim,ent) => drawBlockyHero(ctx,x,y,r,dir,f,'crag',anim,ent)
     },
 
-    BERSERKER: { name:"광전사", color:"#ef4444", hp:2470, atk:52, aspd:1.3, move:185, range:90,  type:"melee", role_desc:"[근접 / 브루저 / 광역 제어]",
-        skill1:{name:"회전 참격",cd:5, desc:"주변 반경 내 적들에게 광역 데미지를 주고 0.5초 기절시킵니다."}, 
-        skill2:{name:"도약 강타",cd:8, desc:"대상에게 도약하여 주변에 큰 데미지를 주고 1.5초 기절시킵니다."},  
+    // ── 브루저 / 근거리 딜탱 ──
+    BERSERKER: { name:"광전사", color:"#ef4444", hp:2470, atk:52, aspd:1.3, move:185, range:90, type:"melee", role_desc:"[근접 / 브루저 / 광역 제어]",
+        // 광역기: 10초(최저 5s), 도약: 14초(최저 7s)
+        skill1:{name:"회전 참격", cd:10, desc:"주변 반경 내 적들에게 광역 데미지를 주고 0.5초 기절시킵니다."},
+        skill2:{name:"도약 강타", cd:14, desc:"대상에게 도약하여 주변에 큰 데미지를 주고 1.5초 기절시킵니다."},
         draw:(ctx,x,y,r,dir,f,anim,ent)=>drawBlockyHero(ctx,x,y,r,dir,f,'berserker',anim,ent) },
-    ARCHON:    { name:"아칸",      color:"#3b82f6", hp:1820, atk:60, aspd:1.8, move:150, range:150, type:"ranged", role_desc:"[중거리 / 광역 폭딜 / 제어]",
-        skill1:{name:"사이어닉 스톰",cd:6, desc:"지정 범위에 3초간 지속적인 하얀 번개를 내리쳐 광역 피해를 줍니다."}, 
-        skill2:{name:"마엘스톰",    cd:12, desc:"지정 범위 내 적을 갈색 원형에 가두어 완전 마비시킵니다."}, 
+
+    // ── 중거리 / 광역 폭딜 ──
+    ARCHON: { name:"아칸", color:"#3b82f6", hp:1820, atk:60, aspd:1.8, move:150, range:150, type:"ranged", role_desc:"[중거리 / 광역 폭딜 / 제어]",
+        // 연속 지속딜: 12초(최저 6s), 완전CC: 20초(최저 10s)
+        skill1:{name:"사이어닉 스톰", cd:12, desc:"지정 범위에 3초간 지속적인 하얀 번개를 내리쳐 광역 피해를 줍니다."},
+        skill2:{name:"마엘스톰",      cd:20, desc:"지정 범위 내 적을 갈색 원형에 가두어 완전 마비시킵니다."},
         draw:(ctx,x,y,r,dir,f,anim,ent)=>drawBlockyHero(ctx,x,y,r,dir,f,'archon',anim,ent) },
-    BARBARIAN: { name:"바바리안",  color:"#fb923c", hp:2860, atk:55, aspd:1.3, move:175, range:90,  type:"melee", role_desc:"[근접 / 브루저 / 광역 딜러]",
-        skill1:{name:"점프샷",      cd:7, desc:"적진으로 도약하여 넓은 범위의 적들을 느리게 만듭니다."}, 
-        skill2:{name:"휠윈드",      cd:10, desc:"3초간 무기를 회전하며 지속 광역 피해를 주고 적을 띄웁니다."}, 
+
+    // ── 브루저 / 근거리 ──
+    BARBARIAN: { name:"바바리안", color:"#fb923c", hp:2860, atk:55, aspd:1.3, move:175, range:90, type:"melee", role_desc:"[근접 / 브루저 / 광역 딜러]",
+        // 도약 둔화: 12초(최저 6s), 휠윈드 지속딜: 16초(최저 8s)
+        skill1:{name:"점프샷",  cd:12, desc:"적진으로 도약하여 넓은 범위의 적들을 느리게 만듭니다."},
+        skill2:{name:"휠윈드", cd:16, desc:"3초간 무기를 회전하며 지속 광역 피해를 주고 적을 띄웁니다."},
         draw:(ctx,x,y,r,dir,f,anim,ent)=>drawBlockyHero(ctx,x,y,r,dir,f,'barbarian',anim,ent) },
-    ARCHER:    { name:"궁수",    color:"#10b981", hp:1690, atk:35, aspd:1.3, move:165, range:420, type:"ranged", role_desc:"[원거리 / 지속 딜러 / 순간 회피]",
-        skill1:{name:"블링크",  cd:10, desc:"전방으로 순간이동하며 5초간 공격속도가 50% 증가합니다."}, 
-        skill2:{name:"화살 폭우",cd:6, desc:"단일 대상에게 연속으로 화살을 발사하여 큰 데미지를 줍니다."}, 
+
+    // ── 원거리 / 지속 딜러 ──
+    ARCHER: { name:"궁수", color:"#10b981", hp:1690, atk:35, aspd:1.3, move:165, range:420, type:"ranged", role_desc:"[원거리 / 지속 딜러 / 순간 회피]",
+        // 대쉬+공속버프: 14초(최저 7s), 화살폭우: 10초(최저 5s)
+        skill1:{name:"블링크",    cd:14, desc:"전방으로 순간이동하며 5초간 공격속도가 50% 증가합니다."},
+        skill2:{name:"화살 폭우", cd:10, desc:"단일 대상에게 연속으로 화살을 발사하여 큰 데미지를 줍니다."},
         critChance:0.12, draw:(ctx,x,y,r,dir,f,anim,ent)=>drawBlockyHero(ctx,x,y,r,dir,f,'archer',anim,ent) },
+
+    // ── 탱커 / 폭주형 ──
     grrr: { name:'그르르', color:"#f59e0b", hp:2080, atk:70, aspd:0.9, move:165, range:80, type:"melee", role_desc:"[근접 / 탱커 / 폭주]",
-        skill1:{name:'거대화', type:'self_buff', cd:18, desc:'일정 시간 동안 크기가 커지며 최대 체력/방어/공속/이속이 폭증합니다.'},
-        skill2:{name:'포효', type:'aoe_stun', cd:12, desc:'크게 포효하여 주변의 모든 적을 2초간 강력하게 기절시킵니다.'},
+        // 변신 폭주: 24초(최저 12s), AoE 기절: 18초(최저 9s) - 강력한 만큼 긴 쿨
+        skill1:{name:'거대화', type:'self_buff', cd:24, desc:'일정 시간 동안 크기가 커지며 최대 체력/방어/공속/이속이 폭증합니다.'},
+        skill2:{name:'포효',   type:'aoe_stun',  cd:18, desc:'크게 포효하여 주변의 모든 적을 2초간 강력하게 기절시킵니다.'},
         draw:(ctx,x,y,r,dir,f,anim,ent)=>drawBlockyHero(ctx,x,y,r,dir,f,'grrr',anim,ent) },
-    VAMPIRE:   { name:"뱀파이어",color:"#f43f5e", hp:2210, atk:45, aspd:1.2, move:175, range:110, type:"melee", role_desc:"[근접 / 암살자 / 피흡]",
-        skill1:{name:"흡혈 파동",cd:7, desc:"전방 부채꼴 범위의 적들에게 데미지를 주고 데미지 비례 체력을 회복합니다."}, 
-        skill2:{name:"박쥐 강습",cd:9, desc:"적의 배후로 순간이동하며 데미지를 주고 1.5초간 기절시킵니다."},  
+
+    // ── 근접 암살자 / 피흡 ──
+    VAMPIRE: { name:"뱀파이어", color:"#f43f5e", hp:2210, atk:45, aspd:1.2, move:175, range:110, type:"melee", role_desc:"[근접 / 암살자 / 피흡]",
+        // 흡혈파동: 12초(최저 6s), 순간이동 기절: 16초(최저 8s)
+        skill1:{name:"흡혈 파동", cd:12, desc:"전방 부채꼴 범위의 적들에게 데미지를 주고 데미지 비례 체력을 회복합니다."},
+        skill2:{name:"박쥐 강습", cd:16, desc:"적의 배후로 순간이동하며 데미지를 주고 1.5초간 기절시킵니다."},
         lifeSteal:0.20, draw:(ctx,x,y,r,dir,f,anim,ent)=>drawBlockyHero(ctx,x,y,r,dir,f,'vampire',anim,ent) },
-    THOR:      { name:"토르",    color:"#60a5fa", hp:2600, atk:58, aspd:0.9, move:175, range:100, type:"melee", role_desc:"[근접 / 마법사 / 광역 폭딜]",
-        skill1:{name:"번개 강타",cd:9, desc:"목표물에 번개를 떨어뜨려 주변에 큰 데미지와 스턴을 부여합니다."}, 
-        skill2:{name:"충격파",  cd:11, desc:"주변 넓은 범위에 매우 큰 데미지를 주고 적들을 밀어내며 에어본시킵니다."}, 
+
+    // ── 근접 마법사 / 광역 폭딜 ──
+    THOR: { name:"토르", color:"#60a5fa", hp:2600, atk:58, aspd:0.9, move:175, range:100, type:"melee", role_desc:"[근접 / 마법사 / 광역 폭딜]",
+        // 번개강타: 14초(최저 7s), 충격파: 18초(최저 9s)
+        skill1:{name:"번개 강타", cd:14, desc:"목표물에 번개를 떨어뜨려 주변에 큰 데미지와 스턴을 부여합니다."},
+        skill2:{name:"충격파",   cd:18, desc:"주변 넓은 범위에 매우 큰 데미지를 주고 적들을 밀어내며 에어본시킵니다."},
         draw:(ctx,x,y,r,dir,f,anim,ent)=>drawBlockyHero(ctx,x,y,r,dir,f,'thor',anim,ent) },
+
+    // ── 중거리 / 빙결 제어 ──
     ICEBORN: {
         name:"이스버그", color:"#38bdf8",
         hp:2860, atk:48, aspd:1.24, move:160, range:220, type:"ranged", role_desc:"[중거리 / 마법사 / 빙결 제어]",
-        skill1: { name:"빙결 창격", cd:7, desc:"전방 원뿔형 범위에 얼음 창을 투척하여 데미지를 주고 적 이동속도 60% 감소 2.5초" },
-        skill2: { name:"얼음 감옥", cd:14, desc:"대상 위치에 얼음 기둥 소환. 반경 100 내 적 2초 완전 빙결(스턴)" },
+        // 빙결슬로우: 12초(최저 6s), 완전빙결: 20초(최저 10s)
+        skill1: { name:"빙결 창격", cd:12, desc:"전방 원뿔형 범위에 얼음 창을 투척하여 데미지를 주고 적 이동속도 60% 감소 2.5초" },
+        skill2: { name:"얼음 감옥", cd:20, desc:"대상 위치에 얼음 기둥 소환. 반경 100 내 적 2초 완전 빙결(스턴)" },
         draw:(ctx,x,y,r,dir,f,anim) => drawBlockyHero(ctx,x,y,r,dir,f,'iceborn',anim)
     },
+
+    // ── 원거리 / 도박 딜러 ──
     JOKER: {
         name:"조커블레이드", color:"#a855f7",
         hp:1820, atk:42, aspd:1.45, move:175, range:360, type:"ranged", role_desc:"[원거리 / 딜러 / 도박]",
         critChance:0.12,
-        skill1: { name:"왕의 패", cd:8, desc:"카드 3장을 무작위로 뽑음. 각각 공격/방어/공속 버프 등 무작위 효과 발동" },
-        skill2: { name:"전체 배팅", cd:16, desc:"현재 소지 골드에 비례한 막대한 피해량 폭발. (모 아니면 도)" },
+        // 무작위 버프: 12초(최저 6s), 골드 비례 폭딜: 24초(최저 12s)
+        skill1: { name:"왕의 패",    cd:12, desc:"카드 3장을 무작위로 뽑음. 각각 공격/방어/공속 버프 등 무작위 효과 발동" },
+        skill2: { name:"전체 배팅", cd:24, desc:"현재 소지 골드에 비례한 막대한 피해량 폭발. (모 아니면 도)" },
         draw:(ctx,x,y,r,dir,f,anim) => drawBlockyHero(ctx,x,y,r,dir,f,'joker',anim)
     },
+
+    // ── 원거리 서포터 / 디버퍼 ──
     DARKPRIEST: {
         name:"암흑사제", color:"#7c3aed",
         hp:1950, atk:35, aspd:1.3, move:155, range:380, type:"ranged", role_desc:"[원거리 / 서포터 / 디버퍼]",
-        skill1: { name:"영혼 착취", cd:10, desc:"주변 아군 한 명의 체력을 일부 깎는 대신, 적에게 2.5배 강력한 레이저 공격을 뿜어냅니다." },
-        skill2: { name:"저주의 낙인", cd:14, desc:"대상 적에게 10초간 낙인 부여. 아군의 모든 공격이 대상에게 30% 추가 피해" },
+        // 자해+폭딜: 14초(최저 7s), 저주 낙인: 20초(최저 10s)
+        skill1: { name:"영혼 착취",  cd:14, desc:"주변 아군 한 명의 체력을 일부 깎는 대신, 적에게 2.5배 강력한 레이저 공격을 뿜어냅니다." },
+        skill2: { name:"저주의 낙인", cd:20, desc:"대상 적에게 10초간 낙인 부여. 아군의 모든 공격이 대상에게 30% 추가 피해" },
         draw:(ctx,x,y,r,dir,f,anim) => drawBlockyHero(ctx,x,y,r,dir,f,'darkpriest',anim)
     },
+
+    // ── 마검사 / 암살자 ──
     ZEROS: {
         name:"제로스", color:"#7f1d1d",
         hp:2500, atk:65, aspd:1.4, move:185, range:120, type:"melee", role_desc:"[마검사 / 암살자 / 광역 딜러]",
-        skill1: { name:"흑염참", cd:8, desc:"전방 부채꼴 범위의 적에게 데미지를 주고 이속 50% 감소 및 시야가려짐(블라인드) 부여" },
-        skill2: { name:"그림자 습격", cd:14, desc:"멀리 있는 적에게 순간이동 후 치명타. 주변 적 1.5초 공포" },
+        // 광역슬로우: 12초(최저 6s), 순간이동 크리: 20초(최저 10s)
+        skill1: { name:"흑염참",      cd:12, desc:"전방 부채꼴 범위의 적에게 데미지를 주고 이속 50% 감소 및 시야가려짐(블라인드) 부여" },
+        skill2: { name:"그림자 습격", cd:20, desc:"멀리 있는 적에게 순간이동 후 치명타. 주변 적 1.5초 공포" },
         draw:(ctx,x,y,r,dir,f,anim,ent) => drawBlockyHero(ctx,x,y,r,dir,f,'zeros',anim,ent)
     },
+
+    // ── 초장거리 스나이퍼 ──
     SYLVIA: {
         name:"실비아", color:"#2dd4bf",
         hp:1600, atk:90, aspd:0.6, move:165, range:450, type:"ranged", role_desc:"[초장거리 스나이퍼 / 퓨어 딜러]",
         critChance:0.2,
-        skill1: { name:"관통하는 섬광", cd:10, desc:"1초 정신집중 후 전방 일직선 두꺼운 트루데미지 레이저 발사" },
-        skill2: { name:"전술 회피", cd:15, desc:"발밑에 지뢰를 깔고 뒤로 크게 백대쉬. 지뢰 폭발 시 적 2초 기절" },
+        // 레이저 관통: 14초(최저 7s), 지뢰+백대쉬: 20초(최저 10s)
+        skill1: { name:"관통하는 섬광", cd:14, desc:"1초 정신집중 후 전방 일직선 두꺼운 트루데미지 레이저 발사" },
+        skill2: { name:"전술 회피",     cd:20, desc:"발밑에 지뢰를 깔고 뒤로 크게 백대쉬. 지뢰 폭발 시 적 2초 기절" },
         draw:(ctx,x,y,r,dir,f,anim,ent) => drawBlockyHero(ctx,x,y,r,dir,f,'sylvia',anim,ent)
     },
+
+    // ── 바람 마법사 / 다단히트 ──
     ZEPHYR: {
         name:"제피르", color:"#4ade80",
         hp:1800, atk:40, aspd:1.6, move:175, range:380, type:"ranged", role_desc:"[바람 마법사 / 다단히트 DPS]",
-        skill1: { name:"Tornado Blast", cd:9, desc:"주변으로 소형 회오리 여러 개가 팽창하며 적 다단히트 및 넉백" },
-        skill2: { name:"Gale Squall", cd:16, desc:"거대하고 느린 폭풍을 발사하여 닿은 적 에어본 및 둔화" },
+        // 회오리 다단히트: 14초(최저 7s), 폭풍 에어본: 22초(최저 11s)
+        skill1: { name:"Tornado Blast", cd:14, desc:"주변으로 소형 회오리 여러 개가 팽창하며 적 다단히트 및 넉백" },
+        skill2: { name:"Gale Squall",   cd:22, desc:"거대하고 느린 폭풍을 발사하여 닿은 적 에어본 및 둔화" },
         draw:(ctx,x,y,r,dir,f,anim,ent) => drawBlockyHero(ctx,x,y,r,dir,f,'zephyr',anim,ent)
     }
 };
@@ -1417,29 +1459,18 @@ class Entity {
         }
         this.hp-=dmg;
         
-        if (this.passiveSkills && this.passiveSkills['mirrorImage'] > 0) {
-            if(Math.random() < 0.15 + (this.passiveSkills['mirrorImage']-1)*0.05) {
-                this.shadowClones = this.shadowClones || [];
-                this.shadowClones.push({x:this.x+rand(-50,50),y:this.y+rand(-50,50),life:5,atk:this.atk*0.5,animPhase:Math.random()*Math.PI*2});
-            }
-        }
         
         // 정글몹 어그로 반격 로직 추가
         if(this.type === 'jungle' && attacker && !attacker.isBuilding) this.aggroTarget = attacker;
 
-        if(triggerEffects && this.reflectRate > 0 && attacker && !attacker.isBuilding){
-            let ref = dmg * this.reflectRate;
-            if (typeof attacker.applyRawDamage === 'function') {
-                
-                attacker.applyRawDamage(ref, this, false);
+        if(triggerEffects && attacker && !attacker.isBuilding){
+            // 반사 데미지 (reflectRate: 가시갑옷/frozen_heart, reflectDmg: 거울의갑옷)
+            let totalReflect = (this.reflectRate||0) + (this.reflectDmg||0);
+            if(totalReflect > 0 && typeof attacker.applyRawDamage === 'function') {
+                let ref = Math.floor(dmg * Math.min(totalReflect, 0.6)); // 최대 60% 반사
+                if(ref > 0) attacker.applyRawDamage(ref, this, false);
             }
-            if(this.reflectDmg > 0) {
-                let ref = dmg * this.reflectDmg;
-                if(typeof attacker.applyRawDamage === 'function') {
-                    attacker.applyRawDamage(ref, this, false);
-                }
-
-            }
+            // 상태이상 저항 (statusResist)은 stun 적용 시점에서 처리됨
         }
         
         let color = attacker===player?'#fbbf24':(attacker&&attacker.faction==='BLUE'?'#60a5fa':'#f87171');
