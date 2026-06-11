@@ -2049,41 +2049,64 @@ class Hero extends Entity {
         let t=HERO_TMPL[this.heroKey];
         this.critChance=t.critChance||0; this.lifeSteal=t.lifeSteal||0;
         this.reflectRate=0; this.burnDmg=0; this.stunChance=0; this.shield=0;
-        this.cdr=0; this.skillDmgBonus=0; this.giantSlayerRate=0; this.defense=0; this.hasZhonya=false;
-        this.borkActive=false; this.hasWarmog=false;
-        this.hasTiamat=false; this.hasFrostG=false; this.hasBehemoth=false; this.hasGA=false; this.hasHermes=false;
+        this.cdr=0; this.skillDmgBonus=0; this.giantSlayerRate=0; this.defense=0;
+        // 신규 스탯 초기화
+        this.hasFlameAura=false; this.crimsonLifesteal=0; this.absoluteDef=0;
+        this.hasTiamat=false; this.hasBehemoth=false; this.hasGA=false;
+        this.bonusRange=0; this.rapidFire=0; this.pierceDmg=false; this.dodgeRate=0; this.splitArrow=0;
+        this.magicAmp=0; this.echoDmg=false; this.frostSlow=0; this.magicPen=0;
+        this.physResist=0; this.magicResist=0; this.statusResist=0; this.reflectDmg=0;
+        this.critMulti=2.0;
+        this.shadowStrikeLv = this.passiveSkills ? (this.passiveSkills['shadowStrike']||0) : 0;
+
         this.inventory.forEach(i=>{
             let m=1+(i.upgrade*0.5);
-            if(i.stat==='atk') this.atk+=i.val*m; if(i.stat==='hp') this.maxHp+=i.val*m;
-            if(i.stat==='move') this.moveSpd+=i.val*m; if(i.stat==='aspd') this.aspd+=i.val*m;
-            if(i.stat==='crit') this.critChance+=i.val*m; if(i.stat==='vamp') this.lifeSteal+=i.val*m;
-            if(i.stat==='reflect') this.reflectRate+=i.val*m; if(i.stat==='burn') this.burnDmg+=i.val*m;
-            if(i.stat==='stun') this.stunChance+=i.val*m; if(i.stat==='shield') this.defense+=i.val*m;
-            if(i.stat==='cdr' || i.id==='archmage_staff') { this.cdr+=i.val*m; this.skillDmgBonus+=0.10*m; }
-            if(i.stat==='giant_slayer' || i.stat==='reaper') this.giantSlayerRate+=i.val*m;
-            if(i.stat==='bork') this.borkActive=true;
-            if(i.stat==='warmog') this.hasWarmog=true;
-            if(i.stat==='tiamat')  { this.hasTiamat=true;  this.atk+=25*m; this.maxHp+=300*m; }
-            if(i.stat==='frost_g') { this.hasFrostG=true;  this.maxHp+=400*m; }
-            if(i.stat==='behemoth'){ this.hasBehemoth=true; this.maxHp+=600*m; }
-            if(i.stat==='ga')      { this.hasGA=true; this.atk+=40*m; this.shield+=200*m; }
-            if(i.stat==='hermes')  { this.hasHermes=true; this.moveSpd+=45*m; }
-            if((i.stat==='zhonya' || i.stat==='fate_zhonya') && i.upgrade>=1) this.hasZhonya=true; 
-            
-            // 진화 아이템 전용 특수 스탯 처리
-            if(i.stat==='avalon') this.atk+=i.val*m;
-            if(i.stat==='divine_shield') { this.shield+=i.val*m; this.defense+=50*m; }
-            if(i.stat==='frozen_heart') this.reflectRate+=i.val*m;
-            if(i.stat==='sunfire') this.maxHp+=i.val*m;
-            if(i.stat==='archmage') { this.skillDmgBonus+=0.20*m; } 
-            if(i.stat==='zeus') this.stunChance+=i.val*m;
-            if(i.stat==='storm_eye') this.moveSpd+=i.val*m;
-            if(i.stat==='vampiric') this.lifeSteal+=i.val*m;
-            if(i.stat==='phantom') this.critChance+=i.val*m;
-            if(i.stat==='demonfire') this.burnDmg+=i.val*m;
-            if(i.stat==='berserker') { this.aspd+=i.val*m; this.lifeSteal+=0.10*m; }
-            if(i.stat==='oracle_glory') { this.defense+=i.val*m; }
+            // ── 근거리 전용 ──
+            if(i.stat==='flame_aura')         { this.hasFlameAura=true; this.atk+=10*m; }
+            if(i.stat==='crimson_lifesteal')  { this.crimsonLifesteal += i.val*m; }
+            if(i.stat==='absolute_def')       { this.absoluteDef += 1*m; } // 최대 HP 비례 방어
+            if(i.stat==='tiamat')             { this.hasTiamat=true; this.atk+=25*m; this.maxHp+=300*m; }
+            if(i.stat==='behemoth')           { this.hasBehemoth=true; this.maxHp+=600*m; }
+            if(i.stat==='berserker_atk')      { this.atk += i.val*m; }
+            // ── 원거리 전용 ──
+            if(i.stat==='bonus_range')        { this.bonusRange += i.val*m; this.critChance += 0.05*m; }
+            if(i.stat==='rapid_fire')         { this.aspd *= (1 + i.val*m); }
+            if(i.stat==='pierce')             { this.pierceDmg = true; this.atk+=15*m; }
+            if(i.stat==='giant_slayer')       { this.giantSlayerRate += i.val*m; }
+            if(i.stat==='dodge')              { this.dodgeRate += i.val*m; this.moveSpd += 20*m; }
+            if(i.stat==='split_arrow')        { this.splitArrow = Math.floor(i.val*m); }
+            // ── 마법사 전용 ──
+            if(i.stat==='cdr')                { this.cdr += i.val*m; }
+            if(i.stat==='skill_dmg')          { this.skillDmgBonus += i.val*m; }
+            if(i.stat==='magic_amp')          { this.magicAmp += i.val*m; }
+            if(i.stat==='echo_dmg')           { this.echoDmg = true; }
+            if(i.stat==='frost_slow')         { this.frostSlow += i.val*m; }
+            if(i.stat==='magic_pen')          { this.magicPen += i.val*m; }
+            // ── 공용 ──
+            if(i.stat==='phys_resist')        { this.physResist += i.val*m; }
+            if(i.stat==='magic_resist')       { this.magicResist += i.val*m; }
+            if(i.stat==='status_resist')      { this.statusResist += i.val*m; }
+            if(i.stat==='reflect_dmg')        { this.reflectDmg += i.val*m; }
+            if(i.stat==='crit_multi')         { this.critMulti += i.val; } // 강화 불가 의도: val 고정
+            if(i.stat==='ga')                 { this.hasGA = true; this.maxHp += 200*m; }
+            // ── 진화 아이템 스탯 ──
+            if(i.stat==='avalon')             { this.atk+=i.val*m; }
+            if(i.stat==='reaper')             { this.giantSlayerRate+=i.val*m; }
+            if(i.stat==='divine_shield')      { this.shield+=i.val*m; this.defense+=50*m; }
+            if(i.stat==='frozen_heart')       { this.reflectRate+=i.val*m; }
+            if(i.stat==='sunfire')            { this.maxHp+=i.val*m; this.hasFlameAura=true; }
+            if(i.stat==='archmage')           { this.skillDmgBonus+=0.20*m; this.cdr+=0.10*m; }
+            if(i.stat==='zeus')               { this.stunChance+=i.val*m; }
+            if(i.stat==='storm_eye')          { this.moveSpd+=i.val*m; }
+            if(i.stat==='vampiric')           { this.crimsonLifesteal+=i.val*m; }
+            if(i.stat==='phantom')            { this.critChance+=i.val*m; }
+            if(i.stat==='demonfire')          { this.burnDmg+=i.val*m; }
+            if(i.stat==='berserker')          { this.aspd+=i.val*m; this.crimsonLifesteal+=0.10*m; }
+            if(i.stat==='oracle_glory')       { this.defense+=i.val*m; }
+            if(i.stat==='fate_dodge')         { /* 특수처리: applyRawDamage에서 처리 */ }
         });
+        // 사거리 반영
+        if(HERO_TMPL[this.heroKey]) this.range = HERO_TMPL[this.heroKey].range + (this.bonusRange||0);
         
         this.critChance  = Math.min(this.critChance,  0.65);
         this.stunChance  = Math.min(this.stunChance,  0.40);
@@ -2172,8 +2195,15 @@ class Hero extends Entity {
         let k = this.heroKey;
         let sl = Math.floor((this.level - 1) / 3) + 1;
         let baseCd = idx===1 ? HERO_TMPL[k].skill1.cd : HERO_TMPL[k].skill2.cd;
-        let cd = Math.max(2, baseCd - sl*0.5);
-        if(this.cdr > 0) cd = cd * Math.max(0.5, 1 - this.cdr); // Max 50% CDR
+        // 레벨에 따른 자연 쿨타임 감소 (기본 쿨타임의 최대 30%까지)
+        let levelReduction = Math.min(sl * 0.5, baseCd * 0.3);
+        let cd = baseCd - levelReduction;
+        // CDR 아이템/패시브 적용 - 기준 baseCd 대비 최대 50%까지만 감소 가능
+        if(this.cdr > 0) {
+            let cdrReduction = baseCd * Math.min(this.cdr, 0.50);
+            cd = Math.max(cd - cdrReduction, baseCd * 0.5); // 원래 쿨타임의 50% 이상 감소 불가
+        }
+        cd = Math.max(cd, 1.5); // 절대 최솟값 1.5초
         
         if(idx===1) { if(this.heroSkill1Timer > 0) return; this.heroSkill1Timer = cd; this.heroSkill2Timer = Math.max(this.heroSkill2Timer, 1.0); }
         else { if(this.heroSkill2Timer > 0) return; this.heroSkill2Timer = cd; this.heroSkill1Timer = Math.max(this.heroSkill1Timer, 1.0); }
@@ -4593,11 +4623,21 @@ window.toggleAutoSkill = (num) => {
 function renderShop(){
     const cont=document.getElementById('shopItemContainer'); cont.innerHTML='';
     if(!player) return; document.getElementById('hudGoldText').textContent=Math.floor(player.gold)+'G';
-    
     document.getElementById('hudVaultGold').textContent = Math.floor(window.TEAM_VAULT.gold);
+
+    // 영웅 타입 확인 (melee / ranged)
+    const heroTmpl = HERO_TMPL[player.heroKey];
+    const heroType = heroTmpl ? heroTmpl.type : 'common'; // 'melee' 또는 'ranged'
+
     BASE_ITEMS.forEach(i=>{
-        let slot=player.inventory.find(inv=>inv.id===i.id); let lv=slot?'<span class="text-rose-400 font-bold">+'+slot.upgrade+'</span>':'';
+        // 타입 필터링: 원거리 영웅은 melee 전용템 미노출, 근거리 영웅은 ranged/magic 전용템 미노출
+        if(heroType === 'ranged' && i.heroType === 'melee') return;
+        if(heroType === 'melee' && (i.heroType === 'ranged' || i.heroType === 'magic')) return;
+
+        let slot=player.inventory.find(inv=>inv.id===i.id);
+        let lv=slot?'<span class="text-rose-400 font-bold">+'+slot.upgrade+'</span>':'';
         let canBuy=player.gold>=i.cost&&(slot||player.inventory.length<10);
+        let sellPrice = Math.floor(i.cost * 0.6);
         cont.innerHTML+=`
         <div class="bg-slate-800/80 hover:bg-slate-700/80 transition-colors border border-slate-700 rounded-lg p-1 md:p-2 flex flex-col items-center justify-between gap-0.5 md:gap-1 w-full relative group shadow-sm">
             <div class="text-2xl md:text-3xl mb-0.5 md:mb-1 mt-0.5 md:mt-1">${i.icon}</div>
@@ -4606,7 +4646,8 @@ function renderShop(){
                 <div class="text-[8px] md:text-[10px] text-amber-400 font-bold">${i.cost}G</div>
             </div>
             ${i.desc ? '<div class="text-[7.5px] md:text-[9px] text-slate-400 text-center leading-tight line-clamp-2 min-h-[1.5rem] mt-0.5 px-0.5">'+i.desc+'</div>' : ''}
-            <button onclick="buyItemUI('${i.id}')" class="${canBuy?'bg-amber-500 hover:bg-amber-400 text-slate-950 active:scale-95 shadow-[0_0_10px_rgba(245,158,11,0.2)]':'bg-slate-700 text-slate-500'} text-[8px] md:text-[11px] w-full py-1 md:py-1.5 rounded font-bold mt-0.5 transition-all">${slot?'강화 (+'+(slot.upgrade+1)+')':'구매'}</button>
+            <button onclick="buyItemUI('${i.id}')" class="${canBuy?'bg-amber-500 hover:bg-amber-400 text-slate-950 active:scale-95':'bg-slate-700 text-slate-500'} text-[8px] md:text-[11px] w-full py-1 md:py-1.5 rounded font-bold mt-0.5 transition-all">${slot?'강화 (+'+(slot.upgrade+1)+')':'구매'}</button>
+            ${slot?'<button onclick="event.stopPropagation();window.sellItemUI&&window.sellItemUI(\"'+i.id+'\",'+sellPrice+')" class="bg-rose-700 hover:bg-rose-600 text-white text-[7px] md:text-[9px] w-full py-0.5 rounded font-bold mt-0.5 transition-all">판매 ('+sellPrice+'G)</button>':''}
         </div>`;
     });
 }
