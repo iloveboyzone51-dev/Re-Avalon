@@ -1,0 +1,46 @@
+{
+  "setTimeout_effects_count": 12,
+  "for_loop_timeouts": 7,
+  "heavy_particles_30plus": 10,
+  "cdr_cap_55pct_line": 2096,
+  "cd_minimum_2sec_line": 2182,
+  "final_cdr_cap_line": 2183,
+  "effect_array_limits": {
+    "particles": {
+      "limited": false,
+      "max": "NONE"
+    },
+    "ringEffects": {
+      "limited": false,
+      "max": "NONE"
+    },
+    "aoeEffects": {
+      "limited": false,
+      "max": "NONE"
+    },
+    "beamEffects": {
+      "limited": false,
+      "max": "NONE"
+    },
+    "laserEffects": {
+      "limited": false,
+      "max": "NONE"
+    },
+    "earthCrackEffects": {
+      "limited": false,
+      "max": "NONE"
+    },
+    "rockAuraEffects": {
+      "limited": false,
+      "max": "NONE"
+    },
+    "slashEffects": {
+      "limited": false,
+      "max": "NONE"
+    },
+    "textFloats": {
+      "limited": false,
+      "max": "NONE"
+    }
+  }
+}

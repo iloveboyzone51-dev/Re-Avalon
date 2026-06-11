@@ -201,10 +201,6 @@ const HERO_TMPL = {
         skill1:{name:"블링크",  cd:10, desc:"전방으로 순간이동하며 5초간 공격속도가 50% 증가합니다."}, 
         skill2:{name:"화살 폭우",cd:6, desc:"단일 대상에게 연속으로 화살을 발사하여 큰 데미지를 줍니다."}, 
         critChance:0.12, draw:(ctx,x,y,r,dir,f,anim,ent)=>drawBlockyHero(ctx,x,y,r,dir,f,'archer',anim,ent) },
-    NECROMANCER:{ name:"네크로맨서",color:"#a855f7",hp:1820, atk:38, aspd:1.0, move:150, range:360, type:"ranged", role_desc:"[원거리 / 마법사 / 소환]",
-        skill1:{name:"해골 소환",cd:7, desc:"적의 어그로를 끄는 근접 해골 미니언을 소환합니다."}, 
-        skill2:{name:"저주 역병",cd:11, desc:"넓은 범위에 도트 데미지를 주며 이동속도를 크게 감소시킵니다."}, 
-        draw:(ctx,x,y,r,dir,f,anim,ent)=>drawBlockyHero(ctx,x,y,r,dir,f,'necromancer',anim,ent) },
     grrr: { name:'그르르', color:"#f59e0b", hp:2080, atk:70, aspd:0.9, move:165, range:80, type:"melee", role_desc:"[근접 / 탱커 / 폭주]",
         skill1:{name:'거대화', type:'self_buff', cd:18, desc:'일정 시간 동안 크기가 커지며 최대 체력/방어/공속/이속이 폭증합니다.'},
         skill2:{name:'포효', type:'aoe_stun', cd:12, desc:'크게 포효하여 주변의 모든 적을 2초간 강력하게 기절시킵니다.'},
@@ -265,70 +261,78 @@ const HERO_TMPL = {
 
 // ============ 아이템 ============
 const BASE_ITEMS = [
-    { id:'atk',      name:'전사의 투구', cost:300, stat:'atk',      val:18,   icon:'🪖', desc:'공격력 증가' },
-    { id:'hp',       name:'수호자의 방패',cost:300, stat:'hp',       val:180,  icon:'🛡️', desc:'최대 체력 증가' },
-    { id:'aspd',     name:'바람의 장화', cost:300, stat:'aspd',     val:0.25, icon:'👢', desc:'공격속도 증가' },
-    { id:'crit',     name:'매의 눈물',   cost:300, stat:'crit',     val:0.1,  icon:'🦅', desc:'치명타 확률 증가' },
-    { id:'move',     name:'신속의 날개', cost:300, stat:'move',     val:30,   icon:'🪽', desc:'이동속도 증가' },
-    { id:'vamp',     name:'피바라기',    cost:400, stat:'vamp',     val:0.12, icon:'🩸', desc:'생명력 흡수 증가' },
-    { id:'reflect',  name:'가시 갑옷',   cost:400, stat:'reflect',  val:0.15, icon:'🦔', desc:'피격 시 데미지 반사' },
-    { id:'burn',     name:'화염검',      cost:400, stat:'burn',     val:18,   icon:'🔥', desc:'평타 시 화상 피해 추가' },
-    { id:'stun',     name:'전투 망치',   cost:400, stat:'stun',     val:0.08, icon:'🔨', desc:'평타 시 기절 확률 추가' },
-    { id:'bork',     name:'몰락한 왕의 검',cost:500, stat:'bork',     val:1,    icon:'🗡️', desc:'현재 체력 5% 피해 및 피흡 5% 추가' },
-    { id:'warmog',   name:'워모그의 갑옷',cost:500, stat:'warmog',   val:1,    icon:'💚', desc:'비전투 시 초당 최대 체력의 4% 회복' },
-    { id:'mage_staff',name:'현자의 지팡이',cost:450, stat:'cdr',      val:0.15, icon:'🔮', desc:'스킬 쿨타임 감소 및 데미지 증가' },
-    { id:'hourglass',name:'시공의 모래시계',cost:600, stat:'dodge_heal', val:0.15, icon:'⏳', desc:'피격 시 15% 확률로 피해 무시 및 체력 회복' },
-    { id:'giant_slayer',name:'거인 학살자',cost:500, stat:'giant_slayer',val:0.02,icon:'🏹', desc:'나보다 체력 높은 적에게 체력차 비례 추뎀' },
-    { id:'legion_shield',name:'군단의 방패',cost:450, stat:'shield',  val:20,   icon:'🔰', desc:'아군 방어력 증가 오라' },
-    { id:'tiamat',         name:'티아맷의 도끼',   cost:1600, stat:'tiamat',  val:1, icon:'🪓', desc:'[근거리 전용] 기본 공격 시 주변 120 반경 35% 광역 피해' },
-    { id:'frost_gauntlet', name:'서리불꽃 건틀릿', cost:1400, stat:'frost_g', val:1, icon:'🧤', desc:'공격 시 적 이속 둔화 (근거리 50%, 원거리 25%)' },
-    { id:'behemoth_armor', name:'괴수의 뼈갑옷',   cost:1800, stat:'behemoth',val:1, icon:'🦴', desc:'[근거리 전용] 받는 피해 15% 감소, 기절 30% 감소' },
-    { id:'guardian_angel', name:'수호천사의 은총', cost:2800, stat:'ga',      val:1, icon:'👼', desc:'사망 시 체력 1 생존 + 최대 체력 50% 실드 (쿨 60초)' },
-    { id:'hermes_boots',   name:'헤르메스의 장화', cost:1000, stat:'hermes',  val:1, icon:'🥾', desc:'이동속도+45, 비전투 3초 이후 이속 25% 추가 증가' }
+    // [근거리 전용]
+    { id:'flame_armor',  name:'화염의 갑옷',   cost:500, heroType:'melee', stat:'flame_aura', val:1, icon:'🔥', desc:'[근접] 주변 적에게 초당 공격력의 20% 화염 피해' },
+    { id:'crimson_horn', name:'홍염의 뿔피리', cost:600, heroType:'melee', stat:'crimson_lifesteal', val:0.1, icon:'📯', desc:'[근접] 기본 공격 시 피해량의 10% 흡혈 (스킬 미적용)' },
+    { id:'absolute_armor',name:'절대 갑옷',    cost:1500, heroType:'melee', stat:'absolute_def', val:1, icon:'🛡️', desc:'[근접] 잃은 체력에 비례해 방어력 최대 100% 증가' },
+    { id:'tiamat',       name:'티아맷의 도끼', cost:1600, heroType:'melee', stat:'tiamat', val:1, icon:'🪓', desc:'[근접] 기본 공격 시 타겟 주변 35% 광역 피해' },
+    { id:'behemoth_armor',name:'괴수의 뼈갑옷',cost:1800, heroType:'melee', stat:'behemoth', val:1, icon:'🦴', desc:'[근접] 받는 피해 15% 감소, 최대 체력 증가' },
+    { id:'berserker_axe',name:'광전사의 도끼', cost:800, heroType:'melee', stat:'berserker_atk', val:30, icon:'🪓', desc:'[근접] 공격력 +30 증가' },
+
+    // [원거리 전용]
+    { id:'sniper_lens',  name:'저격수의 렌즈', cost:700, heroType:'ranged', stat:'bonus_range', val:30, icon:'🔭', desc:'[원거리] 공격 사거리 +30 및 치명타 확률 증가' },
+    { id:'rapid_cannon', name:'고속 연사포',   cost:800, heroType:'ranged', stat:'rapid_fire', val:0.3, icon:'🔫', desc:'[원거리] 공격속도 30% 증가' },
+    { id:'piercing_bow', name:'관통의 활',     cost:1200, heroType:'ranged', stat:'pierce', val:1, icon:'🏹', desc:'[원거리] 기본 공격이 적을 관통하여 일직선 피해' },
+    { id:'giant_slayer', name:'거인 학살자',   cost:1000, heroType:'ranged', stat:'giant_slayer', val:0.02, icon:'🗡️', desc:'[원거리] 나보다 체력이 높은 적에게 추뎀' },
+    { id:'phantom_dancer',name:'유령 무희',    cost:900, heroType:'ranged', stat:'dodge', val:0.1, icon:'👻', desc:'[원거리] 회피율 10% 및 이동속도 증가' },
+    { id:'runaan',       name:'루난의 허리케인',cost:1500, heroType:'ranged', stat:'split_arrow', val:2, icon:'🌪️', desc:'[원거리] 공격 시 2개의 추가 화살 발사' },
+
+    // [마법사/스킬 딜러 전용]
+    { id:'mage_staff',   name:'현자의 지팡이', cost:450, heroType:'magic', stat:'cdr', val:0.1, icon:'🔮', desc:'[마법] 스킬 쿨타임 10% 감소' },
+    { id:'rabadon',      name:'죽음의 모자',   cost:1800, heroType:'magic', stat:'skill_dmg', val:0.3, icon:'🎩', desc:'[마법] 스킬 데미지 30% 폭증' },
+    { id:'mana_crystal', name:'마력의 결정',   cost:600, heroType:'magic', stat:'magic_amp', val:0.15, icon:'💎', desc:'[마법] 마법 피해 15% 증가' },
+    { id:'luden_echo',   name:'루덴의 메아리', cost:1200, heroType:'magic', stat:'echo_dmg', val:1, icon:'🔊', desc:'[마법] 스킬 적중 시 추가 폭발 피해' },
+    { id:'frost_staff',  name:'서리 지팡이',   cost:1100, heroType:'magic', stat:'frost_slow', val:0.3, icon:'❄️', desc:'[마법] 스킬 피해를 입은 적 이속 감소' },
+    { id:'void_staff',   name:'공허의 지팡이', cost:1400, heroType:'magic', stat:'magic_pen', val:0.2, icon:'🌌', desc:'[마법] 적 마법 저항력 무시' },
+
+    // [공용 / 유틸]
+    { id:'steel_plate',  name:'강철 판금',     cost:500, heroType:'common', stat:'phys_resist', val:0.15, icon:'🛡️', desc:'물리 데미지 15% 감소' },
+    { id:'magic_cloak',  name:'마법 무효화 망토',cost:500, heroType:'common', stat:'magic_resist', val:0.15, icon:'🧥', desc:'마법 데미지 15% 감소' },
+    { id:'purify_amulet',name:'정화의 부적',   cost:600, heroType:'common', stat:'status_resist', val:0.2, icon:'🧿', desc:'상태이상(기절/둔화) 저항 확률 20% 증가' },
+    { id:'mirror_armor', name:'거울의 갑옷',   cost:1200, heroType:'common', stat:'reflect_dmg', val:0.2, icon:'🪞', desc:'받는 모든 데미지의 20% 반사' },
+    { id:'hell_hammer',  name:'지옥의 망치',   cost:2000, heroType:'common', stat:'crit_multi', val:1, icon:'🔨', desc:'크리티컬 피해 배율 +1배 (강화 불가)' },
+    { id:'guardian_angel',name:'수호천사의 은총',cost:2800, heroType:'common', stat:'ga', val:1, icon:'👼', desc:'사망 시 부활 (쿨 60초)' }
 ];
 const ENHANCE_RATES = [1,1,1,0.6,0.5,0.4,0.3,0.2,0.1];
 
 // ============ 뱀서라이크 패시브 스킬 ============
 const PASSIVE_SKILLS = [
-    { id:'lightning', name:'낙뢰', icon:'⚡', desc:'타격 시 확률로 하늘에서 낙뢰 낙하', maxLv:5 },
-    { id:'chainLightning', name:'체인 라이트닝', icon:'🔗', desc:'타격 시 확률로 주변 적에게 연쇄 번개', maxLv:3 },
-    { id:'fireRing', name:'화염의 고리', icon:'🔥', desc:'몸 주변 화염 고리가 적에게 지속 피해', maxLv:5 },
-    { id:'frost', name:'빙결의 손길', icon:'❄️', desc:'타격 시 확률로 적 이동속도 감소', maxLv:3 },
-    { id:'soulHarvest', name:'영혼 수확', icon:'👻', desc:'적 처치 시 HP 회복 + 공격력 일시 증가', maxLv:4 },
-    { id:'meteor', name:'유성우', icon:'☄️', desc:'주기적으로 주변에 유성 낙하', maxLv:4 },
-    { id:'thornArmor', name:'가시 갑옷', icon:'🛡️', desc:'피격 시 데미지의 일부를 반사', maxLv:4 },
-    { id:'ironHealth', name:'강철 체력', icon:'💪', desc:'최대 HP 15% 증가', maxLv:5 },
-    { id:'berserkerSoul', name:'광전사의 혼', icon:'💀', desc:'HP가 낮을수록 공격력 증가', maxLv:3 },
-    { id:'shadowClone', name:'분신술', icon:'👥', desc:'주기적으로 분신 소환', maxLv:3 },
-    { id:'swiftWind', name:'질풍', icon:'💨', desc:'이동속도/공격속도 증가', maxLv:4 },
-    { id:'poisonCloud', name:'독안개', icon:'☠️', desc:'주기적으로 주변에 독구름 생성', maxLv:4 },
-    { id:'vampireAura', name:'흡혈 오라', icon:'🧛', desc:'주변 적 체력을 초당 흡수', maxLv:3 },
-    { id:'bombTrail', name:'폭탄 발자국', icon:'💣', desc:'이동 시 뒤에 폭탄을 흘림', maxLv:3 },
-    { id:'mirrorImage', name:'허상 거울', icon:'🪞', desc:'피격 시 일정 확률로 자신을 복제', maxLv:2 },
-    { id:'bloodFury', name:'피의 분노', icon:'😡', desc:'처치 시 일시적 공속 50% 폭증', maxLv:3 },
-    { id:'stormWalker', name:'폭풍 발걸음', icon:'🌪️', desc:'주변에 지속적인 번개 구름 형성', maxLv:3 },
-    { id:'war_anthem', name:'전장의 찬가', icon:'💫', desc:'적 처치/어시 시 주변 아군 이속/공속 증가', maxLv:3 },
-    { id:'haste_art', name:'가속의 미학', icon:'⏳', desc:'모든 스킬 쿨타임 레벨당 10% 감소', maxLv:3 },
-    { id:'guardian_bond', name:'수호자의 결속', icon:'🛡️', desc:'아군 피해 10% 흡수 및 내 방어력 레벨당 15% 증가', maxLv:3 },
-    { id:'healing_spring', name:'치유의 샘', icon:'✨', desc:'주기적으로 최저 체력 아군 대폭 회복', maxLv:4 }
+    // [근거리]
+    { id:'fireRing', name:'화염의 고리', icon:'🔥', desc:'[근접] 몸 주변 화염 고리가 적에게 지속 피해', maxLv:5, heroType:'melee' },
+    { id:'thornArmor', name:'가시 갑옷', icon:'🛡️', desc:'[근접] 피격 시 데미지의 일부를 반사', maxLv:4, heroType:'melee' },
+    { id:'berserkerSoul', name:'광전사의 혼', icon:'💀', desc:'[근접] HP가 낮을수록 공격력 증가', maxLv:3, heroType:'melee' },
+    { id:'poisonCloud', name:'독안개', icon:'☠️', desc:'[근접] 주기적으로 주변에 독구름 생성', maxLv:4, heroType:'melee' },
+    { id:'vampireAura', name:'흡혈 오라', icon:'🧛', desc:'[근접] 주변 적 체력을 초당 흡수', maxLv:3, heroType:'melee' },
+    { id:'stormWalker', name:'폭풍 발걸음', icon:'🌪️', desc:'[근접] 주변에 지속적인 번개 구름 형성', maxLv:3, heroType:'melee' },
+
+    // [원거리]
+    { id:'frost', name:'빙결의 손길', icon:'❄️', desc:'[원거리] 타격 시 확률로 적 이동속도 감소', maxLv:3, heroType:'ranged' },
+    { id:'swiftWind', name:'질풍', icon:'💨', desc:'[원거리] 이동속도/공격속도 증가', maxLv:4, heroType:'ranged' },
+    { id:'shadowStrike', name:'그림자 일격', icon:'🌑', desc:'[원거리] 타격 시 확률로 추가 어둠 피해를 줍니다.', maxLv:3, heroType:'ranged' },
+
+    // [공용]
+    { id:'soulHarvest', name:'영혼 수확', icon:'👻', desc:'[공용] 적 처치 시 HP 회복 + 공격력 일시 증가', maxLv:4, heroType:'common' },
+    { id:'ironHealth', name:'강철 체력', icon:'💪', desc:'[공용] 최대 HP 15% 증가', maxLv:5, heroType:'common' },
+    { id:'bloodFury', name:'피의 분노', icon:'😡', desc:'[공용] 처치 시 일시적 공속 50% 폭증', maxLv:3, heroType:'common' },
+    { id:'haste_art', name:'가속의 미학', icon:'⏳', desc:'[공용] 스킬 쿨타임 레벨당 10% 감소', maxLv:3, heroType:'common' }
 ];
 
 // ============ 진화 아이템 (Evolution) ============
 const EVOLUTION_ITEMS = [
-    { id:'avalon_sword', name:'아발론의 대검', reqItem:'atk', reqPassive:'soulHarvest', desc:'[진화] 공격력 극대화 및 처치 시 데미지 면역', icon:'🗡️', stat:'avalon', val:300 },
+    { id:'avalon_sword', name:'아발론의 대검', reqItem:'tiamat', reqPassive:'soulHarvest', desc:'[진화] 공격력 극대화 및 처치 시 데미지 면역', icon:'🗡️', stat:'avalon', val:300 },
     { id:'reaper_blade', name:'사신의 장검', reqItem:'giant_slayer', reqPassive:'bloodFury', desc:'[진화] 적 최대체력 비례 고정 피해', icon:'⚔️', stat:'reaper', val:0.08 },
-    { id:'divine_shield', name:'신성한 방패', reqItem:'hp', reqPassive:'guardian_bond', desc:'[진화] 거대 방어막 및 주변 아군 방어력 급격 증가', icon:'🛡️', stat:'divine_shield', val:800 },
-    { id:'frozen_heart', name:'얼어붙은 심장', reqItem:'reflect', reqPassive:'frost', desc:'[진화] 피격 시 적의 공속/이속 대폭 감소', icon:'❄️', stat:'frozen_heart', val:0.3 },
-    { id:'sunfire_cape', name:'태양불꽃 망토', reqItem:'hp', reqPassive:'fireRing', desc:'[진화] 체력 극대화 및 화염 고리 강화', icon:'🔥', stat:'sunfire', val:3000 },
+    { id:'divine_shield', name:'신성한 방패', reqItem:'absolute_armor', reqPassive:'ironHealth', desc:'[진화] 거대 방어막 및 주변 아군 방어력 급격 증가', icon:'🛡️', stat:'divine_shield', val:800 },
+    { id:'frozen_heart', name:'얼어붙은 심장', reqItem:'frost_staff', reqPassive:'frost', desc:'[진화] 피격 시 적의 공속/이속 대폭 감소', icon:'❄️', stat:'frozen_heart', val:0.3 },
+    { id:'sunfire_cape', name:'태양불꽃 망토', reqItem:'flame_armor', reqPassive:'fireRing', desc:'[진화] 체력 극대화 및 화염 고리 강화', icon:'🔥', stat:'sunfire', val:3000 },
     { id:'archmage_staff', name:'대마법사의 지팡이', reqItem:'mage_staff', reqPassive:'haste_art', desc:'[진화] 쿨감 극대화 및 스킬 사용 시 이속 폭증', icon:'🔮', stat:'archmage', val:0.35 },
-    { id:'zeus_bracelet', name:'번개신의 팔찌', reqItem:'stun', reqPassive:'chainLightning', desc:'[진화] 타격 시 연쇄 번개 강화 및 확정 기절', icon:'⚡', stat:'zeus', val:0.2 },
-    { id:'eye_of_storm', name:'폭풍의 눈', reqItem:'move', reqPassive:'stormWalker', desc:'[진화] 이속 극대화 및 번개 구름 아군 이속 버프', icon:'🌪️', stat:'storm_eye', val:60 },
-    { id:'vampiric_cloak', name:'흡혈마의 망토', reqItem:'vamp', reqPassive:'healing_spring', desc:'[진화] 흡혈 극대화 및 내 흡혈량으로 아군 회복', icon:'🩸', stat:'vampiric', val:0.3 },
-    { id:'phantom_dagger', name:'환영의 단검', reqItem:'crit', reqPassive:'mirrorImage', desc:'[진화] 크리티컬 증가 및 복제본 도발 강화', icon:'🪞', stat:'phantom', val:0.25 },
-    { id:'hourglass_fate', name:'운명의 모래시계', reqItem:'hourglass', reqPassive:'meteor', desc:'[진화] 피격 시 25% 확률로 피해 무시, 체력 회복 및 유성우 폭발', icon:'⏳', stat:'fate_dodge', val:0.25 },
-    { id:'demonfire_blade', name:'화염마귀의 검', reqItem:'burn', reqPassive:'bombTrail', desc:'[진화] 평타 타격 시 대상 위치 폭탄 폭발', icon:'🧨', stat:'demonfire', val:100 },
-    { id:'oracle_glory', name:'오라클의 영광', reqItem:'legion_shield', reqPassive:'war_anthem', desc:'[진화] 방어 오라 극대화 및 1회 부활 지원', icon:'🔰', stat:'oracle_glory', val:30 },
-    { id:'berserker_axe', name:'광전사의 도끼', reqItem:'aspd', reqPassive:'ironHealth', desc:'[진화] 잃은 체력 비례 공속 증가 및 피흡', icon:'🪓', stat:'berserker', val:0.5 }
+    { id:'zeus_bracelet', name:'번개신의 팔찌', reqItem:'luden_echo', reqPassive:'stormWalker', desc:'[진화] 타격 시 연쇄 번개 강화 및 확정 기절', icon:'⚡', stat:'zeus', val:0.2 },
+    { id:'eye_of_storm', name:'폭풍의 눈', reqItem:'phantom_dancer', reqPassive:'swiftWind', desc:'[진화] 이속 극대화 및 번개 구름 아군 이속 버프', icon:'🌪️', stat:'storm_eye', val:60 },
+    { id:'vampiric_cloak', name:'흡혈마의 망토', reqItem:'crimson_horn', reqPassive:'vampireAura', desc:'[진화] 흡혈 극대화 및 내 흡혈량으로 아군 회복', icon:'🩸', stat:'vampiric', val:0.3 },
+    { id:'phantom_dagger', name:'환영의 단검', reqItem:'sniper_lens', reqPassive:'shadowStrike', desc:'[진화] 치명타 확률 대폭 증가 및 이동속도 증가', icon:'🗡️', stat:'phantom', val:0.25 },
+    { id:'hourglass_fate', name:'운명의 모래시계', reqItem:'guardian_angel', reqPassive:'ironHealth', desc:'[진화] 피격 시 25% 확률로 피해 무시 및 회복', icon:'⏳', stat:'fate_dodge', val:0.25 },
+    { id:'demonfire_blade', name:'화염마귀의 검', reqItem:'berserker_axe', reqPassive:'berserkerSoul', desc:'[진화] 평타 타격 시 대상 위치 폭탄 폭발', icon:'🧨', stat:'demonfire', val:100 },
+    { id:'oracle_glory', name:'오라클의 영광', reqItem:'steel_plate', reqPassive:'poisonCloud', desc:'[진화] 방어 오라 극대화 및 1회 부활 지원', icon:'🔰', stat:'oracle_glory', val:30 },
+    { id:'blood_thirster', name:'피바라기', reqItem:'behemoth_armor', reqPassive:'thornArmor', desc:'[진화] 잃은 체력 비례 공속 증가 및 피흡', icon:'🪓', stat:'berserker', val:0.5 }
 ];
 
 // ============ 전역 상태 ============
@@ -605,35 +609,6 @@ function drawBlockyHero(ctx, x, y, r, dir, faction, type, attackAnimTimer = 0, e
             ctx.beginPath(); ctx.moveTo(-pull+r*1.6, -3); ctx.lineTo(-pull+r*1.9, 0); ctx.lineTo(-pull+r*1.6, 3); ctx.fill(); // 화살촉
             ctx.shadowBlur = 0;
         }
-        ctx.restore();
-        
-    } else if(type === 'necromancer') {
-        drawBody('#f3e8ff', '#4c1d95', '#2e1065', '#a855f7', true); // 보라색 아우라 뿜뿜
-        // 마법사 모자 챙
-        ctx.fillStyle = '#3b0764'; ctx.fillRect(x-r*0.8, y-r*0.9-breath, r*1.6, r*0.15);
-        // 모자 위 꼬깔
-        ctx.beginPath(); ctx.moveTo(x-r*0.4, y-r*0.9-breath); ctx.lineTo(x+r*0.4, y-r*0.9-breath); ctx.lineTo(x-r*0.2, y-r*1.8-breath); ctx.closePath(); ctx.fill();
-        
-        // 몸 주위를 도는 원혼(Skull)
-        let skullAngle = t/300;
-        ctx.fillStyle = 'rgba(168, 85, 247, 0.7)';
-        ctx.beginPath(); ctx.arc(x + Math.cos(skullAngle)*r*1.2, y + Math.sin(skullAngle)*r*0.5, r*0.2, 0, Math.PI*2); ctx.fill();
-        ctx.beginPath(); ctx.arc(x + Math.cos(skullAngle+Math.PI)*r*1.2, y + Math.sin(skullAngle+Math.PI)*r*0.5, r*0.2, 0, Math.PI*2); ctx.fill();
-
-        ctx.save();
-        if(isAttacking) {
-            ctx.translate(x+r*0.7, y-r*0.4); ctx.rotate((Math.PI/2.5) * rotDir); // 낫을 크게 벰
-            ctx.shadowColor = '#9333ea'; ctx.shadowBlur = 20;
-            ctx.strokeStyle = 'rgba(147, 51, 234, 0.5)'; ctx.lineWidth = r*0.4;
-            ctx.beginPath(); ctx.arc(-r*0.5, -r*0.5, r*1.5, -Math.PI*0.8, 0); ctx.stroke();
-            ctx.shadowBlur = 0;
-        } else {
-            ctx.translate(x+r*0.5, y-r*0.2); ctx.rotate(-Math.PI*0.1);
-        }
-        // 거대한 사신의 낫(Scythe)
-        ctx.fillStyle = '#1e293b'; ctx.fillRect(-r*0.1, -r*1.8, r*0.2, r*2.8); // 낫 자루
-        ctx.fillStyle = '#cbd5e1'; 
-        ctx.beginPath(); ctx.moveTo(r*0.1, -r*1.8); ctx.lineTo(r*1.5, -r*1.5); ctx.lineTo(r*1.6, -r*1.2); ctx.lineTo(r*0.5, -r*1.3); ctx.lineTo(-r*0.2, -r*1.5); ctx.fill(); // 날카로운 낫날
         ctx.restore();
         
     } else if(type === 'mechanic') {
@@ -1353,7 +1328,7 @@ class Entity {
             if(b.timer<=0){ this.applyRawDamage(b.dmg, b.src, false); b.ticks--; b.timer=1.0; if(b.ticks<=0) this.burnTicks.splice(i,1); }
         }
     }
-    applyRawDamage(amount, attacker, triggerEffects=true){
+    applyRawDamage(amount, attacker, triggerEffects=true, isSkill=false){
         if(this.isDead || this.invincibleTimer > 0) return 0;
         if(this.type === 'nexus' && entities.some(t=>t.type==='nexus_turret' && t.faction===this.faction && !t.isDead)) return 0;
         
@@ -1399,9 +1374,22 @@ class Entity {
         }
 
         this.lastAttackedTimer=REGEN_DELAY+0.5; this.nonCombatTimer=0;
-        let dmg=Math.max(1, Math.floor(amount));
+        
+        let dmg = amount;
+        if(this.type === 'hero') {
+            if(isSkill && this.magicResist > 0) dmg *= (1 - this.magicResist);
+            if(!isSkill && this.physResist > 0) dmg *= (1 - this.physResist);
+        }
+        dmg = Math.max(1, Math.floor(dmg));
+
         if(this.damageReduction) dmg = Math.max(1, dmg * (1 - this.damageReduction));
+        
         let effDef = this.defense + ((this.defBuffTimer > 0 && this.defBuffAmount) ? this.defBuffAmount : 0);
+        if(this.absoluteDef > 0) {
+            let missingHpPct = 1 - (this.hp / this.maxHp);
+            effDef *= (1 + this.absoluteDef * missingHpPct);
+        }
+
         if(effDef > 0) dmg = dmg * (100 / (100 + effDef));
         
         if(this.shield > 0) {
@@ -1442,7 +1430,15 @@ class Entity {
         if(triggerEffects && this.reflectRate > 0 && attacker && !attacker.isBuilding){
             let ref = dmg * this.reflectRate;
             if (typeof attacker.applyRawDamage === 'function') {
+                
                 attacker.applyRawDamage(ref, this, false);
+            }
+            if(this.reflectDmg > 0) {
+                let ref = dmg * this.reflectDmg;
+                if(typeof attacker.applyRawDamage === 'function') {
+                    attacker.applyRawDamage(ref, this, false);
+                }
+
             }
         }
         
@@ -1892,7 +1888,7 @@ class Hero extends Entity {
                 this.triggerOnHitPassives(target);
                 if(this.lifeSteal>0) { this.hp=Math.min(this.maxHp, this.hp+dealt*this.lifeSteal); playSFX('heal'); }
                 if(this.burnDmg>0&&!target.isBuilding) target.burnTicks.push({dmg:this.burnDmg,ticks:3,timer:1.0,src:this});
-                if(this.stunChance>0&&Math.random()<this.stunChance&&!target.isBuilding) target.stunTimer = target.type==='hero' && target.inventory && target.inventory.some(i=>i.id==='behemoth_armor') && HERO_TMPL[target.heroKey] && HERO_TMPL[target.heroKey].type==='melee' ? (1.0)*0.7 : (1.0);
+                if(this.stunChance>0&&Math.random()<this.stunChance&&!target.isBuilding) target.stunTimer = (target.type==='hero' && target.inventory && target.inventory.some(i=>i.id==='behemoth_armor') && HERO_TMPL[target.heroKey] && HERO_TMPL[target.heroKey].type==='melee' ? (1.0)*0.7 : (1.0)) * (1 - (target.statusResist||0));
                 // 서리불꽃 건틀릿: 이속 둔화 (근거리 50%, 원거리 25%)
                 if(this.hasFrostG && !target.isBuilding) {
                     let isMeleeSelf = HERO_TMPL[this.heroKey] && HERO_TMPL[this.heroKey].type === 'melee';
@@ -2093,7 +2089,7 @@ class Hero extends Entity {
         this.stunChance  = Math.min(this.stunChance,  0.40);
         this.lifeSteal   = Math.min(this.lifeSteal,   0.45);
         this.reflectRate = Math.min(this.reflectRate, 0.40);
-        this.cdr         = Math.min(this.cdr,         0.55);
+        this.cdr = Math.min(this.cdr, 0.50);
 
         // 패시브 스킬 스탯
         let ihLv = this.passiveSkills['ironHealth'] || 0;
@@ -2123,12 +2119,7 @@ class Hero extends Entity {
             });
         }
         
-        // 시너지: 얼어붙은 학살자 (서리불꽃 건틀릿 + 몰락검)
-        if(this.hasFrostG && this.borkActive) { this.atk += 30; this.lifeSteal += 0.10; }
-        // 시너지: 불사조의 분노 (수호천사 + 티아맷의 도끼)
-        if(this.hasGA && this.hasTiamat) { this.maxHp += 500; }
-        // 몰락한 왕의 검: 피흡 5% 기본 추가
-        if(this.borkActive) { this.lifeSteal += 0.05; }
+        
 
         this.staticAtk = this.atk; this.staticAspd = this.aspd; this.staticMoveSpd = this.moveSpd;
         this.hp=Math.min(this.hp, this.maxHp);
@@ -2166,7 +2157,9 @@ class Hero extends Entity {
         if(this.hasHermes && this.nonCombatTimer > 3.0) {
             effMove *= 1.25;
         }
-        this.atk = effAtk; this.aspd = effAspd; this.moveSpd = effMove;
+        this.atk = effAtk;
+        this.aspd = Math.min(effAspd, 5.0); // 최대 공속 5.0 캡
+        this.moveSpd = Math.min(effMove, 600); // 최대 이속 600 캡;
     }
     autoUseHeroSkills(){
         let nearEnemies = (cx,cy,r) => entities.filter(e=>e.faction!==this.faction&&!e.isDead&&dist({x:cx,y:cy},e)<=r);
@@ -2180,7 +2173,7 @@ class Hero extends Entity {
         let sl = Math.floor((this.level - 1) / 3) + 1;
         let baseCd = idx===1 ? HERO_TMPL[k].skill1.cd : HERO_TMPL[k].skill2.cd;
         let cd = Math.max(2, baseCd - sl*0.5);
-        if(this.cdr > 0) cd = cd * Math.max(0.3, 1 - this.cdr); // Max 70% CDR
+        if(this.cdr > 0) cd = cd * Math.max(0.5, 1 - this.cdr); // Max 50% CDR
         
         if(idx===1) { if(this.heroSkill1Timer > 0) return; this.heroSkill1Timer = cd; this.heroSkill2Timer = Math.max(this.heroSkill2Timer, 1.0); }
         else { if(this.heroSkill2Timer > 0) return; this.heroSkill2Timer = cd; this.heroSkill1Timer = Math.max(this.heroSkill1Timer, 1.0); }
@@ -2203,7 +2196,7 @@ class Hero extends Entity {
             spawnAOE(this.x, this.y, 125, '#f59e0b88', 0.5);
             this.emote = '🤬'; this.emoteTimer = 2.0;
             let tgts = nearEnemies(this.x, this.y, 125);
-            tgts.forEach(e => { e.applyRawDamage(this.atk*2.0, this); e.stunTimer = e.type==='hero' && e.inventory && e.inventory.some(i=>i.id==='behemoth_armor') && HERO_TMPL[e.heroKey] && HERO_TMPL[e.heroKey].type==='melee' ? (2.0)*0.7 : (2.0); });
+            tgts.forEach(e => { e.applyRawDamage(this.atk*2.0, this); e.stunTimer = (e.type==='hero' && e.inventory && e.inventory.some(i=>i.id==='behemoth_armor') && HERO_TMPL[e.heroKey] && HERO_TMPL[e.heroKey].type==='melee' ? (2.0)*0.7 : (2.0)) * (1 - (e.statusResist||0)); });
 
             // 바닥 갈라짐 + 흙먼지 이펙트
             for(let i=0; i<5; i++) spawnSlash(this.x, this.y, Math.random()*Math.PI*2, '#78350f', 125);
@@ -2228,14 +2221,7 @@ class Hero extends Entity {
                 spawnAOE(this.x, this.y, 200, '#facc1588', 0.8); // 번쩍이는 빛
                 
                 // 파편과 흙먼지가 연속으로 터짐
-                for(let i=0; i<6; i++) {
-                    setTimeout(() => {
-                        if(GS.status !== 'PLAYING') return;
-                        spawnParticles(this.x, this.y, '#44403c', 40, 300, 1.2);
-                        spawnParticles(this.x, this.y, '#facc15', 10, 200, 0.8);
-                        if(typeof playSFX !== 'undefined') playSFX('skill_burst');
-                    }, i * 50);
-                }
+                spawnParticles(this.x, this.y, '#44403c', 30, 300, 1.2); spawnParticles(this.x, this.y, '#facc15', 20, 200, 0.8); if(typeof playSFX !== 'undefined') playSFX('skill_burst');
 
                 // 즉각적인 타격 판정 및 시각 효과 (명중률 100%)
                 let tgts = nearEnemies(this.x, this.y, 250); // 범위 더욱 넓힘
@@ -2299,7 +2285,7 @@ class Hero extends Entity {
                 spawnRing(this.x, this.y, '#ef4444', 150, 0.4);
                 nearEnemies(this.x,this.y,150).forEach(e=>{
                     e.applyRawDamage(skillDmg*1.8, this, true, true); 
-                    e.stunTimer = e.type==='hero' && e.inventory && e.inventory.some(i=>i.id==='behemoth_armor') && HERO_TMPL[e.heroKey] && HERO_TMPL[e.heroKey].type==='melee' ? (1.0)*0.7 : (1.0); e.airborneTimer=0.7;
+                    e.stunTimer = (e.type==='hero' && e.inventory && e.inventory.some(i=>i.id==='behemoth_armor') && HERO_TMPL[e.heroKey] && HERO_TMPL[e.heroKey].type==='melee' ? (1.0)*0.7 : (1.0)) * (1 - (e.statusResist||0)); e.airborneTimer=0.7;
                     let ea = Math.atan2(e.y - this.y, e.x - this.x);
                     e.vx+=Math.cos(ea)*600; e.vy+=Math.sin(ea)*600;
                 });
@@ -2310,24 +2296,19 @@ class Hero extends Entity {
                 spawnAOE(this.x, this.y, 175, '#b91c1c99', 0.5);
                 spawnRing(this.x, this.y, '#7f1d1d', 175, 0.5);
                 spawnSpecial(this.x, this.y, '#fca5a5', 'plus', 24, 150, 0.5);
-                nearEnemies(this.x,this.y,175).forEach(e=>{e.applyRawDamage(skillDmg*2.0, this, true, true); e.stunTimer = e.type==='hero' && e.inventory && e.inventory.some(i=>i.id==='behemoth_armor') && HERO_TMPL[e.heroKey] && HERO_TMPL[e.heroKey].type==='melee' ? (2.0)*0.7 : (2.0);});
+                nearEnemies(this.x,this.y,175).forEach(e=>{e.applyRawDamage(skillDmg*2.0, this, true, true); e.stunTimer = (e.type==='hero' && e.inventory && e.inventory.some(i=>i.id==='behemoth_armor') && HERO_TMPL[e.heroKey] && HERO_TMPL[e.heroKey].type==='melee' ? (2.0)*0.7 : (2.0)) * (1 - (e.statusResist||0));});
                 // 피분수 이펙트
                 for(let i=0; i<3; i++) setTimeout(()=>spawnParticles(this.x, this.y, '#9f1239', 20, 125, 0.6), i*100);
             }
         } else if(k==='ARCHER') {
             if(idx===2) { // 폭풍 화살
                 if(t) {
-                    for(let i=0;i<8+sl*2;i++) {
-                        setTimeout(()=>{
-                            if(t.isDead) { let ne = nearEnemies(this.x,this.y,600); if(ne.length>0) t=ne[0]; }
-                            if(t&&!t.isDead) {
-                                projectiles.push(new Projectile(this.x,this.y-100,t,skillDmg*0.5,this,false));
-                                spawnBeam(this.x, this.y-100, t.x, t.y, '#4ade80', 0.15);
-                                spawnParticles(this.x, this.y-100, '#a7f3d0', 5, 100, 0.2);
-                                playSFX('shoot');
-                            }
-                        }, i*60);
-                    }
+                    if(t&&!t.isDead) { 
+            for(let i=0; i<3; i++) projectiles.push(new Projectile(this.x,this.y-100,t,skillDmg*1.5,this,false));
+            spawnBeam(this.x, this.y-100, t.x, t.y, '#4ade80', 0.5);
+            spawnParticles(this.x, this.y-100, '#a7f3d0', 15, 150, 0.5);
+            playSFX('shoot');
+        }
                 }
             } else { // 회피 사격 (강화)
                 let dx = this.vx || 0; let dy = this.vy || 0;
@@ -2338,27 +2319,6 @@ class Hero extends Entity {
                 spawnRing(this.x, this.y, '#10b981', 75, 0.3);
                 this.atkSpdBuffTimer = 4; this.atkSpdBuffRate = 2.0;
 
-            }
-        } else if(k==='NECROMANCER') {
-            if(idx===1) { // 해골 군단 소환
-                for(let i=0;i<3+sl;i++) {
-                    let m = new Monster(this.x+rand(-80,80), this.y+rand(-80,80), 'summon');
-                    m.faction = this.faction;
-                    m.maxHp = 1500 + sl*500; m.hp=m.maxHp; m.atk = this.atk*0.8; m.radius=15; m.moveSpd = 120;
-                    entities.push(m);
-                    spawnSpecial(m.x, m.y, '#1e293b', 'star', 12, 120, 0.5);
-                    spawnRing(m.x, m.y, '#9333ea', 80, 0.3);
-                }
-                playSFX('skill_magic');
-            } else { // 죽음의 늪
-                let tg = t || this;
-                nearEnemies(tg.x, tg.y, 250).forEach(e => {
-                    e.applyRawDamage(skillDmg*1.5, this, true, true); e.slowTimer=4; e.slowRate=0.2;
-                    spawnAOE(e.x, e.y, 40, '#7e22ce88', 1.0);
-                    spawnBeam(tg.x, tg.y, e.x, e.y, '#a855f7', 0.5); // 영혼 흡수선
-                });
-                spawnAOE(tg.x, tg.y, 250, '#4c1d9566', 1.0);
-                for(let i=0;i<10;i++) spawnParticles(tg.x+rand(-100,100), tg.y+rand(-100,100), '#c084fc', 5, 50, 1.0);
             }
         } else if(k==='MECHANIC') {
             if(idx===1) { // 자동 포탑
@@ -2389,7 +2349,7 @@ class Hero extends Entity {
                 let dmgTotal = 0;
                 nearEnemies(this.x, this.y, 175).forEach(e => {
                     e.applyRawDamage(skillDmg*1.5, this, true, true); dmgTotal+=skillDmg*1.5;
-                    for(let i=0; i<3; i++) setTimeout(()=>spawnBeam(e.x, e.y, this.x, this.y, '#fda4af', 0.2), i*100);
+                    spawnBeam(e.x, e.y, this.x, this.y, '#fda4af', 0.5);
                     spawnParticles(e.x, e.y, '#be123c', 10, 75, 0.5);
                 });
                 this.hp = Math.min(this.maxHp, this.hp + dmgTotal*0.4);
@@ -2398,7 +2358,7 @@ class Hero extends Entity {
                 spawnAOE(this.x, this.y, 125, '#881337AA', 0.6);
                 nearEnemies(this.x, this.y, 125).forEach(e => {
                     e.applyRawDamage(skillDmg*2.5, this, true, true);
-                    e.stunTimer = e.type==='hero' && e.inventory && e.inventory.some(i=>i.id==='behemoth_armor') && HERO_TMPL[e.heroKey] && HERO_TMPL[e.heroKey].type==='melee' ? (1.5)*0.7 : (1.5);
+                    e.stunTimer = (e.type==='hero' && e.inventory && e.inventory.some(i=>i.id==='behemoth_armor') && HERO_TMPL[e.heroKey] && HERO_TMPL[e.heroKey].type==='melee' ? (1.5)*0.7 : (1.5)) * (1 - (e.statusResist||0));
                 });
                 spawnSpecial(this.x, this.y, '#fca5a5', 'star', 20, 125, 0.6);
                 for(let i=0; i<5; i++) spawnSlash(this.x, this.y, Math.random()*Math.PI*2, '#f43f5e', 100);
@@ -2413,7 +2373,7 @@ class Hero extends Entity {
                         spawnRing(tg.x, tg.y, '#fef08a', 150, 0.3);
                     }, i*100);
                 }
-                nearEnemies(tg.x, tg.y, 150).forEach(e=>{e.applyRawDamage(skillDmg*2.2, this, true, true); e.stunTimer = e.type==='hero' && e.inventory && e.inventory.some(i=>i.id==='behemoth_armor') && HERO_TMPL[e.heroKey] && HERO_TMPL[e.heroKey].type==='melee' ? (1.5)*0.7 : (1.5);});
+                nearEnemies(tg.x, tg.y, 150).forEach(e=>{e.applyRawDamage(skillDmg*2.2, this, true, true); e.stunTimer = (e.type==='hero' && e.inventory && e.inventory.some(i=>i.id==='behemoth_armor') && HERO_TMPL[e.heroKey] && HERO_TMPL[e.heroKey].type==='melee' ? (1.5)*0.7 : (1.5)) * (1 - (e.statusResist||0));});
                 spawnParticles(tg.x, tg.y, '#60a5fa', 40, 150, 0.7);
             } else { // 천둥신의 분노
                 spawnRing(this.x, this.y, '#93c5fd', 225, 0.8);
@@ -2422,7 +2382,7 @@ class Hero extends Entity {
                 nearEnemies(this.x, this.y, 225).forEach(e=>{
                     e.applyRawDamage(skillDmg*1.5, this, true, true); 
                     e.slowTimer=3; e.slowRate=0.1; 
-                    e.stunTimer = e.type==='hero' && e.inventory && e.inventory.some(i=>i.id==='behemoth_armor') && HERO_TMPL[e.heroKey] && HERO_TMPL[e.heroKey].type==='melee' ? (1.2)*0.7 : (1.2); e.airborneTimer=1.0;
+                    e.stunTimer = (e.type==='hero' && e.inventory && e.inventory.some(i=>i.id==='behemoth_armor') && HERO_TMPL[e.heroKey] && HERO_TMPL[e.heroKey].type==='melee' ? (1.2)*0.7 : (1.2)) * (1 - (e.statusResist||0)); e.airborneTimer=1.0;
                     spawnParticles(e.x, e.y, '#fef08a', 10, 50, 0.5);
                 });
             }
@@ -2431,7 +2391,7 @@ class Hero extends Entity {
                 let a = this.facingDir > 0 ? 0 : Math.PI;
                 if(t) a = Math.atan2(t.y - this.y, t.x - this.x);
                 spawnAOE(this.x + Math.cos(a)*75, this.y + Math.sin(a)*75, 100, '#38bdf8AA', 0.8);
-                for(let i=0; i<15; i++) setTimeout(()=>spawnParticles(this.x + Math.cos(a)*75, this.y + Math.sin(a)*75, '#e0f2fe', 5, 100, 0.5), i*50);
+                spawnParticles(this.x + Math.cos(a)*75, this.y + Math.sin(a)*75, '#e0f2fe', 20, 150, 0.8);
                 
                 nearEnemies(this.x, this.y, 200).forEach(e => {
                     let ea = Math.atan2(e.y - this.y, e.x - this.x);
@@ -2449,32 +2409,22 @@ class Hero extends Entity {
                 spawnAOE(tg.x, tg.y, 125, '#bae6fdCC', 0.8);
                 spawnRing(tg.x, tg.y, '#0284c7', 125, 0.8);
                 for(let i=0; i<8; i++) spawnSlash(tg.x, tg.y, (Math.PI/4)*i, '#7dd3fc', 125);
-                nearEnemies(tg.x, tg.y, 125).forEach(e => { e.applyRawDamage(skillDmg*1.8, this, true, true); e.stunTimer = e.type==='hero' && e.inventory && e.inventory.some(i=>i.id==='behemoth_armor') && HERO_TMPL[e.heroKey] && HERO_TMPL[e.heroKey].type==='melee' ? (2.5)*0.7 : (2.5); e.isFrozen = true; });
+                nearEnemies(tg.x, tg.y, 125).forEach(e => { e.applyRawDamage(skillDmg*1.8, this, true, true); e.stunTimer = (e.type==='hero' && e.inventory && e.inventory.some(i=>i.id==='behemoth_armor') && HERO_TMPL[e.heroKey] && HERO_TMPL[e.heroKey].type==='melee' ? (2.5)*0.7 : (2.5)) * (1 - (e.statusResist||0)); e.isFrozen = true; });
                 spawnSpecial(tg.x, tg.y, '#e0f2fe', 'star', 24, 125, 0.8);
             }
         } else if(k==='JOKER') {
             if(idx===1) { // 트릭 쇼
-                for(let i=0; i<4; i++) {
-                    setTimeout(() => {
-                        let eff = Math.random();
-                        if(eff < 0.33) {
-                            nearEnemies(this.x, this.y, 200).forEach(e => {
-                                e.applyRawDamage(skillDmg*1.5, this, true, true);
-                                spawnParticles(e.x, e.y, '#ef4444', 5, 50, 0.4);
-                            });
-                            spawnRing(this.x, this.y, '#ef4444', 200, 0.5);
-
-                        } else if(eff < 0.66) {
-                            this.defBuffTimer = 4.0; this.defBuffAmount = this.maxHp * 0.2;
-                            spawnRing(this.x, this.y, '#3b82f6', 100, 0.5);
-
-                        } else {
-                            this.atkSpdBuffTimer = 4.0; this.atkSpdBuffRate = 1.8;
-                            spawnRing(this.x, this.y, '#10b981', 100, 0.5);
-
-                        }
-                    }, i*250);
-                }
+                
+            let eff = Math.random();
+            if(eff < 0.33) {
+                nearEnemies(this.x, this.y, 200).forEach(e => { e.applyRawDamage(skillDmg*3.0, this, true, true); });
+                spawnParticles(this.x, this.y, '#ef4444', 30, 200, 0.6); spawnRing(this.x, this.y, '#ef4444', 200, 0.5);
+            } else if(eff < 0.66) {
+                this.defBuffTimer = 4.0; this.defBuffAmount = this.maxHp * 0.5; spawnRing(this.x, this.y, '#3b82f6', 200, 0.5);
+            } else {
+                this.atkSpdBuffTimer = 4.0; this.atkSpdBuffRate = 2.5; spawnRing(this.x, this.y, '#10b981', 200, 0.5);
+            }
+        
             } else { // 잭팟 (광역 카드 비)
                 let bet = Math.max(100, Math.min(1500, Math.floor(this.gold * 0.25)));
                 this.gold -= bet;
@@ -2483,10 +2433,10 @@ class Hero extends Entity {
 
                     spawnRing(this.x, this.y, '#fbbf24', 250, 0.8);
                     spawnAOE(this.x, this.y, 250, '#fcd34d66', 0.8);
-                    for(let i=0; i<20; i++) setTimeout(()=>spawnParticles(this.x+rand(-150,150), this.y+rand(-150,150), '#ffffff', 5, 75, 0.5), i*50);
+                    spawnParticles(this.x, this.y, '#ffffff', 40, 250, 0.8);
                     nearEnemies(this.x, this.y, 250).forEach(e => {
                         e.applyRawDamage(skillDmg * 3.5 + bet * 2.5, this, true, true);
-                        e.stunTimer = e.type==='hero' && e.inventory && e.inventory.some(i=>i.id==='behemoth_armor') && HERO_TMPL[e.heroKey] && HERO_TMPL[e.heroKey].type==='melee' ? (1.5)*0.7 : (1.5); e.airborneTimer = 0.5;
+                        e.stunTimer = (e.type==='hero' && e.inventory && e.inventory.some(i=>i.id==='behemoth_armor') && HERO_TMPL[e.heroKey] && HERO_TMPL[e.heroKey].type==='melee' ? (1.5)*0.7 : (1.5)) * (1 - (e.statusResist||0)); e.airborneTimer = 0.5;
                     });
                 } else {
 
@@ -2506,7 +2456,7 @@ class Hero extends Entity {
                         let sacrifice = allies.sort((a,b) => dist(this,a)-dist(this,b))[0];
                         let drain = sacrifice.maxHp * 0.2;
                         sacrifice.hp = Math.max(1, sacrifice.hp - drain);
-                        for(let i=0; i<5; i++) setTimeout(()=>spawnBeam(sacrifice.x, sacrifice.y, this.x, this.y, '#9333ea', 0.2), i*100);
+                        spawnBeam(sacrifice.x, sacrifice.y, this.x, this.y, '#9333ea', 0.8);
 
                         boostedDmg *= 1.8;
                     }
@@ -2574,7 +2524,7 @@ class Hero extends Entity {
                     spawnAOE(this.x, this.y, 100, '#00000088', 0.8);
                     
                     nearEnemies(this.x, this.y, 100).forEach(e => {
-                        e.stunTimer = e.type==='hero' && e.inventory && e.inventory.some(i=>i.id==='behemoth_armor') && HERO_TMPL[e.heroKey] && HERO_TMPL[e.heroKey].type==='melee' ? (1.5)*0.7 : (1.5);
+                        e.stunTimer = (e.type==='hero' && e.inventory && e.inventory.some(i=>i.id==='behemoth_armor') && HERO_TMPL[e.heroKey] && HERO_TMPL[e.heroKey].type==='melee' ? (1.5)*0.7 : (1.5)) * (1 - (e.statusResist||0));
                     });
                     playSFX('skill_burst');
                 }
@@ -2627,7 +2577,7 @@ class Hero extends Entity {
                     if(typeof playSFX !== 'undefined') playSFX('skill_burst');
                     nearEnemies(mineX, mineY, 150).forEach(e => {
                         e.applyRawDamage(skillDmg * 1.5, this, true, true);
-                        e.stunTimer = e.type==='hero' && e.inventory && e.inventory.some(i=>i.id==='behemoth_armor') && HERO_TMPL[e.heroKey] && HERO_TMPL[e.heroKey].type==='melee' ? (2.0)*0.7 : (2.0);
+                        e.stunTimer = (e.type==='hero' && e.inventory && e.inventory.some(i=>i.id==='behemoth_armor') && HERO_TMPL[e.heroKey] && HERO_TMPL[e.heroKey].type==='melee' ? (2.0)*0.7 : (2.0)) * (1 - (e.statusResist||0));
                     });
                 }, 500);
             }
@@ -2652,18 +2602,14 @@ class Hero extends Entity {
                 let tg = t || this;
                 spawnAOE(tg.x, tg.y, 200, '#ffffff66', 0.8);
                 spawnRing(tg.x, tg.y, '#eff6ff', 200, 0.8);
-                for(let i=0; i<15; i++) {
-                    setTimeout(() => {
-                        let bx = tg.x + rand(-180, 180);
-                        let by = tg.y + rand(-180, 180);
-                        spawnBeam(bx+rand(-20,20), by-800, bx, by, '#ffffff', 0.25);
-                        spawnParticles(bx, by, '#e0f2fe', 8, 80, 0.4);
-                        if(Math.random()<0.3) playSFX('shoot');
-                    }, i * 150);
-                }
+                
+            spawnBeam(tg.x, tg.y-800, tg.x, tg.y, '#ffffff', 1.0);
+            spawnParticles(tg.x, tg.y, '#e0f2fe', 40, 200, 0.8);
+            playSFX('shoot');
+        
                 nearEnemies(tg.x, tg.y, 200).forEach(e => {
                     e.applyRawDamage(skillDmg * 2.5, this, true, true);
-                    e.stunTimer = e.type==='hero' && e.inventory && e.inventory.some(i=>i.id==='behemoth_armor') && HERO_TMPL[e.heroKey] && HERO_TMPL[e.heroKey].type==='melee' ? (0.5)*0.7 : (0.5);
+                    e.stunTimer = (e.type==='hero' && e.inventory && e.inventory.some(i=>i.id==='behemoth_armor') && HERO_TMPL[e.heroKey] && HERO_TMPL[e.heroKey].type==='melee' ? (0.5)*0.7 : (0.5)) * (1 - (e.statusResist||0));
                 });
 
             } else { // 마엘스톰 (갈색 구체 완전 마비)
@@ -2675,15 +2621,13 @@ class Hero extends Entity {
                 // 마엘스톰 내부의 적 완전 마비
                 nearEnemies(tg.x, tg.y, 180).forEach(e => {
                     e.applyRawDamage(skillDmg * 1.5, this, true, true);
-                    e.stunTimer = e.type==='hero' && e.inventory && e.inventory.some(i=>i.id==='behemoth_armor') && HERO_TMPL[e.heroKey] && HERO_TMPL[e.heroKey].type==='melee' ? (duration)*0.7 : (duration); // 완전 마비
+                    e.stunTimer = (e.type==='hero' && e.inventory && e.inventory.some(i=>i.id==='behemoth_armor') && HERO_TMPL[e.heroKey] && HERO_TMPL[e.heroKey].type==='melee' ? (duration)*0.7 : (duration)) * (1 - (e.statusResist||0)); // 완전 마비
                     spawnParticles(e.x, e.y, '#b45309', 20, 100, duration);
                 });
 
                 
                 // 소용돌이 이펙트 추가 생성
-                for(let i=0; i<8; i++) {
-                    setTimeout(() => spawnSlash(tg.x, tg.y, Math.random()*Math.PI*2, '#78350f', 180), i*300);
-                }
+                spawnSlash(tg.x, tg.y, Math.random()*Math.PI*2, '#78350f', 200);
             }
         } else if(k==='BARBARIAN') {
             if(idx===1) { // 점프샷 (지형 균열 + 슬로우)
@@ -2917,7 +2861,15 @@ class Hero extends Entity {
         }
     }
     showSkillSelection() {
-        let available = PASSIVE_SKILLS.filter(s=>(this.passiveSkills[s.id]||0)<s.maxLv);
+        
+        let pType = HERO_TMPL[this.heroKey] ? HERO_TMPL[this.heroKey].type : 'common';
+        let available = PASSIVE_SKILLS.filter(s => {
+            if ((this.passiveSkills[s.id]||0) >= s.maxLv) return false;
+            if (pType === 'melee' && s.heroType === 'ranged') return false;
+            if (pType === 'ranged' && s.heroType === 'melee') return false;
+            return true;
+        });
+
         if(available.length===0) return;
         available.sort(()=>Math.random()-0.5);
         let choices = available.slice(0, Math.min(3, available.length));
@@ -3204,7 +3156,7 @@ class EpicDragon extends Entity {
                     spawnSpecial(tx, ty, this.dtype==='red'?'#fca5a5':'#e0f2fe', 'star', 20, 150, 0.5);
                     entities.filter(e=>!e.isDead && e.type==='hero' && dist({x:tx,y:ty},e)<=150).forEach(e => {
                         e.applyRawDamage(this.atk * 2.0, this, true, true);
-                        e.stunTimer = e.type==='hero' && e.inventory && e.inventory.some(i=>i.id==='behemoth_armor') && HERO_TMPL[e.heroKey] && HERO_TMPL[e.heroKey].type==='melee' ? (1.0)*0.7 : (1.0);
+                        e.stunTimer = (e.type==='hero' && e.inventory && e.inventory.some(i=>i.id==='behemoth_armor') && HERO_TMPL[e.heroKey] && HERO_TMPL[e.heroKey].type==='melee' ? (1.0)*0.7 : (1.0)) * (1 - (e.statusResist||0));
                     });
                 }, 1000);
             }
@@ -3223,7 +3175,7 @@ class EpicDragon extends Entity {
             targets.forEach(e => {
                 if(dist(this, e) <= 500) {
                     e.applyRawDamage(this.atk * 1.5, this, true, true);
-                    e.stunTimer = e.type==='hero' && e.inventory && e.inventory.some(i=>i.id==='behemoth_armor') && HERO_TMPL[e.heroKey] && HERO_TMPL[e.heroKey].type==='melee' ? (1.5)*0.7 : (1.5);
+                    e.stunTimer = (e.type==='hero' && e.inventory && e.inventory.some(i=>i.id==='behemoth_armor') && HERO_TMPL[e.heroKey] && HERO_TMPL[e.heroKey].type==='melee' ? (1.5)*0.7 : (1.5)) * (1 - (e.statusResist||0));
                     let a = Math.atan2(e.y - this.y, e.x - this.x);
                     e.vx += Math.cos(a) * 800; e.vy += Math.sin(a) * 800; // 넉백
                 }
@@ -3879,7 +3831,7 @@ class Creature extends Minion {
                 spawnRing(this.x, this.y, '#facc15', 200, 1.0);
                 entities.forEach(e => {
                     if(e.faction !== this.faction && !e.isDead && e.type !== 'tower' && e.type !== 'nexus' && e.type !== 'nexus_turret' && dist(this, e) <= 200) {
-                        e.stunTimer = 1.0;
+                        e.stunTimer = (1.0) * (1 - (e.statusResist||0));
                         e.applyRawDamage(this.atk * 0.5, this, true, true);
                     }
                 });
@@ -4145,8 +4097,7 @@ class Projectile {
             if(attacker.heroKey==='ICEBORN') this.ptype='ice';
             else if(attacker.heroKey==='JOKER') this.ptype='card';
             else if(attacker.heroKey==='DARKPRIEST') this.ptype='darkorb';
-            else if(attacker.heroKey==='NECROMANCER') this.ptype='skull';
-            else if(attacker.heroKey==='MECHANIC') this.ptype='bullet';
+                        else if(attacker.heroKey==='MECHANIC') this.ptype='bullet';
             else if(attacker.heroKey==='VAMPIRE') this.ptype='blood';
             else if(attacker.heroKey==='ARIEL') this.ptype='holy';
             else if(attacker.heroKey==='SYLVIA') this.ptype='snipe_bullet';
@@ -4182,9 +4133,16 @@ class Projectile {
                 let dealt = tgt.applyRawDamage(this.dmg, this.attacker, true, true);
                 if(this.attacker && this.attacker.type === 'hero') this.attacker.totalDmg += (dealt || this.dmg);
                 if(this.attacker && this.attacker.triggerOnHitPassives) this.attacker.triggerOnHitPassives(tgt);
-                if(this.attacker.lifeSteal>0&&this.attacker.type==='hero') { this.attacker.hp=Math.min(this.attacker.maxHp,this.attacker.hp+this.dmg*this.attacker.lifeSteal); playSFX('heal'); }
+                
+                if(this.attacker.shadowStrikeLv > 0 && Math.random() < 0.2 + (this.attacker.shadowStrikeLv * 0.05)) {
+                    tgt.applyRawDamage(this.attacker.atk * 0.5 * this.attacker.shadowStrikeLv, this.attacker, false, false);
+                    spawnParticles(tgt.x, tgt.y, '#581c87', 5, 80, 0.4);
+                    addText(tgt.x, tgt.y - 20, '그림자!', '#9333ea', 12);
+                }
+                if(this.attacker.lifeSteal>0&&this.attacker.type==='hero')
+ { this.attacker.hp=Math.min(this.attacker.maxHp,this.attacker.hp+this.dmg*this.attacker.lifeSteal); playSFX('heal'); }
                 if(this.attacker.burnDmg>0&&!tgt.isBuilding) tgt.burnTicks.push({dmg:this.attacker.burnDmg,ticks:3,timer:1.0,src:this.attacker});
-                if(this.attacker.stunChance>0&&Math.random()<this.attacker.stunChance&&!tgt.isBuilding) tgt.stunTimer = tgt.type==='hero' && tgt.inventory && tgt.inventory.some(i=>i.id==='behemoth_armor') && HERO_TMPL[tgt.heroKey] && HERO_TMPL[tgt.heroKey].type==='melee' ? (1.0)*0.7 : (1.0);
+                if(this.attacker.stunChance>0&&Math.random()<this.attacker.stunChance&&!tgt.isBuilding) tgt.stunTimer = (tgt.type==='hero' && tgt.inventory && tgt.inventory.some(i=>i.id==='behemoth_armor') && HERO_TMPL[tgt.heroKey] && HERO_TMPL[tgt.heroKey].type==='melee' ? (1.0)*0.7 : (1.0)) * (1 - (tgt.statusResist||0));
                 
                 let hitColor = this.isCrit?'#ff6b35':'#fbbf24';
                 if(this.ptype==='blood') hitColor = '#e11d48';
@@ -4574,6 +4532,19 @@ window.showEvolutionPopup = (name, icon, desc) => {
         box.style.transform = 'scale(0)';
         setTimeout(() => popup.classList.add('hidden'), 500);
     }, 4000);
+};
+
+window.sellItemUI = function(id, price) {
+    if(!player || player.isDead) return;
+    let idx = player.inventory.findIndex(i => i.id === id);
+    if(idx >= 0) {
+        player.inventory.splice(idx, 1);
+        player.gold += price;
+        player.applyStats();
+        renderInventory();
+        renderShop();
+        playSFX('ui_click');
+    }
 };
 window.buyItemUI=id=>{ 
     if(player) {
@@ -5078,7 +5049,8 @@ function renderInventory(){
         if(player&&i<player.inventory.length){
             let item=player.inventory[i];
             let bi=[...BASE_ITEMS,...EVOLUTION_ITEMS].find(b=>b.id===item.id);
-            d.innerHTML=`<div class="cursor-pointer text-[12px] md:text-xl">${bi?bi.icon:'?'}</div><div class="absolute -top-1 -right-1 bg-amber-500 text-slate-900 text-[8px] md:text-[10px] font-black px-0.5 md:px-1 rounded-full">+${item.upgrade}</div>`;
+            let sellPrice = bi ? Math.floor(bi.cost * 0.6) : 100;
+            d.innerHTML=`<div class="cursor-pointer text-[12px] md:text-xl" onclick="if(window.showItemDetails) window.showItemDetails('${item.id}')">${bi?bi.icon:'?'}</div><div class="absolute -top-1 -right-1 bg-amber-500 text-slate-900 text-[8px] md:text-[10px] font-black px-0.5 md:px-1 rounded-full">+${item.upgrade}</div>`;
         }
         inv.appendChild(d);
     }
@@ -5691,7 +5663,8 @@ const HERO_ICONS = {
     CRAG: { s1: '🛡️', s2: '⛰️' },
     BERSERKER: { s1: '🪓', s2: '🩸' },
     ARCHER: { s1: '🏹', s2: '🎯' },
-    NECROMANCER: { s1: '💀', s2: '👻' },
+
+
     grrr: { s1: '🐾', s2: '🦁' },
     VAMPIRE: { s1: '🦇', s2: '🧛' },
     THOR: { s1: '⚡', s2: '🔨' },
