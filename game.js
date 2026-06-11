@@ -1415,6 +1415,18 @@ class Entity {
             }
         }
 
+        // 운명의 모래시계
+        if(this.fate_dodge && Math.random() < 0.25) {
+            this.hp = Math.min(this.maxHp, this.hp + amount*0.5);
+            addText(this.x, this.y-this.radius-10, '⏳ 운명!', '#fcd34d', 16);
+            return 0;
+        }
+        // 일반 회피
+        if(this.dodgeRate > 0 && Math.random() < this.dodgeRate) {
+            addText(this.x, this.y-this.radius-10, 'MISS', '#d1d5db', 16);
+            return 0;
+        }
+        
         this.lastAttackedTimer=REGEN_DELAY+0.5; this.nonCombatTimer=0;
         
         let dmg = amount;
@@ -1874,7 +1886,19 @@ class Hero extends Entity {
                 }
                 if(this.isPlayer) playSFX('shoot');
             } else {
-                projectiles.push(new Projectile(this.x, this.y-this.radius, target, dmg, this, isCrit));
+                let p = new Projectile(this.x, this.y-this.radius, target, dmg, this, isCrit);
+                if(this.pierceDmg) p.pierce = true;
+                projectiles.push(p);
+
+                // 분열화살 처리 (루난의 허리케인)
+                if(this.splitArrow > 0) {
+                    let nearby = entities.filter(e => e.hp>0 && e.faction!==this.faction && Math.hypot(e.x-target.x, e.y-target.y) < 300 && e!==target).slice(0, 2);
+                    nearby.forEach(nt => {
+                        let sp = new Projectile(this.x, this.y-this.radius, nt, dmg*0.5, this, isCrit);
+                        if(this.pierceDmg) sp.pierce = true;
+                        projectiles.push(sp);
+                    });
+                }
                 if(this.isPlayer) playSFX('shoot');
             }
         } else {
@@ -1917,7 +1941,10 @@ class Hero extends Entity {
                 let a = Math.atan2(target.y-this.y, target.x-this.x);
                 spawnSlash(this.x, this.y-this.radius, a, this.faction==='BLUE'?'#93c5fd':'#fca5a5', 30);
                 this.triggerOnHitPassives(target);
-                if(this.lifeSteal>0) { this.hp=Math.min(this.maxHp, this.hp+dealt*this.lifeSteal); playSFX('heal'); }
+                if(this.lifeSteal>0 || this.crimsonLifesteal>0) { 
+                    this.hp=Math.min(this.maxHp, this.hp+dealt*((this.lifeSteal||0) + (this.crimsonLifesteal||0))); 
+                    playSFX('heal'); 
+                }
                 if(this.burnDmg>0&&!target.isBuilding) target.burnTicks.push({dmg:this.burnDmg,ticks:3,timer:1.0,src:this});
                 if(this.stunChance>0&&Math.random()<this.stunChance&&!target.isBuilding) target.stunTimer = (target.type==='hero' && target.inventory && target.inventory.some(i=>i.id==='behemoth_armor') && HERO_TMPL[target.heroKey] && HERO_TMPL[target.heroKey].type==='melee' ? (1.0)*0.7 : (1.0)) * (1 - (target.statusResist||0));
                 // 서리불꽃 건틀릿: 이속 둔화 (근거리 50%, 원거리 25%)
@@ -4201,7 +4228,7 @@ class Projectile {
                     addText(tgt.x, tgt.y - 20, '그림자!', '#9333ea', 12);
                 }
                 if(this.attacker.lifeSteal>0&&this.attacker.type==='hero')
- { this.attacker.hp=Math.min(this.attacker.maxHp,this.attacker.hp+this.dmg*this.attacker.lifeSteal); playSFX('heal'); }
+ { this.attacker.hp=Math.min(this.attacker.maxHp,this.attacker.hp+this.dmg*((this.attacker.lifeSteal||0) + (this.attacker.crimsonLifesteal||0))); playSFX('heal'); }
                 if(this.attacker.burnDmg>0&&!tgt.isBuilding) tgt.burnTicks.push({dmg:this.attacker.burnDmg,ticks:3,timer:1.0,src:this.attacker});
                 if(this.attacker.stunChance>0&&Math.random()<this.attacker.stunChance&&!tgt.isBuilding) tgt.stunTimer = (tgt.type==='hero' && tgt.inventory && tgt.inventory.some(i=>i.id==='behemoth_armor') && HERO_TMPL[tgt.heroKey] && HERO_TMPL[tgt.heroKey].type==='melee' ? (1.0)*0.7 : (1.0)) * (1 - (tgt.statusResist||0));
                 
