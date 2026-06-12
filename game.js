@@ -2004,12 +2004,12 @@ class Hero extends Entity {
     }
 
     _laneWaypoints() {
-        let bT=[{x:300,y:2700},{x:300,y:1500},{x:300,y:300}];
+        let bT=[{x:300,y:2700},{x:300,y:1500},{x:300,y:300},{x:2700,y:300}];
         let bM=[{x:300,y:2700},{x:1500,y:1500},{x:2700,y:300}];
         let bB=[{x:300,y:2700},{x:1500,y:2700},{x:2700,y:2700},{x:2700,y:300}];
-        let rT=[{x:2700,y:300},{x:2700,y:1500},{x:2700,y:2700}];
+        let rT=[{x:2700,y:300},{x:1500,y:300},{x:300,y:300},{x:300,y:2700}];
         let rM=[{x:2700,y:300},{x:1500,y:1500},{x:300,y:2700}];
-        let rB=[{x:2700,y:300},{x:1500,y:300},{x:300,y:300},{x:300,y:2700}];
+        let rB=[{x:2700,y:300},{x:2700,y:1500},{x:2700,y:2700},{x:300,y:2700}];
         let bWp={top:bT,mid:bM,bot:bB,jungle:bM,support:bB};
         let rWp={top:rT,mid:rM,bot:rB,jungle:rM,support:rB};
         return (this.faction==='BLUE'?bWp:rWp)[this.laneRole]||bM;
