@@ -160,7 +160,7 @@ function playSFX(type) {
 const MAP_SIZE = 3000;
 const SUDDEN_DEATH_TIME = 18 * 60; // 18분 (서든데스 단축)
 const DRAGON_SPAWN_TIME = 5 * 60;  // 5분마다
-const GOLD_GOBLIN_TIME  = 8 * 60;  // 8분
+// [v4.2 CLEAN-01] GOLD_GOBLIN_TIME 상수 제거 (황금 고블린 컨텐츠 삭제됨)
 const MID_BOSS_TIMES    = [5*60, 10*60, 15*60]; // 5, 10, 15분 중간보스
 const MINION_INTERVAL   = 9;       // 9초마다 (미니언 소환 속도 2배)
 const REGEN_DELAY       = 5.0;     // 5초 비전투 후
@@ -182,7 +182,7 @@ const HERO_TMPL = {
     // ── 탱커 / 근거리 ──
     CRAG: {
         name:"크래그", color:"#4b5563",
-        hp:4500, atk:55, aspd:0.85, move:160, range:100, type:"melee", role_desc:"[탱커 / 근거리 / 오버파워]",
+        hp:4500, atk:55, aspd:0.85, move:184, range:100, type:"melee", role_desc:"[탱커 / 근거리 / 오버파워]",
         // 탱커형: AoE 기절 12초(최저 6s), 방어막 20초(최저 10s)
         skill1: { name:"대지 강타", cd:12, desc:"주변 반경 150의 모든 적에게 강한 마법 피해를 입히고 1.5초 기절시킵니다." },
         skill2: { name:"바위 갑옷", cd:20, desc:"5초 동안 최대 체력의 30% 방어막을 얻고 방어력이 대폭 상승합니다." },
@@ -190,49 +190,49 @@ const HERO_TMPL = {
     },
 
     // ── 브루저 / 근거리 딜탱 ──
-    BERSERKER: { name:"광전사", color:"#ef4444", hp:2470, atk:52, aspd:1.3, move:185, range:90, type:"melee", role_desc:"[근접 / 브루저 / 광역 제어]",
+    BERSERKER: { name:"광전사", color:"#ef4444", hp:2470, atk:52, aspd:1.3, move:213, range:90, type:"melee", role_desc:"[근접 / 브루저 / 광역 제어]",
         // 광역기: 10초(최저 5s), 도약: 14초(최저 7s)
         skill1:{name:"회전 참격", cd:10, desc:"주변 반경 내 적들에게 광역 데미지를 주고 0.5초 기절시킵니다."},
         skill2:{name:"도약 강타", cd:14, desc:"대상에게 도약하여 주변에 큰 데미지를 주고 1.5초 기절시킵니다."},
         draw:(ctx,x,y,r,dir,f,anim,ent)=>drawBlockyHero(ctx,x,y,r,dir,f,'berserker',anim,ent) },
 
     // ── 중거리 / 광역 폭딜 ──
-    ARCHON: { name:"아칸", color:"#3b82f6", hp:1820, atk:60, aspd:1.8, move:150, range:150, type:"ranged", role_desc:"[중거리 / 광역 폭딜 / 제어]",
+    ARCHON: { name:"아칸", color:"#3b82f6", hp:1820, atk:60, aspd:1.8, move:165, range:150, type:"ranged", role_desc:"[중거리 / 광역 폭딜 / 제어]",
         // 연속 지속딜: 12초(최저 6s), 완전CC: 20초(최저 10s)
         skill1:{name:"사이어닉 스톰", cd:12, desc:"지정 범위에 3초간 지속적인 하얀 번개를 내리쳐 광역 피해를 줍니다."},
         skill2:{name:"마엘스톰",      cd:20, desc:"지정 범위 내 적을 갈색 원형에 가두어 완전 마비시킵니다."},
         draw:(ctx,x,y,r,dir,f,anim,ent)=>drawBlockyHero(ctx,x,y,r,dir,f,'archon',anim,ent) },
 
     // ── 브루저 / 근거리 ──
-    BARBARIAN: { name:"바바리안", color:"#fb923c", hp:2860, atk:55, aspd:1.3, move:175, range:90, type:"melee", role_desc:"[근접 / 브루저 / 광역 딜러]",
+    BARBARIAN: { name:"바바리안", color:"#fb923c", hp:2860, atk:55, aspd:1.3, move:201, range:90, type:"melee", role_desc:"[근접 / 브루저 / 광역 딜러]",
         // 도약 둔화: 12초(최저 6s), 휠윈드 지속딜: 16초(최저 8s)
         skill1:{name:"점프샷",  cd:12, desc:"적진으로 도약하여 넓은 범위의 적들을 느리게 만듭니다."},
         skill2:{name:"휠윈드", cd:16, desc:"3초간 무기를 회전하며 지속 광역 피해를 주고 적을 띄웁니다."},
         draw:(ctx,x,y,r,dir,f,anim,ent)=>drawBlockyHero(ctx,x,y,r,dir,f,'barbarian',anim,ent) },
 
     // ── 원거리 / 지속 딜러 ──
-    ARCHER: { name:"궁수", color:"#10b981", hp:1690, atk:35, aspd:1.3, move:165, range:420, type:"ranged", role_desc:"[원거리 / 지속 딜러 / 순간 회피]",
+    ARCHER: { name:"궁수", color:"#10b981", hp:1690, atk:35, aspd:1.3, move:165, range:300, type:"ranged", role_desc:"[원거리 / 지속 딜러 / 순간 회피]",
         // 대쉬+공속버프: 14초(최저 7s), 화살폭우: 10초(최저 5s)
         skill1:{name:"블링크",    cd:14, desc:"전방으로 순간이동하며 5초간 공격속도가 50% 증가합니다."},
         skill2:{name:"화살 폭우", cd:10, desc:"단일 대상에게 연속으로 화살을 발사하여 큰 데미지를 줍니다."},
         critChance:0.12, draw:(ctx,x,y,r,dir,f,anim,ent)=>drawBlockyHero(ctx,x,y,r,dir,f,'archer',anim,ent) },
 
     // ── 탱커 / 폭주형 ──
-    grrr: { name:'그르르', color:"#f59e0b", hp:2080, atk:70, aspd:0.9, move:165, range:80, type:"melee", role_desc:"[근접 / 탱커 / 폭주]",
+    grrr: { name:'그르르', color:"#f59e0b", hp:2080, atk:70, aspd:0.9, move:190, range:80, type:"melee", role_desc:"[근접 / 탱커 / 폭주]",
         // 변신 폭주: 24초(최저 12s), AoE 기절: 18초(최저 9s) - 강력한 만큼 긴 쿨
         skill1:{name:'거대화', type:'self_buff', cd:24, desc:'일정 시간 동안 크기가 커지며 최대 체력/방어/공속/이속이 폭증합니다.'},
         skill2:{name:'포효',   type:'aoe_stun',  cd:18, desc:'크게 포효하여 주변의 모든 적을 2초간 강력하게 기절시킵니다.'},
         draw:(ctx,x,y,r,dir,f,anim,ent)=>drawBlockyHero(ctx,x,y,r,dir,f,'grrr',anim,ent) },
 
     // ── 근접 암살자 / 피흡 ──
-    VAMPIRE: { name:"뱀파이어", color:"#f43f5e", hp:2210, atk:45, aspd:1.2, move:175, range:110, type:"melee", role_desc:"[근접 / 암살자 / 피흡]",
+    VAMPIRE: { name:"뱀파이어", color:"#f43f5e", hp:2210, atk:45, aspd:1.2, move:201, range:110, type:"melee", role_desc:"[근접 / 암살자 / 피흡]",
         // 흡혈파동: 12초(최저 6s), 순간이동 기절: 16초(최저 8s)
         skill1:{name:"흡혈 파동", cd:12, desc:"전방 부채꼴 범위의 적들에게 데미지를 주고 데미지 비례 체력을 회복합니다."},
         skill2:{name:"박쥐 강습", cd:16, desc:"적의 배후로 순간이동하며 데미지를 주고 1.5초간 기절시킵니다."},
         lifeSteal:0.20, draw:(ctx,x,y,r,dir,f,anim,ent)=>drawBlockyHero(ctx,x,y,r,dir,f,'vampire',anim,ent) },
 
     // ── 근접 마법사 / 광역 폭딜 ──
-    THOR: { name:"토르", color:"#60a5fa", hp:2600, atk:58, aspd:0.9, move:175, range:100, type:"melee", role_desc:"[근접 / 마법사 / 광역 폭딜]",
+    THOR: { name:"토르", color:"#60a5fa", hp:2600, atk:58, aspd:0.9, move:201, range:100, type:"melee", role_desc:"[근접 / 마법사 / 광역 폭딜]",
         // 번개강타: 14초(최저 7s), 충격파: 18초(최저 9s)
         skill1:{name:"번개 강타", cd:14, desc:"목표물에 번개를 떨어뜨려 주변에 큰 데미지와 스턴을 부여합니다."},
         skill2:{name:"충격파",   cd:18, desc:"주변 넓은 범위에 매우 큰 데미지를 주고 적들을 밀어내며 에어본시킵니다."},
@@ -251,7 +251,7 @@ const HERO_TMPL = {
     // ── 원거리 / 도박 딜러 ──
     JOKER: {
         name:"조커블레이드", color:"#a855f7",
-        hp:1820, atk:42, aspd:1.45, move:175, range:360, type:"ranged", role_desc:"[원거리 / 딜러 / 도박]",
+        hp:1820, atk:42, aspd:1.45, move:175, range:290, type:"ranged", role_desc:"[원거리 / 딜러 / 도박]",
         critChance:0.12,
         // 무작위 버프: 12초(최저 6s), 골드 비례 폭딜: 24초(최저 12s)
         skill1: { name:"왕의 패",    cd:12, desc:"카드 3장을 무작위로 뽑음. 각각 공격/방어/공속 버프 등 무작위 효과 발동" },
@@ -262,7 +262,7 @@ const HERO_TMPL = {
     // ── 원거리 서포터 / 디버퍼 ──
     DARKPRIEST: {
         name:"암흑사제", color:"#7c3aed",
-        hp:1950, atk:35, aspd:1.3, move:155, range:380, type:"ranged", role_desc:"[원거리 / 서포터 / 디버퍼]",
+        hp:1950, atk:35, aspd:1.3, move:155, range:285, type:"ranged", role_desc:"[원거리 / 서포터 / 디버퍼]",
         // 자해+폭딜: 14초(최저 7s), 저주 낙인: 20초(최저 10s)
         skill1: { name:"영혼 착취",  cd:14, desc:"주변 아군 한 명의 체력을 일부 깎는 대신, 적에게 2.5배 강력한 레이저 공격을 뿜어냅니다." },
         skill2: { name:"저주의 낙인", cd:20, desc:"대상 적에게 10초간 낙인 부여. 아군의 모든 공격이 대상에게 30% 추가 피해" },
@@ -272,7 +272,7 @@ const HERO_TMPL = {
     // ── 마검사 / 암살자 ──
     ZEROS: {
         name:"제로스", color:"#7f1d1d",
-        hp:2500, atk:65, aspd:1.4, move:185, range:120, type:"melee", role_desc:"[마검사 / 암살자 / 광역 딜러]",
+        hp:2500, atk:65, aspd:1.4, move:213, range:120, type:"melee", role_desc:"[마검사 / 암살자 / 광역 딜러]",
         // 광역슬로우: 12초(최저 6s), 순간이동 크리: 20초(최저 10s)
         skill1: { name:"흑염참",      cd:12, desc:"전방 부채꼴 범위의 적에게 데미지를 주고 이속 50% 감소 및 시야가려짐(블라인드) 부여" },
         skill2: { name:"그림자 습격", cd:20, desc:"멀리 있는 적에게 순간이동 후 치명타. 주변 적 1.5초 공포" },
@@ -282,8 +282,8 @@ const HERO_TMPL = {
     // ── 초장거리 스나이퍼 ──
     SYLVIA: {
         name:"실비아", color:"#2dd4bf",
-        hp:1600, atk:90, aspd:0.6, move:165, range:450, type:"ranged", role_desc:"[초장거리 스나이퍼 / 퓨어 딜러]",
-        critChance:0.2,
+        hp:1600, atk:72, aspd:0.6, move:165, range:310, type:"ranged", role_desc:"[초장거리 스나이퍼 / 퓨어 딜러]",
+        critChance:0.15, // [v4.2 BALANCE-02] 0.20→0.15 하향
         // 레이저 관통: 14초(최저 7s), 지뢰+백대쉬: 20초(최저 10s)
         skill1: { name:"관통하는 섬광", cd:14, desc:"1초 정신집중 후 전방 일직선 두꺼운 트루데미지 레이저 발사" },
         skill2: { name:"전술 회피",     cd:20, desc:"발밑에 지뢰를 깔고 뒤로 크게 백대쉬. 지뢰 폭발 시 적 2초 기절" },
@@ -293,7 +293,7 @@ const HERO_TMPL = {
     // ── 바람 마법사 / 다단히트 ──
     ZEPHYR: {
         name:"제피르", color:"#4ade80",
-        hp:1800, atk:40, aspd:1.6, move:175, range:380, type:"ranged", role_desc:"[바람 마법사 / 다단히트 DPS]",
+        hp:1800, atk:40, aspd:1.6, move:175, range:285, type:"ranged", role_desc:"[바람 마법사 / 다단히트 DPS]",
         // 회오리 다단히트: 14초(최저 7s), 폭풍 에어본: 22초(최저 11s)
         skill1: { name:"Tornado Blast", cd:14, desc:"주변으로 소형 회오리 여러 개가 팽창하며 적 다단히트 및 넉백" },
         skill2: { name:"Gale Squall",   cd:22, desc:"거대하고 느린 폭풍을 발사하여 닿은 적 에어본 및 둔화" },
@@ -383,35 +383,19 @@ let camera = { x:1500, y:2500, zoom:0.65 };
 let player = null;
 window.TEAM_VAULT = { gold: 0 };
 window.addGold = function(hero, amount) {
+    // [v4.2 BUG-01 Fix] addGold 내부의 ZEROS/CRAG 평타 코드(dead code) 완전 제거
+    // 이 함수는 오직 골드 지급 역할만 수행해야 함
     if(!hero) return;
     if(hero.faction === player?.faction) {
         let tax = amount * 0.03;
         window.TEAM_VAULT.gold += tax;
         hero.gold += (amount - tax);
-    } 
-            else if(this.heroKey === 'ZEROS') {
-                let a = Math.atan2(target.y-this.y, target.x-this.x);
-                spawnSlash(this.x, this.y-this.radius, a, '#7f1d1d', 120); // 흑염검
-                let hitTargets = entities.filter(e=>e.faction!==this.faction && !e.isDead && dist(e, this) <= this.range + 20);
-                hitTargets.forEach(tgt => {
-                    let dealt=tgt.applyRawDamage(dmg, this); this.totalDmg+=dealt;
-                    this.triggerOnHitPassives(tgt);
-                    if(this.lifeSteal>0) this.hp=Math.min(this.maxHp, this.hp+dealt*this.lifeSteal);
-                });
-                if(this.isPlayer) playSFX('hit');
-            }
-            else if(this.heroKey === 'CRAG') {
-                spawnSlash(this.x, this.y-this.radius, Math.random()*Math.PI*2, '#78716c', 100);
-                spawnParticles(target.x, target.y, '#57534e', 10, 80, 0.5);
-                let hitTargets = entities.filter(e=>e.faction!==this.faction && !e.isDead && dist(e, target) <= 100);
-                hitTargets.forEach(tgt => {
-                    let dealt=tgt.applyRawDamage(dmg, this); this.totalDmg+=dealt;
-                    this.triggerOnHitPassives(tgt);
-                });
-                if(this.isPlayer) playSFX('hit');
-            }
- else {
-        hero.gold += amount;
+    } else {
+        // [v4.2 BALANCE-04] RED팀 금고에 3% 세금 적립 → 크리처 소환에 사용
+        let redTax = amount * 0.03;
+        window.TEAM_VAULT_RED = window.TEAM_VAULT_RED || { gold: 0 };
+        window.TEAM_VAULT_RED.gold += redTax;
+        hero.gold += (amount - redTax);
     }
 };
 let entities = [];
@@ -427,7 +411,7 @@ let aoeEffects = [];
 const keys = { w:false, a:false, s:false, d:false };
 const joy  = { active:false, id:null, ox:0, oy:0, dx:0, dy:0 };
 
-let minionTimer = 0; let dragonTimer = 0; let goblinSpawned = false; let suddenDeathTriggered = false;
+let minionTimer = 0; let dragonTimer = 0; let suddenDeathTriggered = false; // [v4.2 CLEAN-01] goblinSpawned 제거
 let midBossSpawned = [false, false, false];
 
 // ============ 유틸 ============
@@ -1257,9 +1241,7 @@ class Entity {
         if(this.isDead) return;
         if(this.invincibleTimer>0) {
             this.invincibleTimer-=dt;
-            if(this.stunTimer > 0) this.stunTimer-=dt;
-            this.vx=0; this.vy=0;
-            return;
+            // 무적 상태여도 이동 및 공격은 가능해야 하므로 return 및 vx,vy 초기화를 제거함
         }
         if(this.hitFlashTimer>0) this.hitFlashTimer-=dt;
         if(this.curseTimer>0) this.curseTimer-=dt;
@@ -1467,7 +1449,146 @@ class Entity {
 }
 
 // ============ 영웅 클래스 ============
+
+// ============ AI 성격 시스템 ============
+const AI_PERSONALITY = {
+    AGGRESSIVE: {
+        id: 'AGGRESSIVE', label: '공격형',
+        retreatHpRatio: 0.20, chaseRange: 1100, orderObeyRate: 0.55, loneWolfChance: 0.40, skillUseDelay: 0.1,
+        shopBias: 'atk', chatStyle: 'toxic',
+    },
+    TACTICAL: {
+        id: 'TACTICAL', label: '전술형',
+        retreatHpRatio: 0.35, chaseRange: 800, orderObeyRate: 0.90, loneWolfChance: 0.10, skillUseDelay: 0.3,
+        shopBias: 'balanced', chatStyle: 'callout',
+    },
+    COWARD: {
+        id: 'COWARD', label: '생존형',
+        retreatHpRatio: 0.50, chaseRange: 500, orderObeyRate: 0.70, loneWolfChance: 0.20, skillUseDelay: 0.5,
+        shopBias: 'def', chatStyle: 'complain',
+    },
+    OPPORTUNIST: {
+        id: 'OPPORTUNIST', label: '기회주의형',
+        retreatHpRatio: 0.30, chaseRange: 700, orderObeyRate: 0.50, loneWolfChance: 0.60, skillUseDelay: 0.2,
+        shopBias: 'gold', chatStyle: 'brag',
+    },
+    SUPPORT_MIND: {
+        id: 'SUPPORT_MIND', label: '서포터형',
+        retreatHpRatio: 0.40, chaseRange: 600, orderObeyRate: 0.85, loneWolfChance: 0.05, skillUseDelay: 0.4,
+        shopBias: 'utility', chatStyle: 'encourage',
+    }
+};
+
+// ============ 팀 뇌 시스템 ============
+class TeamBrain {
+    constructor(faction) {
+        this.faction = faction;
+        this.updateTimer = 3.0;
+        this.commander = null;
+        this.currentOrder = {
+            type: 'FARM', lane: 'mid', urgency: 'normal',
+            targetEntity: null, issuedAt: 0, duration: 15.0,
+        };
+    }
+
+    update(dt) {
+        this.updateTimer -= dt;
+        if (this.updateTimer > 0) return;
+        this.updateTimer = 3.0;
+        this._electCommander();
+        this._analyzeAndIssueOrder();
+    }
+
+    _electCommander() {
+        let myHeroes = entities.filter(e => e.type==='hero' && e.faction===this.faction && !e.isDead && !e.isPlayer);
+        if (myHeroes.length === 0) return;
+        myHeroes.sort((a, b) => {
+            let sa = a.kills*3 + (a.assists||0) - a.deaths*2 + a.level;
+            let sb = b.kills*3 + (b.assists||0) - b.deaths*2 + b.level;
+            return sb - sa;
+        });
+        this.commander = myHeroes[0];
+    }
+
+    _analyzeAndIssueOrder() {
+        let ef = this.faction==='BLUE' ? 'RED' : 'BLUE';
+        let myH = entities.filter(e=>e.type==='hero'&&e.faction===this.faction&&!e.isDead);
+        let myNx = entities.find(e=>e.type==='nexus'&&e.faction===this.faction);
+        let enmNx = entities.find(e=>e.type==='nexus'&&e.faction===ef);
+        let dragons = entities.filter(e=>(e.mtype==='boss_epic_dragon'||e.mtype==='boss')&&!e.isDead);
+        let myScore = this.faction==='BLUE' ? GS.scoreBlue : GS.scoreRed;
+        let enmScore = this.faction==='BLUE' ? GS.scoreRed : GS.scoreBlue;
+        let avgHp = myH.length>0 ? myH.reduce((s,h)=>s+h.hp/h.maxHp,0)/myH.length : 1;
+
+        if (myNx && myNx.hp/myNx.maxHp < 0.30) return this._issue('DEFEND', null, 'critical', 10.0);
+        
+        if (enmNx && !entities.some(e=>e.type==='nexus_turret'&&e.faction===ef&&!e.isDead)) {
+            let lane = this._weakestEnemyLane();
+            this._chat('nexus_open');
+            return this._issue('PUSH_'+lane.toUpperCase(), lane, 'urgent', 20.0);
+        }
+        
+        let nearDragon = dragons.find(d=>myH.filter(h=>dist(h,d)<900).length>=2);
+        if (nearDragon && avgHp>0.55 && Math.random()<0.65) {
+            this._chat('call_dragon');
+            return this._issue('DRAGON', null, 'urgent', 15.0, nearDragon);
+        }
+        
+        if (avgHp < 0.45) return this._issue('FARM', null, 'normal', 12.0);
+        
+        if (myScore - enmScore >= 3) {
+            let lane = this._weakestEnemyLane();
+            if (Math.random()<0.5) this._chat('order_push');
+            return this._issue('PUSH_'+lane.toUpperCase(), lane, 'normal', 15.0);
+        }
+        
+        if (enmScore - myScore >= 3) {
+            if (Math.random()<0.6) this._chat('call_defend');
+            return this._issue('DEFEND', null, 'urgent', 12.0);
+        }
+        
+        let grouped = this._findGroupedAllies(3, 450);
+        if (grouped && GS.time>300) {
+            if (Math.random()<0.4) this._chat('call_teamfight');
+            return this._issue('GROUP_FIGHT', null, 'normal', 8.0);
+        }
+        
+        let lane = GS.time<300 ? ['top','mid','bot'][Math.floor(Math.random()*3)] : this._weakestEnemyLane();
+        return this._issue('PUSH_'+lane.toUpperCase(), lane, 'normal', 12.0);
+    }
+
+    _issue(type, lane, urgency, duration, target=null) {
+        this.currentOrder = { type, lane, urgency, targetEntity:target, issuedAt:GS.time, duration };
+    }
+
+    _weakestEnemyLane() {
+        let ef = this.faction==='BLUE' ? 'RED' : 'BLUE';
+        let laneScore = { top:0, mid:0, bot:0 };
+        entities.filter(e=>(e.type==='tower'||e.type==='nexus_turret')&&e.faction===ef&&!e.isDead)
+            .forEach(t=>{
+                let l=(t.x<700||t.y>2300)?'top':(t.x>2300||t.y<700)?'bot':'mid';
+                laneScore[l]+=t.hp;
+            });
+        let sorted = Object.entries(laneScore).sort((a,b)=>a[1]-b[1]);
+        return sorted.length > 0 ? sorted[0][0] : 'mid';
+    }
+
+    _findGroupedAllies(minCount, radius) {
+        let heroes=entities.filter(e=>e.type==='hero'&&e.faction===this.faction&&!e.isDead);
+        for(let h of heroes){
+            if(heroes.filter(a=>a!==h&&dist(a,h)<radius).length+1>=minCount) return h;
+        }
+        return null;
+    }
+
+    _chat(type) {
+        if(this.commander && window.AIChat)
+            window.AIChat.triggerOrderChat(this.commander, type, this.faction);
+    }
+}
+
 class Hero extends Entity {
+
     constructor(x, y, faction, heroKey, isPlayer=false, laneRole='mid'){
         super(x,y,faction,'hero');
         this.heroKey=heroKey; this.isPlayer=isPlayer; this.laneRole = laneRole;
@@ -1496,7 +1617,24 @@ class Hero extends Entity {
         this.borkActive=false; this.hasWarmog=false;
         this.isRetreating=false; this.aiShopTimer=rand(5,15);
         this.facingDir=1;
+
+        if (!isPlayer) {
+            let personalityPool;
+            if (heroKey === 'ARIEL' || heroKey === 'DARKPRIEST') {
+                personalityPool = ['SUPPORT_MIND','SUPPORT_MIND','SUPPORT_MIND','TACTICAL','COWARD'];
+            } else if (heroKey === 'CRAG' || heroKey === 'BARBARIAN' || heroKey === 'grrr') {
+                personalityPool = ['AGGRESSIVE','AGGRESSIVE','TACTICAL','TACTICAL','OPPORTUNIST'];
+            } else if (heroKey === 'VAMPIRE' || heroKey === 'ZEROS' || heroKey === 'JOKER') {
+                personalityPool = ['OPPORTUNIST','OPPORTUNIST','AGGRESSIVE','TACTICAL','COWARD'];
+            } else {
+                personalityPool = ['AGGRESSIVE','TACTICAL','COWARD','OPPORTUNIST','SUPPORT_MIND'];
+            }
+            this.personality = AI_PERSONALITY[personalityPool[Math.floor(Math.random() * personalityPool.length)]];
+            this.aiMemory = { lastDeathPos: null, lastKilledBy: null, enemyDangerMap: {}, objectiveFocus: null };
+            this.wpIdx = 1;
+        }
         this.applyStats();
+
     }
     update(dt){
         if(this.whirlwindTimer > 0) {
@@ -1560,6 +1698,7 @@ class Hero extends Entity {
             if(this.respawnTimer<=0){
                 this.isDead=false; this.hp=this.maxHp;
                 this.invincibleTimer = 5.0; // 5초 무적
+                this.wpIdx = 1; // 부활 시 웨이포인트 이동 상태를 처음으로 초기화하여 본진에 갇히는 버그 방지
                 let sp=this.faction==='BLUE'?{x:300,y:2700}:{x:2700,y:300};
                 this.x=sp.x+rand(-60,60); this.y=sp.y+rand(-60,60);
                 if(this.isPlayer){ document.getElementById('respawnOverlay').classList.add('hidden'); }
@@ -1606,188 +1745,292 @@ class Hero extends Entity {
         }
         let len=Math.hypot(this.vx,this.vy); if(len>this.moveSpd){ this.vx=this.vx/len*this.moveSpd; this.vy=this.vy/len*this.moveSpd; }
     }
-    handleAI(dt){
-        if(this.isDead || this.stunTimer>0) return;
+    handleAI(dt) {
+        if (this.isDead || this.stunTimer > 0) return;
 
-        let myBase = this.faction === 'BLUE' ? {x:300, y:2700} : {x:2700, y:300};
-        
-        // 본진 근처면 즉시 최적의 장비 구매 시도
-        if(dist(this, myBase) < 400) {
-            this.aiShopTimer -= dt;
-            if(this.aiShopTimer <= 0) {
-                this.aiShopAI();
-                this.aiShopTimer = 4.0;
-            }
-        }
+        let myBase    = this.faction==='BLUE' ? {x:300,y:2700} : {x:2700,y:300};
+        let enemyBase = this.faction==='BLUE' ? {x:2700,y:300} : {x:300,y:2700};
+        let hpRatio   = this.hp / this.maxHp;
+        let pers      = this.personality || AI_PERSONALITY.TACTICAL;
 
-        let hpRatio = this.hp / this.maxHp;
-        
-        // 0.2초마다 주변 전황 및 고도화된 정보 캐싱
         if (!this.aiUpdateTimer) this.aiUpdateTimer = 0;
         this.aiUpdateTimer -= dt;
         if (this.aiUpdateTimer <= 0) {
             this.aiUpdateTimer = 0.2;
-            this.nearEnemiesCache = entities.filter(e => e.faction !== this.faction && !e.isDead && dist(this, e) < 900);
-            this.nearAlliesCache = entities.filter(e => e.faction === this.faction && !e.isDead && dist(this, e) < 900 && e !== this);
+            this.nearEnemiesCache = entities.filter(e=>e.faction!==this.faction&&!e.isDead&&dist(this,e)<1000);
+            this.nearAlliesCache  = entities.filter(e=>e.faction===this.faction&&!e.isDead&&dist(this,e)<1000&&e!==this);
+            if (this.aiMemory) {
+                this.nearEnemiesCache.forEach(e=>{
+                    if(e.type==='hero') {
+                        let d=(e.kills||0)*10+(e.level||1)*5;
+                        if(this.aiMemory.lastKilledBy===e.heroKey) d+=50;
+                        this.aiMemory.enemyDangerMap[e.heroKey]=d;
+                    }
+                });
+            }
         }
 
-        let nearEnemies = (this.nearEnemiesCache || []).filter(e => !e.isDead);
-        let nearAllies = (this.nearAlliesCache || []).filter(e => !e.isDead);
+        let nearEnemies = (this.nearEnemiesCache||[]).filter(e=>!e.isDead);
+        let nearAllies  = (this.nearAlliesCache ||[]).filter(e=>!e.isDead);
 
-        // ────────────────────────────────────────
-        // [가이드 4.3.1] 동적 전술 상태 결정 알고리즘
-        // ────────────────────────────────────────
+        if (dist(this, myBase) < 400) {
+            if (!this.aiShopTimer) this.aiShopTimer = 3.0 + Math.random()*4.0;
+            this.aiShopTimer -= dt;
+            if (this.aiShopTimer <= 0) {
+                this.aiShopAI();
+                this.aiShopTimer = 3.0 + Math.random()*4.0;
+            }
+        }
+
+        let brain  = window.TeamBrains && window.TeamBrains[this.faction];
+        let order  = brain ? brain.currentOrder : null;
+        let orderActive = order && (GS.time - order.issuedAt) < order.duration;
+
         let oldState = this.aiState;
-        
-        if (hpRatio <= 0.35) {
-            let superWeakEnemy = nearEnemies.find(e => e.type === 'hero' && (e.hp / e.maxHp) <= 0.15 && dist(this, e) < this.range * 1.3);
-            if (superWeakEnemy) {
-                this.aiState = 'ATTACK';
-            } else {
-                this.aiState = 'RETREAT';
-            }
-        } else {
-            let combatAllies = nearAllies.filter(a => a.type === 'hero' && a.lastAttackedTimer > 0);
-            let visibleEnemyHeroes = nearEnemies.filter(e => e.type === 'hero');
-            
-            if (combatAllies.length > 0 && visibleEnemyHeroes.length > 0) {
-                this.aiState = 'TEAMFIGHT_JOIN';
-            } else if (nearEnemies.length > 0) {
-                this.aiState = 'ATTACK';
-            } else {
-                this.aiState = 'LANE';
-            }
-        }
+        this.aiState = this._decideState(hpRatio,nearEnemies,nearAllies,pers,order,orderActive,myBase);
 
         if (oldState !== this.aiState) {
             this.aiChasing = false;
-            this.reactionDelay = 0.15;
+            this.reactionDelay = pers.id==='AGGRESSIVE' ? 0.05 : 0.10+Math.random()*0.15;
+            if (Math.random() < 0.25) this._stateChat(oldState, this.aiState);
         }
-        if (this.reactionDelay > 0) {
-            this.reactionDelay -= dt;
-            return;
-        }
+        if (this.reactionDelay > 0) { this.reactionDelay -= dt; return; }
 
-        // ────────────────────────────────────────
-        // [가이드 4.3.2] 타겟 우선순위 스코어링 수식 기반 스마트 타겟팅
-        // ────────────────────────────────────────
-        let target = null;
-        if (nearEnemies.length > 0) {
-            let bestScore = -99999;
-            nearEnemies.forEach(e => {
-                if (e.type === 'nexus' && entities.some(t => t.type==='nexus_turret' && t.faction===e.faction && !t.isDead)) return;
-                
-                let d = dist(this, e);
-                let score = 0;
-                score += (1.0 - (e.hp / e.maxHp)) * 400;
-                score += (1.0 - (d / 900)) * 300;
-                if (e.type === 'hero') score += 250;
-                if ((e.type === 'tower' || e.type === 'nexus_turret') && !entities.some(m => m.faction === this.faction && m.type === 'minion' && dist(m, e) < e.range)) {
-                    score -= 600;
-                }
+        let target = this._pickTarget(nearEnemies, pers);
+        this._runState(dt,target,nearEnemies,nearAllies,myBase,enemyBase,pers,order,orderActive);
+        this.aiTarget = target;
+    }
 
-                if (score > bestScore) {
-                    bestScore = score;
-                    target = e;
-                }
-            });
-        }
+    _decideState(hpRatio, nearEnemies, nearAllies, pers, order, orderActive, myBase) {
+        let dangerZones = entities.filter(e => e.type==='stormZone' && e.faction!==this.faction && dist(this, e) < e.radius);
+        if (dangerZones.length > 0) return 'EVADE';
 
-        // ────────────────────────────────────────
-        // [가이드 4.3.3] 각 상태별 세부 주행 제어
-        // ────────────────────────────────────────
-        let tx = 1500, ty = 1500;
-        
-        const followDirection = (targetPos, stopDist) => {
-            let d = dist(this, targetPos);
-            if (d > stopDist) {
-                let a = Math.atan2(targetPos.y - this.y, targetPos.x - this.x);
-                this.vx = Math.cos(a) * this.moveSpd;
-                this.vy = Math.sin(a) * this.moveSpd;
-            } else {
-                this.vx = 0; this.vy = 0;
+        if (hpRatio <= pers.retreatHpRatio) {
+            if (pers.id==='AGGRESSIVE') {
+                let dying=nearEnemies.find(e=>e.type==='hero'&&(e.hp/e.maxHp)<0.15&&dist(this,e)<this.range*1.5);
+                if(dying) return 'ASSASSINATE';
             }
-            this.facingDir = targetPos.x < this.x ? -1 : 1;
+            return dist(this,myBase)<500 ? 'RECALL' : 'RETREAT';
+        }
+        if (orderActive && Math.random()<pers.orderObeyRate) return 'FOLLOW_ORDER';
+        let dyingHero=nearEnemies.find(e=>e.type==='hero'&&(e.hp/e.maxHp)<0.30&&dist(this,e)<700);
+        if(dyingHero&&(pers.id==='AGGRESSIVE'||pers.id==='OPPORTUNIST')) return 'ASSASSINATE';
+        if(pers.id==='SUPPORT_MIND') {
+            let weakAlly=nearAllies.find(a=>a.type==='hero'&&a.hp/a.maxHp<0.40);
+            if(weakAlly) return 'ESCORT';
+        }
+        let combatAllies=nearAllies.filter(a=>a.type==='hero'&&(a.lastAttackedTimer||0)>0);
+        if(combatAllies.length>=2&&nearEnemies.filter(e=>e.type==='hero').length>=1) return 'TEAMFIGHT_JOIN';
+        if(pers.id==='OPPORTUNIST'&&hpRatio>0.70&&nearAllies.filter(a=>a.type==='hero').length===0&&Math.random()<pers.loneWolfChance) return 'SPLITPUSH';
+        
+        let siegeTower=entities.find(e=>
+            (e.type==='tower'||e.type==='nexus_turret')&&e.faction!==this.faction&&!e.isDead&&
+            dist(this,e)<700&&entities.some(m=>m.faction===this.faction&&m.type==='minion'&&!m.isDead&&dist(m,e)<e.range));
+        if(siegeTower) return 'SIEGE';
+        if(nearEnemies.length>0) return 'ATTACK';
+        return 'LANE';
+    }
+
+    _pickTarget(nearEnemies, pers) {
+        if(nearEnemies.length===0) return null;
+        let best=-99999, target=null;
+        nearEnemies.forEach(e=>{
+            if(e.type==='nexus'&&entities.some(t=>t.type==='nexus_turret'&&t.faction===e.faction&&!t.isDead)) return;
+            let d=dist(this,e);
+            let s=(1-(e.hp/e.maxHp))*400+(1-(d/1000))*300;
+            if(e.type==='hero') s+=250;
+            if(pers.id==='AGGRESSIVE'&&e.type==='hero') s+=400;
+            if(pers.id==='AGGRESSIVE'&&e.type==='minion') s-=200;
+            if(pers.id==='OPPORTUNIST') s+=(1-(e.hp/e.maxHp))*300;
+            if(pers.id==='TACTICAL'&&e.type==='hero'&&this.aiMemory) s+=(this.aiMemory.enemyDangerMap[e.heroKey]||0)*0.5;
+            if((e.type==='tower'||e.type==='nexus_turret')&&
+               !entities.some(m=>m.faction===this.faction&&m.type==='minion'&&dist(m,e)<e.range)) s-=600;
+            if(s>best){best=s;target=e;}
+        });
+        return target;
+    }
+
+    _runState(dt, target, nearEnemies, nearAllies, myBase, enemyBase, pers, order, orderActive) {
+        let hpRatio=this.hp/this.maxHp;
+        const go=(pos,stop)=>{
+            let d=dist(this,pos);
+            if(d>stop){let a=Math.atan2(pos.y-this.y,pos.x-this.x);this.vx=Math.cos(a)*this.moveSpd;this.vy=Math.sin(a)*this.moveSpd;}
+            else{this.vx=0;this.vy=0;}
+            this.facingDir=pos.x<this.x?-1:1;
+        };
+        const skills=(needTarget=true,maxDist=9999)=>{
+            if(needTarget&&(!target||dist(this,target)>maxDist)) return;
+            if(this.heroSkill1Timer<=pers.skillUseDelay) this.useSkill(1);
+            if(this.heroSkill2Timer<=pers.skillUseDelay&&(!needTarget||dist(this,target)<this.range*1.2)) this.useSkill(2);
         };
 
         switch(this.aiState) {
-            case 'RETREAT':
-                let pursuer = nearEnemies.find(e => e.type === 'hero' && dist(this, e) < 300);
-                if (pursuer) {
-                    let escapeAngle = Math.atan2(myBase.y - this.y, myBase.x - this.x);
-                    let evadeNoise = Math.sin(performance.now() / 150) * 0.4;
-                    this.vx = Math.cos(escapeAngle + evadeNoise) * this.moveSpd;
-                    this.vy = Math.sin(escapeAngle + evadeNoise) * this.moveSpd;
-                } else {
-                    followDirection(myBase, 50);
-                }
-                break;
-
-            case 'TEAMFIGHT_JOIN':
-                let targetFight = nearAllies.find(a => a.type === 'hero' && a.lastAttackedTimer > 0);
-                if (targetFight) {
-                    followDirection(targetFight, this.range * 0.7);
-                    if (target && dist(this, target) <= this.range) {
-                        if(this.heroSkill1Timer <= 0) this.useSkill(1);
-                        if(this.heroSkill2Timer <= 0) this.useSkill(2);
-                    }
+            case 'EVADE': {
+                let dangerZones = entities.filter(e => e.type==='stormZone' && e.faction!==this.faction && dist(this, e) < e.radius);
+                if(dangerZones.length > 0) {
+                    let dz = dangerZones[0];
+                    let a = Math.atan2(this.y - dz.y, this.x - dz.x);
+                    this.vx = Math.cos(a) * this.moveSpd * 1.5;
+                    this.vy = Math.sin(a) * this.moveSpd * 1.5;
+                    this.facingDir = this.vx > 0 ? 1 : -1;
                 } else {
                     this.aiState = 'LANE';
                 }
                 break;
-
-            case 'ATTACK':
-                if (target) {
-                    let d = dist(this, target);
-                    if (this.attackTimer > 0 && HERO_TMPL[this.heroKey].type === 'ranged' && d < this.range * 0.8) {
-                        let escapeAngle = Math.atan2(this.y - target.y, this.x - target.x);
-                        this.vx = Math.cos(escapeAngle) * this.moveSpd * 0.85;
-                        this.vy = Math.sin(escapeAngle) * this.moveSpd * 0.85;
-                    } else {
-                        followDirection(target, this.range * 0.6);
+            }
+            case 'RETREAT': {
+                let chaser=nearEnemies.find(e=>e.type==='hero'&&dist(this,e)<350);
+                if(chaser){
+                    let a=Math.atan2(myBase.y-this.y,myBase.x-this.x);
+                    let n=Math.sin(performance.now()/130)*0.5;
+                    this.vx=Math.cos(a+n)*this.moveSpd; this.vy=Math.sin(a+n)*this.moveSpd;
+                    if(dist(this,chaser)<200&&this.heroSkill2Timer<=0) this.useSkill(2);
+                } else { go(myBase,50); }
+                break;
+            }
+            case 'RECALL': {
+                go(myBase,80);
+                if(hpRatio>0.75) this.aiState='LANE';
+                break;
+            }
+            case 'ATTACK': {
+                if(!target){this.aiState='LANE';break;}
+                let d=dist(this,target);
+                if(HERO_TMPL[this.heroKey].type==='ranged'&&this.attackTimer>0&&d<this.range*0.75){
+                    let a=Math.atan2(this.y-target.y,this.x-target.x);
+                    let side=Math.sin(performance.now()/200)*0.6;
+                    this.vx=Math.cos(a+side)*this.moveSpd*0.8; this.vy=Math.sin(a+side)*this.moveSpd*0.8;
+                } else { go(target,this.range*0.65); }
+                skills(true,this.range*1.3);
+                break;
+            }
+            case 'TEAMFIGHT_JOIN': {
+                let center=nearAllies.find(a=>a.type==='hero'&&(a.lastAttackedTimer||0)>0);
+                if(!center){this.aiState='LANE';break;}
+                let stopDist=HERO_TMPL[this.heroKey].type==='melee'?this.range*0.5:this.range*0.8;
+                go(center,stopDist);
+                skills(true,this.range*1.2);
+                break;
+            }
+            case 'SIEGE': {
+                let tw=entities.find(e=>(e.type==='tower'||e.type==='nexus_turret')&&e.faction!==this.faction&&!e.isDead&&dist(this,e)<700);
+                if(!tw){this.aiState='LANE';break;}
+                let hasTank=entities.some(m=>m.faction===this.faction&&m.type==='minion'&&!m.isDead&&dist(m,tw)<tw.range);
+                if(hasTank){
+                    let a=Math.atan2(this.y-tw.y,this.x-tw.x);
+                    go({x:tw.x+Math.cos(a)*(tw.range-this.range*0.9),y:tw.y+Math.sin(a)*(tw.range-this.range*0.9)},30);
+                } else { go(myBase,300); }
+                break;
+            }
+            case 'ASSASSINATE': {
+                let prey=nearEnemies.find(e=>e.type==='hero'&&(e.hp/e.maxHp)<0.40)||nearEnemies.find(e=>e.type==='hero');
+                if(!prey){this.aiState='LANE';break;}
+                go(prey,this.range*0.4);
+                if(this.heroSkill1Timer<=0) this.useSkill(1);
+                if(this.heroSkill2Timer<=0) this.useSkill(2);
+                break;
+            }
+            case 'ESCORT': {
+                let weakA=nearAllies.find(a=>a.type==='hero'&&a.hp/a.maxHp<0.40);
+                if(!weakA||weakA.hp/weakA.maxHp>0.72){this.aiState='LANE';break;}
+                go(weakA,80);
+                if(target&&target.type==='hero'){go(target,this.range*0.5);skills(true,this.range*1.3);}
+                break;
+            }
+            case 'FOLLOW_ORDER': {
+                if(!order||!orderActive){this.aiState='LANE';break;}
+                let ef=this.faction==='BLUE'?'RED':'BLUE';
+                switch(order.type){
+                    case 'DEFEND': {
+                        let nx=entities.find(e=>e.type==='nexus'&&e.faction===this.faction);
+                        if(nx) go(nx,200);
+                        if(target){go(target,this.range*0.6);skills(true,this.range*1.2);}
+                        break;
                     }
-                    
-                    if(this.heroSkill1Timer <= 0) this.useSkill(1);
-                    if(this.heroSkill2Timer <= 0 && d < this.range * 1.1) this.useSkill(2);
-                } else {
-                    this.aiState = 'LANE';
+                    case 'DRAGON': {
+                        let dg=order.targetEntity;
+                        if(dg&&!dg.isDead){go(dg,this.range*0.7);skills(true,this.range*1.3);}
+                        else this.aiState='LANE';
+                        break;
+                    }
+                    case 'PUSH_TOP': case 'PUSH_MID': case 'PUSH_BOT': {
+                        let dest=this._laneDest(order.lane||'mid');
+                        go(dest,100);
+                        let tw=entities.find(e=>(e.type==='tower'||e.type==='nexus_turret')&&e.faction===ef&&!e.isDead&&dist(this,e)<e.range*1.8);
+                        if(tw&&entities.some(m=>m.faction===this.faction&&m.type==='minion'&&!m.isDead&&dist(m,tw)<tw.range)){
+                            let a=Math.atan2(this.y-tw.y,this.x-tw.x);
+                            go({x:tw.x+Math.cos(a)*(tw.range-this.range*0.8),y:tw.y+Math.sin(a)*(tw.range-this.range*0.8)},30);
+                        }
+                        if(target&&dist(this,target)<this.range*1.2) skills(true,this.range*1.2);
+                        break;
+                    }
+                    case 'GROUP_FIGHT': {
+                        let gc=this._nearestAllyGroup();
+                        if(gc) go(gc,150);
+                        if(target) skills(true,this.range*1.2);
+                        break;
+                    }
+                    default: this.aiState='LANE';
                 }
                 break;
-
-            case 'LANE':
-            default:
-                if(this.laneRole === 'top') { tx = 300; ty = 300; }
-                else if(this.laneRole === 'bot' || this.laneRole === 'support') { tx = 2700; ty = 2700; }
-                else if(this.laneRole === 'mid') { tx = 1500; ty = 1500; }
-                else if(this.laneRole === 'jungle') {
-                    let jg = entities.filter(e => e.type === 'jungle' && !e.isDead && (!e.mtype || !e.mtype.includes('boss'))).sort((a,b) => dist(this,a) - dist(this,b))[0];
-                    if(jg) { tx = jg.x; ty = jg.y; }
-                    else { tx = 1500; ty = 1500; }
-                }
-
-                if(dist(this, {x:tx, y:ty}) < 250) {
-                    let enemyBase = this.faction === 'BLUE' ? {x:2700, y:300} : {x:300, y:2700};
-                    tx = enemyBase.x; ty = enemyBase.y;
-                }
-
-                let enemyTower = entities.find(t => (t.type==='tower' || t.type==='nexus_turret') && t.faction !== this.faction && !t.isDead && dist(this, t) < t.range + 80);
-                if (enemyTower) {
-                    let hasFriendlyMinion = entities.some(m => m.faction === this.faction && m.type === 'minion' && !m.isDead && dist(m, enemyTower) < enemyTower.range);
-                    if (!hasFriendlyMinion) {
-                        let retreatAngle = Math.atan2(this.y - enemyTower.y, this.x - enemyTower.x);
-                        tx = enemyTower.x + Math.cos(retreatAngle) * (enemyTower.range + 100);
-                        ty = enemyTower.y + Math.sin(retreatAngle) * (enemyTower.range + 100);
-                    }
-                }
-
-                followDirection({x:tx, y:ty}, 40);
+            }
+            case 'SPLITPUSH': {
+                let oppLane=this.laneRole==='top'?'bot':'top';
+                go(this._laneDest(oppLane),100);
+                if(nearEnemies.find(e=>e.type==='hero'&&dist(this,e)<400)) this.aiState='RETREAT';
                 break;
+            }
+            case 'LANE': default: {
+                let wps=this._laneWaypoints();
+                let dest=this._nextWaypoint(wps);
+                let tw=entities.find(t=>(t.type==='tower'||t.type==='nexus_turret')&&t.faction!==this.faction&&!t.isDead&&dist(this,t)<t.range+130);
+                if(tw&&!entities.some(m=>m.faction===this.faction&&m.type==='minion'&&!m.isDead&&dist(m,tw)<tw.range)){
+                    let a=Math.atan2(this.y-tw.y,this.x-tw.x);
+                    dest={x:tw.x+Math.cos(a)*(tw.range+130),y:tw.y+Math.sin(a)*(tw.range+130)};
+                }
+                go(dest,60);
+                if(nearEnemies.length>0&&target) this.aiState='ATTACK';
+                break;
+            }
         }
+    }
 
-        // 디버그용 데이터 저장
-        this.aiTarget = target;
-        this.aiTx = tx;
-        this.aiTy = ty;
+    _laneDest(lane) {
+        let d={
+            BLUE:{top:{x:300,y:300},  mid:{x:1500,y:1500},bot:{x:2700,y:2700}},
+            RED: {top:{x:2700,y:2700},mid:{x:1500,y:1500},bot:{x:300,y:300}}
+        };
+        return (d[this.faction]&&d[this.faction][lane])||{x:1500,y:1500};
+    }
+
+    _laneWaypoints() {
+        let bT=[{x:300,y:2700},{x:300,y:1500},{x:300,y:300}];
+        let bM=[{x:300,y:2700},{x:1500,y:1500},{x:2700,y:300}];
+        let bB=[{x:300,y:2700},{x:1500,y:2700},{x:2700,y:2700},{x:2700,y:300}];
+        let rT=[{x:2700,y:300},{x:2700,y:1500},{x:2700,y:2700}];
+        let rM=[{x:2700,y:300},{x:1500,y:1500},{x:300,y:2700}];
+        let rB=[{x:2700,y:300},{x:1500,y:300},{x:300,y:300},{x:300,y:2700}];
+        let bWp={top:bT,mid:bM,bot:bB,jungle:bM,support:bB};
+        let rWp={top:rT,mid:rM,bot:rB,jungle:rM,support:rB};
+        return (this.faction==='BLUE'?bWp:rWp)[this.laneRole]||bM;
+    }
+
+    _nextWaypoint(wps) {
+        if(!wps||wps.length===0) return{x:1500,y:1500};
+        if(this.wpIdx===undefined) this.wpIdx=1;
+        let wp=wps[Math.min(this.wpIdx,wps.length-1)];
+        if(dist(this,wp)<180&&this.wpIdx<wps.length-1) this.wpIdx++;
+        return wp;
+    }
+
+    _nearestAllyGroup() {
+        let allies=entities.filter(e=>e.type==='hero'&&e.faction===this.faction&&!e.isDead&&e!==this);
+        for(let a of allies){if(allies.filter(b=>b!==a&&dist(a,b)<300).length>=1) return a;}
+        return allies[0]||null;
+    }
+
+    _stateChat(from, to) {
+        if(window.AIChat) window.AIChat.triggerStateChat(this, from, to);
     }
     autoAttack(){
         if(this.attackTimer>0) return;
@@ -2034,10 +2277,38 @@ class Hero extends Entity {
         if(this.isPlayer) document.getElementById('respawnOverlay').classList.replace('hidden', 'flex');
         spawnParticles(this.x,this.y,HERO_TMPL[this.heroKey].color,20,200,1.0);
     }
-    aiShopAI(){
-        let item=BASE_ITEMS[Math.floor(Math.random()*BASE_ITEMS.length)];
-        if(this.gold >= item.cost) this.buyItem(item.id);
+    aiShopAI() {
+        let heroType = HERO_TMPL[this.heroKey].type;
+        let pers     = this.personality || AI_PERSONALITY.TACTICAL;
+        let hpRatio  = this.hp / this.maxHp;
+
+        let eligible = BASE_ITEMS.filter(i=>{
+            if(this.gold<i.cost) return false;
+            if(i.heroType==='melee'  && heroType!=='melee')  return false;
+            if(i.heroType==='ranged' && heroType!=='ranged') return false;
+            if(i.heroType==='magic'  && heroType==='melee')  return false; // [v4.2 BUG-04] 근접영웅 magic 아이템 구매 방지
+            return true;
+        });
+        if(eligible.length===0) return;
+
+        let scored=eligible.map(item=>{
+            let s=50;
+            if(pers.shopBias==='atk') if(['berserker_axe','rapid_cannon','rabadon','mage_staff','luden_echo','void_staff'].includes(item.id)) s+=60;
+            if(pers.shopBias==='def') if(['steel_plate','magic_cloak','behemoth_armor','absolute_armor','guardian_angel'].includes(item.id)) s+=60;
+            if(pers.shopBias==='utility') if(['purify_amulet','phantom_dancer','frost_staff','mirror_armor'].includes(item.id)) s+=60;
+            if(hpRatio<0.40&&['behemoth_armor','absolute_armor','guardian_angel','steel_plate'].includes(item.id)) s+=80;
+            let owned=this.inventory.find(i2=>i2.id===item.id);
+            if(owned&&owned.upgrade<7) s+=40;
+            EVOLUTION_ITEMS.forEach(evo=>{
+                if(evo.reqItem===item.id&&(this.passiveSkills[evo.reqPassive]||0)>0) s+=55;
+            });
+            s+=(Math.random()-0.5)*40;
+            return{item,s};
+        });
+        scored.sort((a,b)=>b.s-a.s);
+        this.buyItem(scored[0].item.id);
     }
+
     buyItem(id){
         let item=BASE_ITEMS.find(i=>i.id===id); if(!item||this.gold<item.cost) return;
         let slot=this.inventory.find(i=>i.id===id);
@@ -2472,7 +2743,7 @@ class Hero extends Entity {
             }
         
             } else { // 잭팟 (광역 카드 비)
-                let bet = Math.max(100, Math.min(1500, Math.floor(this.gold * 0.25)));
+                let bet = Math.max(500, Math.min(1500, Math.floor(this.gold * 0.25)));
                 this.gold -= bet;
                 if(Math.random() < 0.6) { // 60% 확률 당첨!
                     window.addGold(this, bet * 2);
@@ -2641,6 +2912,14 @@ class Hero extends Entity {
                 p.speed = 100; p.life = 4.0;
                 p.isMega = true; // 대형 회오리
                 projectiles.push(p);
+                // [v4.2 BUG-03 Fix] stormZones 전용 배열에 추가 (entities에 넣으면 draw 오류)
+                stormZones.push({
+                    faction: this.faction,
+                    x: this.x + Math.cos(a) * 300, y: this.y + Math.sin(a) * 300,
+                    radius: 150, life: 3.5, maxLife: 3.5,
+                    dmg: skillDmg * 0.3, attacker: this,
+                    tickTimer: 0
+                });
                 playSFX('skill_magic');
             }
         } else if(k==='ARCHON') {
@@ -2973,12 +3252,35 @@ class Hero extends Entity {
         }
     }
     aiSelectSkill() {
-        let available = PASSIVE_SKILLS.filter(s=>(this.passiveSkills[s.id]||0)<s.maxLv);
+        let heroType = HERO_TMPL[this.heroKey].type;
+        let pers     = this.personality || AI_PERSONALITY.TACTICAL;
+
+        let available=PASSIVE_SKILLS.filter(s=>{
+            if((this.passiveSkills[s.id]||0)>=s.maxLv) return false;
+            if(heroType==='melee'  && s.heroType==='ranged') return false;
+            if(heroType==='ranged' && s.heroType==='melee')  return false;
+            return true;
+        });
         if(available.length===0) return;
-        let pick = available[Math.floor(Math.random()*available.length)];
-        this.passiveSkills[pick.id] = (this.passiveSkills[pick.id]||0) + 1;
-        this.applyStats(); this.checkEvolution();
+
+        let scored=available.map(s=>{
+            let sc=50;
+            if(pers.shopBias==='atk') if(['bloodFury','berserkerSoul','soulHarvest','shadowStrike','stormWalker'].includes(s.id)) sc+=50;
+            if(pers.shopBias==='def') if(['ironHealth','thornArmor','vampireAura','poisonCloud'].includes(s.id)) sc+=50;
+            if(pers.shopBias==='utility') if(['haste_art','frost','swiftWind'].includes(s.id)) sc+=50;
+            EVOLUTION_ITEMS.forEach(evo=>{
+                if(evo.reqPassive===s.id&&this.inventory.some(i=>i.id===evo.reqItem)) sc+=75;
+            });
+            sc+=(Math.random()-0.5)*30;
+            return{s,sc};
+        });
+        scored.sort((a,b)=>b.sc-a.sc);
+        let pick=scored[0].s;
+        this.passiveSkills[pick.id]=(this.passiveSkills[pick.id]||0)+1;
+        this.applyStats();
+        this.checkEvolution();
     }
+
     checkEvolution() {
         EVOLUTION_ITEMS.forEach(evo => {
             if(this.inventory.some(i => i.id === evo.id)) return; // 이미 진화함
@@ -3005,6 +3307,20 @@ class Hero extends Entity {
         let t=HERO_TMPL[this.heroKey];
         if(this.stunTimer>0){ ctx.strokeStyle='#fbbf24'; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(this.x, this.y-this.radius, this.radius*1.4, 0, Math.PI*2); ctx.stroke(); }
         
+        // [v4.2 FIX] 무적 상태 시각화 (금빛 방어막)
+        if(this.invincibleTimer > 0) {
+            ctx.save();
+            ctx.globalAlpha = 0.6 + Math.sin(performance.now() / 100) * 0.2;
+            ctx.strokeStyle = '#fde047';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.arc(this.x, this.y - this.radius * 0.5, this.radius * 1.5, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.fillStyle = 'rgba(253, 224, 71, 0.2)';
+            ctx.fill();
+            ctx.restore();
+        }
+
         t.draw(ctx, this.x, this.y, this.radius, this.facingDir, this.faction, this.attackAnimTimer, this);
         
         if(this.heroKey === 'grrr' && this.isGiant) {
@@ -4396,7 +4712,7 @@ window.startGame=()=>{
     // 완벽한 초기화
     entities=[]; projectiles=[]; particles=[]; floatingTexts=[]; slashEffects=[]; aoeEffects=[]; earthCrackEffects=[]; rockAuraEffects=[];
     GS.scoreBlue=0; GS.scoreRed=0; GS.time=0; GS.paused=false; minionTimer=MINION_INTERVAL-2;
-    midBossSpawned = [false, false, false]; suddenDeathTriggered = false; goblinSpawned = false;
+    midBossSpawned = [false, false, false]; suddenDeathTriggered = false; // [v4.2 CLEAN-01] goblinSpawned 제거
     document.getElementById('scoreBlue').textContent='0'; document.getElementById('scoreRed').textContent='0';
 
     // 건물 세팅 (3라인 + 수호타워)
@@ -4421,11 +4737,11 @@ window.startGame=()=>{
         entities.push(new Monster(rand(400,2600), rand(400,2600), type));
     }
 
-    let allRoles = ['top', 'mid', 'bot', 'jungle'];
+    let allRoles = ['top', 'mid', 'bot', 'jungle', 'support']; // [v4.2 CLEAN-02] support 역할 추가
     player=new Hero(GS.faction==='BLUE'?300:2700, GS.faction==='BLUE'?2700:300, GS.faction, GS.hero, true, 'mid');
     entities.push(player);
-
-    let allKeys=Object.keys(HERO_TMPL).filter(h=>h!==GS.hero); allKeys.sort(()=>Math.random()-0.5);
+    window.TeamBrains = { 'BLUE': new TeamBrain('BLUE'), 'RED': new TeamBrain('RED') };
+let allKeys=Object.keys(HERO_TMPL).filter(h=>h!==GS.hero); allKeys.sort(()=>Math.random()-0.5);
     let bc=0, rc=0;
     for(let i=0;i<9;i++){
         let hk=allKeys[i%allKeys.length]; let f=bc<4?'BLUE':'RED';
@@ -4730,9 +5046,12 @@ function gameLoop(now){
                 spawnedAny = true;
             }
             
-            // RED 팀 스폰 로직
-            if(blueCount > 0) {
-                for(let i=0; i<blueCount; i++) {
+            // [v4.2 BALANCE-04] RED팀도 TEAM_VAULT_RED 금고 소모 방식 → BLUE팀과 완전 대칭
+            window.TEAM_VAULT_RED = window.TEAM_VAULT_RED || { gold: 0 };
+            let redCreatureCount = Math.floor(window.TEAM_VAULT_RED.gold / 450);
+            if(redCreatureCount > 0) {
+                window.TEAM_VAULT_RED.gold -= redCreatureCount * 450;
+                for(let i=0; i<redCreatureCount; i++) {
                     let lane = lanes[Math.floor(Math.random() * lanes.length)];
                     let ctype = types[Math.floor(Math.random() * types.length)];
                     entities.push(new Creature(2700, 300, 'RED', lane, ctype));
@@ -4759,28 +5078,7 @@ function gameLoop(now){
 
         GS.time+=dt;
 
-        // 골드 고블린 스폰 (8분 1회)
-        if(typeof goblinSpawned === 'undefined') window.goblinSpawned = false;
-        if(!window.goblinSpawned && GS.time >= 8 * 60) {
-            window.goblinSpawned = true;
-            let gx = 1500 + rand(-300, 300);
-            let gy = 1500 + rand(-300, 300);
-            let goblin = new Monster(gx, gy, 'goblin');
-            goblin.maxHp = 1200; goblin.hp = goblin.maxHp;
-            goblin.atk = 10; goblin.moveSpd = 220;  // 매우 빠름
-            goblin.radius = 14;
-            // 처치 시 거대 골드 보상
-            goblin.onDeath = function(attacker) {
-                if(attacker && attacker.type === 'hero') {
-                    window.addGold(attacker, 2500);
-                    addText(attacker.x, attacker.y-60, '💰 황금 고블린 +2500G!', '#fbbf24', 20);
-                    spawnSpecial(this.x, this.y, '#fbbf24', 'star', 20, 250, 1.0);
-                }
-                showBanner('황금 고블린 처치!', '💰', attacker?.faction===player?.faction);
-            };
-            entities.push(goblin);
-            showBanner('황금 고블린 출현! 잡아라!', '💰', true);
-        }
+        // [v4.2 CLEAN-01] 황금 고블린 스폰 코드 완전 제거 (컨텐츠 삭제됨)
 
         // 서든데스 트리거
         if(typeof suddenDeathTriggered === 'undefined') window.suddenDeathTriggered = false;
@@ -4862,6 +5160,7 @@ function gameLoop(now){
         }
         
         if(window.AIChat) window.AIChat.update(dt);
+    if(window.TeamBrains) { if(window.TeamBrains['BLUE']) window.TeamBrains['BLUE'].update(dt); if(window.TeamBrains['RED']) window.TeamBrains['RED'].update(dt); }
         entities=entities.filter(e=>!e.isDead||e.type==='hero'||(e.type==='jungle'&&!e.mtype.includes('boss')&&e.mtype!=='summon')); projectiles=projectiles.filter(p=>!p.isDead);
         let camSmooth = GS.platform === 'MOBILE' ? 0.08 : 0.12;
         if(player&&!player.isDead){ camera.x+=(player.x-camera.x)*camSmooth; camera.y+=(player.y-camera.y)*camSmooth; }
@@ -5400,6 +5699,84 @@ window.addPing = function(x, y, faction, type='danger') {
 window.AIChat = {
     timer: 0,
     chatLog: null,
+    triggerOrderChat: function(commander, orderType, faction) {
+        if(!commander) return;
+        const p={
+            call_dragon:    ["용 잡으러 갑시다","드래곤 집결!","빠르게 드래곤 치자","용 먹으면 이김 ㄱㄱ","드래곤!"],
+            call_defend:    ["수비!!","넥서스로 다 모여","빨리 들어와","방어 라인 잡아!","수비 안하면 진다","넥서스 위험"],
+            order_push:     ["라인 밀자","집결해서 넥서스!","약한 라인 ㄱㄱ","다 모여서 밀자","오더: 라인 집중"],
+            call_teamfight: ["한타 간다","뭉쳐 한타 박자","집결!","5명 모이면 이김","한타 각 나왔다"],
+            nexus_open:     ["넥서스 무방비다!!","지금이야!!","다 버리고 넥서스!","가즈아!!!!","열렸다 ㄱ"],
+        };
+        let msgs=p[orderType]; if(!msgs) return;
+        let msg=msgs[Math.floor(Math.random()*msgs.length)];
+        setTimeout(()=>this.addChat(commander,msg), 200+Math.random()*400);
+        
+        let tColor = faction === 'BLUE' ? '#3b82f6' : '#ef4444';
+        if(orderType==='call_dragon') {
+            let dg = entities.find(e=>(e.mtype==='boss_epic_dragon'||e.mtype==='boss')&&!e.isDead);
+            if(dg) { spawnRing(dg.x, dg.y, tColor, 200, 1.0); spawnParticles(dg.x, dg.y, tColor, 30, 200, 1.5); }
+        } else if(orderType==='call_defend') {
+            let nx = entities.find(e=>e.type==='nexus'&&e.faction===faction);
+            if(nx) { spawnRing(nx.x, nx.y, tColor, 250, 1.0); spawnParticles(nx.x, nx.y, tColor, 40, 250, 1.5); }
+        }
+    },
+    triggerStateChat: function(hero, from, to) {
+        const p={
+            'LANE->ASSASSINATE':     ["잠깐 저놈 잡고올게","피 낮네 ㅋ 치고빠짐","컷하고올게"],
+            'ATTACK->RETREAT':       ["아 ㅅㅂ 피 없어","일단 튀어야겠다","렉임 ㅈㅅ","후퇴"],
+            'LANE->SPLITPUSH':       ["나 반대 라인 밀게","혼자 탑 밀고올게","스플릿 갑니다","딴데 압박걸게"],
+            'RETREAT->RECALL':       ["본진 잠깐","아이템 사러","회복 좀 하고올게","귀환"],
+            'ATTACK->TEAMFIGHT_JOIN':["한타 합류","간다!","같이 함"],
+            'LANE->FOLLOW_ORDER':    ["오더 대로","알겠음","합류","ㅇㅇ"],
+            'LANE->SIEGE':           ["타워 딜 넣자","미니언 탱크 고마워","공성 간다"],
+            'RECALL->LANE':          ["복귀","왔다","준비됨","ㄱㄱ"],
+            'LANE->ESCORT':          ["내가 지킴","뒤에 있어","커버 간다"],
+        };
+        let key=from+'->'+to, msgs=p[key];
+        if(!msgs||Math.random()>0.30) return;
+        this.addChat(hero, msgs[Math.floor(Math.random()*msgs.length)]);
+    },
+
+    triggerOrderChat: function(commander, orderType, faction) {
+        if(!commander) return;
+        const p={
+            call_dragon:    ["용 잡으러 갑시다","드래곤 집결!","빠르게 드래곤 치자","용 먹으면 이김 ㄱㄱ","드래곤!"],
+            call_defend:    ["수비!!","넥서스로 다 모여","빨리 들어와","방어 라인 잡아!","수비 안하면 진다","넥서스 위험"],
+            order_push:     ["라인 밀자","집결해서 넥서스!","약한 라인 ㄱㄱ","다 모여서 밀자","오더: 라인 집중"],
+            call_teamfight: ["한타 간다","뭉쳐 한타 박자","집결!","5명 모이면 이김","한타 각 나왔다"],
+            nexus_open:     ["넥서스 무방비다!!","지금이야!!","다 버리고 넥서스!","가즈아!!!!","열렸다 ㄱ"],
+        };
+        let msgs=p[orderType]; if(!msgs) return;
+        let msg=msgs[Math.floor(Math.random()*msgs.length)];
+        setTimeout(()=>this.addChat(commander,msg), 200+Math.random()*400);
+        
+        let tColor = faction === 'BLUE' ? '#3b82f6' : '#ef4444';
+        if(orderType==='call_dragon') {
+            let dg = entities.find(e=>(e.mtype==='boss_epic_dragon'||e.mtype==='boss')&&!e.isDead);
+            if(dg) { spawnRing(dg.x, dg.y, tColor, 200, 1.0); spawnParticles(dg.x, dg.y, tColor, 30, 200, 1.5); }
+        } else if(orderType==='call_defend') {
+            let nx = entities.find(e=>e.type==='nexus'&&e.faction===faction);
+            if(nx) { spawnRing(nx.x, nx.y, tColor, 250, 1.0); spawnParticles(nx.x, nx.y, tColor, 40, 250, 1.5); }
+        }
+    },
+    triggerStateChat: function(hero, from, to) {
+        const p={
+            'LANE->ASSASSINATE':     ["잠깐 저놈 잡고올게","피 낮네 ㅋ 치고빠짐","컷하고올게"],
+            'ATTACK->RETREAT':       ["아 ㅅㅂ 피 없어","일단 튀어야겠다","렉임 ㅈㅅ","후퇴"],
+            'LANE->SPLITPUSH':       ["나 반대 라인 밀게","혼자 탑 밀고올게","스플릿 갑니다","딴데 압박걸게"],
+            'RETREAT->RECALL':       ["본진 잠깐","아이템 사러","회복 좀 하고올게","귀환"],
+            'ATTACK->TEAMFIGHT_JOIN':["한타 합류","간다!","같이 함"],
+            'LANE->FOLLOW_ORDER':    ["오더 대로","알겠음","합류","ㅇㅇ"],
+            'LANE->SIEGE':           ["타워 딜 넣자","미니언 탱크 고마워","공성 간다"],
+            'RECALL->LANE':          ["복귀","왔다","준비됨","ㄱㄱ"],
+            'LANE->ESCORT':          ["내가 지킴","뒤에 있어","커버 간다"],
+        };
+        let key=from+'->'+to, msgs=p[key];
+        if(!msgs||Math.random()>0.30) return;
+        this.addChat(hero, msgs[Math.floor(Math.random()*msgs.length)]);
+    },
+
     pendingResponses: [],
     lastTowerCount: -1,
     
@@ -5456,9 +5833,18 @@ window.AIChat = {
     addChat: function(hero, msg) {
         if(!this.chatLog) this.chatLog = document.getElementById('chatLog');
         if(!this.chatLog || !hero) return;
-        
+        let chatProb=1.0;
+        if(hero.personality){
+            const cp={AGGRESSIVE:1.0,TACTICAL:0.55,COWARD:0.80,OPPORTUNIST:0.90,SUPPORT_MIND:0.65};
+            chatProb=cp[hero.personality.id]||1.0;
+        }
+        if(Math.random()>chatProb) return;
         // Spawn speech bubble in game
-        /* Chat deleted */
+        window.chatBubbles.push({
+            hero: hero,
+            text: msg,
+            life: 3.5
+        });
         
         let aName = getHeroName(hero);
         let hCol = hero.faction === 'BLUE' ? '#60a5fa' : '#f87171';

@@ -536,11 +536,27 @@ window.onerror = function(msg, url, line, col, error) {
             <button onclick="document.getElementById('patchNotesModal').classList.add('hidden')" class="absolute top-4 right-4 text-slate-400 hover:text-white text-3xl font-bold">&times;</button>
             <h2 class="text-2xl md:text-3xl font-black text-amber-400 mb-6 border-b border-slate-700 pb-3 orbitron">📝 PATCH NOTES</h2>
             <div class="flex-1 overflow-y-auto pr-4 text-sm md:text-base text-slate-300 space-y-4 custom-scrollbar">
-                <!-- v1.0.14 -->
+                <!-- v4.2 (Latest) -->
                 <details class="bg-slate-800/80 rounded-xl border border-amber-500/50 shadow-lg overflow-hidden" open>
                     <summary class="cursor-pointer p-4 font-black text-amber-400 hover:bg-slate-700/50 transition select-none flex justify-between items-center">
-                        <div class="flex items-center gap-2"><span class="text-xl">✨</span> v1.0.14 - 신규 영웅 3종 출시 및 UI/UX 대개편</div>
+                        <div class="flex items-center gap-2"><span class="text-xl">🛠️</span> v4.2 - 치명적 버그 수정 및 원거리 밸런스 조정</div>
                         <span class="px-2 py-0.5 bg-amber-500/20 text-amber-400 text-[10px] rounded-full border border-amber-500/30">LATEST</span>
+                    </summary>
+                    <div class="p-4 pt-2 text-sm text-slate-300 space-y-3 bg-slate-900/50">
+                        <ul class="list-disc pl-5 space-y-2">
+                            <li><span class="font-bold text-rose-400">[치명적 버그 수정]</span> 게임이 멈추거나 튕기게 만들던 골드 획득(`addGold`) 함수 내의 잘못된 코드를 완전히 제거하여 안정성을 대폭 확보했습니다.</li>
+                            <li><span class="font-bold text-amber-400">[원거리 밸런스 조정]</span> 사거리가 지나치게 길어 타워 바깥에서 일방적으로 공격하던 원거리 영웅들(실비아, 궁수, 제피르, 암흑사제, 조커)의 사거리를 현실적으로 하향 조정했습니다. 특히 실비아는 공격력과 치명타도 일부 하향되었습니다.</li>
+                            <li><span class="font-bold text-sky-400">[AI 및 시스템 개선]</span> 제피르의 폭풍(Gale Squall)이 이제 정상적으로 회피(EVADE) 가능해집니다. 근접 영웅이 마법 아이템을 구매하던 버그를 수정했으며, AI 역할군에 '서포터'가 정식 추가되었습니다.</li>
+                            <li><span class="font-bold text-emerald-400">[경제 대칭성]</span> 이제 레드팀도 블루팀과 마찬가지로 자체적인 금고(TEAM_VAULT_RED)에 모인 세금으로만 크리처를 소환합니다. 사용되지 않던 황금 고블린 컨텐츠는 완전히 삭제되었습니다.</li>
+                        </ul>
+                    </div>
+                </details>
+
+                <!-- v4.1 (신규 영웅 3종) -->
+                <details class="bg-slate-800/50 rounded-xl border border-slate-700 overflow-hidden">
+                    <summary class="cursor-pointer p-4 font-bold text-emerald-400 hover:bg-slate-700/50 transition select-none flex justify-between items-center">
+                        <div class="flex items-center gap-2"><span class="text-lg">✨</span> v4.1 - 신규 영웅 3종 출시 및 UI/UX 대개편</div>
+                        <span class="text-slate-500 text-xs">▼</span>
                     </summary>
                     <div class="p-4 pt-2 text-sm text-slate-300 space-y-3 bg-slate-900/50">
                         <ul class="list-disc pl-5 space-y-2">
