@@ -1,0 +1,121 @@
+diff --git a/game.js b/game.js
+index de88c69..401821c 100644
+--- a/game.js
++++ b/game.js
+@@ -162,7 +162,7 @@ const SUDDEN_DEATH_TIME = 18 * 60; // 18遺?(?쒕뱺?곗뒪 ?⑥텞)
+ const DRAGON_SPAWN_TIME = 5 * 60;  // 5遺꾨쭏?? const GOLD_GOBLIN_TIME  = 8 * 60;  // 8遺? const MID_BOSS_TIMES    = [5*60, 10*60, 15*60]; // 5, 10, 15遺?以묎컙蹂댁뒪
+-const MINION_INTERVAL   = 18;      // 18珥덈쭏??(誘몃땲??媛꾧꺽 ?꾪솕)
++const MINION_INTERVAL   = 9;       // 9珥덈쭏??(誘몃땲???뚰솚 ?띾룄 2諛?
+ const REGEN_DELAY       = 5.0;     // 5珥?鍮꾩쟾???? const REGEN_RATE        = 0.05;    // 珥덈떦 5%
+ const WARMOG_REGEN      = 0.10;    // ?뚮え洹?珥덈떦 10%
+@@ -1687,7 +1687,7 @@ class Hero extends Entity {
+                 if(d<=this.range) {
+                     if (e.type === 'hero') {
+                         if (d < distHero) { distHero = d; targetHero = e; }
+-                    } else if (e.type === 'minion' || e.type === 'jungle') {
++                    } else if (e.type === 'minion' || e.type === 'creature' || e.type === 'jungle') {
+                         if (d < distMinion) { distMinion = d; targetMinion = e; }
+                     } else if (e.type === 'tower' || e.type === 'nexus_turret' || e.type === 'nexus') {
+                         if (d < distBuilding) { distBuilding = d; targetBuilding = e; }
+@@ -1838,6 +1838,7 @@ class Hero extends Entity {
+             if (this.isPlayer) {
+                 this.pendingSkillLevels = (this.pendingSkillLevels || 0) + leveledUp;
+                 if (!this.pendingLevelUp) {
++                    this.pendingLevelUp = true;
+                     setTimeout(() => this.showSkillSelection(), 500);
+                 }
+             } else {
+@@ -2826,7 +2827,7 @@ class Building extends Entity {
+         super.update(dt);
+         if(this.atk > 0 && this.attackTimer<=0){
+             let target=null, minD=this.range;
+-            for(let ptype of ['minion','hero','jungle']){
++            for(let ptype of ['creature','minion','hero','jungle']){
+                 entities.forEach(e=>{if(e.faction!==this.faction&&!e.isDead){
+                     if(e.type==='nexus' && entities.some(t=>t.type==='nexus_turret' && t.faction===e.faction && !t.isDead)) return;
+                     let d=dist(this,e);if(d<=this.range&&d<minD&&e.type===ptype){minD=d;target=e;}
+@@ -3158,7 +3159,7 @@ class Minion extends Entity {
+             const d = dist(this, e);
+             if((e.type==='tower' || e.type==='nexus_turret' || e.type==='nexus') && d < dB) {
+                 dB = d; closestBuilding = e;
+-            } else if(e.type === 'minion' && d < dM) {
++            } else if((e.type === 'minion' || e.type === 'creature') && d < dM) {
+                 dM = d; closestMinion = e;
+             } else if(e.type === 'hero' && d < dH) {
+                 dH = d; closestHero = e;
+@@ -3483,17 +3484,29 @@ class Creature extends Minion {
+         
+         if (ctype === 'dragon') {
+             this.maxHp = 30000 * scale; this.hp = this.maxHp;
+-            this.atk = 600 * scale; this.moveSpd = 120; this.radius = 36; this.aspd = 0.6; this.range = 80;
++            this.atk = 600 * scale; this.moveSpd = 120; this.radius = 54; this.aspd = 0.6; this.range = 80;
+         } else if (ctype === 'golem') {
+             this.maxHp = 60000 * scale; this.hp = this.maxHp;
+-            this.atk = 200 * scale; this.moveSpd = 100; this.radius = 45; this.aspd = 0.5; this.range = 90;
++            this.atk = 200 * scale; this.moveSpd = 100; this.radius = 67; this.aspd = 0.5; this.range = 90;
+         } else { // beast
+             this.maxHp = 24000 * scale; this.hp = this.maxHp;
+-            this.atk = 800 * scale; this.moveSpd = 250; this.radius = 30; this.aspd = 1.5; this.range = 70;
++            this.atk = 800 * scale; this.moveSpd = 250; this.radius = 45; this.aspd = 1.5; this.range = 70;
+             this.beastStunTimer = 6.0;
+         }
++        
++        // Spawn Aura Effect
++        this.auraTimer = 5.0; // ?ㅻ씪 ?좎? ?쒓컙
+     }
+ 
++    applyRawDamage(dmg, attacker, triggerEffects=true, isSkill=false) {
++        if (this.ctype === 'golem') {
++            if (isSkill || (attacker && attacker.range > 150)) {
++                return 0; // 硫댁뿭
++            }
++            dmg *= 0.75; // 25% 媛먯냼
++        }
++        return super.applyRawDamage(dmg, attacker, triggerEffects, isSkill);
++    }
+     
+     draw(ctx) {
+         if(this.isDead) return;
+@@ -3505,6 +3518,24 @@ class Creature extends Minion {
+             atkAnim = (this.attackTimer - (maxAtkTime - 0.2)) / 0.2; // 1 -> 0
+         }
+ 
++        // ?깆옣 ?꾩슜 ?ㅻ씪 ?댄럺??+        if (this.auraTimer > 0) {
++            this.auraTimer -= 1/60;
++            ctx.save();
++            ctx.translate(this.x, this.y);
++            let auraScale = 1.0 + Math.sin(Date.now() / 150) * 0.1;
++            ctx.scale(auraScale, auraScale);
++            let grad = ctx.createRadialGradient(0, 0, r*0.5, 0, 0, r*2.5);
++            grad.addColorStop(0, 'rgba(255, 215, 0, 0.8)');
++            grad.addColorStop(0.5, 'rgba(255, 140, 0, 0.4)');
++            grad.addColorStop(1, 'rgba(255, 69, 0, 0)');
++            ctx.fillStyle = grad;
++            ctx.beginPath();
++            ctx.arc(0, 0, r*2.5, 0, Math.PI*2);
++            ctx.fill();
++            ctx.restore();
++        }
++
+         // 洹몃┝??         ctx.fillStyle='rgba(0,0,0,0.3)'; ctx.beginPath(); ctx.ellipse(this.x, this.y+r*0.8, r, r*0.4, 0, 0, Math.PI*2); ctx.fill();
+         
+@@ -4370,8 +4401,8 @@ function gameLoop(now){
+             const types = ['dragon', 'golem', 'beast'];
+             let spawnedAny = false;
+             
+-            // BLUE ? ?ㅽ룿 濡쒖쭅
+-            let blueCount = Math.min(3, Math.floor(window.TEAM_VAULT.gold / 450));
++            // BLUE ? ?ㅽ룿 濡쒖쭅 (?쒗븳 ?놁쓬)
++            let blueCount = Math.floor(window.TEAM_VAULT.gold / 450);
+             if(blueCount > 0) {
+                 window.TEAM_VAULT.gold -= blueCount * 450;
+                 for(let i=0; i<blueCount; i++) {
+@@ -4858,6 +4889,8 @@ function updateUI(){
+     document.getElementById('hudLevelBadge').textContent='Lv.'+player.level; document.getElementById('hudKDA').textContent='K:'+player.kills+' / D:'+player.deaths;
+     document.getElementById('hudHpBar').style.width=(player.hp/player.maxHp)*100+'%'; document.getElementById('hudHpText').textContent=Math.floor(player.hp)+' / '+Math.floor(player.maxHp); document.getElementById('hudXpBar').style.width=(player.exp/player.maxExp)*100+'%';
+     document.getElementById('hudGoldText').textContent=Math.floor(player.gold)+'G';
++    const vaultGoldEl = document.getElementById('hudVaultGold');
++    if (vaultGoldEl && window.TEAM_VAULT) vaultGoldEl.textContent = Math.floor(window.TEAM_VAULT.gold);
+     
+     const inv=document.getElementById('inventorySlots'); 
+     let newInvHtml='';

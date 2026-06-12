@@ -1,0 +1,329 @@
+cat > /mnt/user-data/outputs/avalon_final_review.md << 'EOF'
+# 운빨 아발론 — 최종 코드 리뷰 보고서
+## "진짜 최종" 배포 전 반드시 해결해야 할 항목들
+
+> **분석 대상:** game.js (6,080 lines) + index.html (622 lines)  
+> **분석 기준:** 이전 컨설팅 보고서 반영 여부 + 신규 발견 버그  
+> **총평:** AI 시스템 반영은 훌륭하다. 그러나 코드 오염 버그 1개가 게임 전체를 언제든 터뜨릴 수 있으며, 보고서 권장 사항 중 반영 안 된 것들이 여전히 다수 존재한다.
+
+---
+
+## 🔴 1등급: 즉각 수정 (게임 실행 중 오작동 또는 데이터 오염)
+
+### BUG-01 ❌ `addGold()` 함수 내부 코드 오염 — 가장 위험한 버그
+
+**위치:** `game.js` 396~418번 줄  
+**현상:** `addGold()` 함수 내부에 ZEROS와 CRAG의 **평타 공격 코드**가 통째로 삽입되어 있음. 편집 과정에서 잘못된 위치에 붙여넣기된 것으로 추정.
+
+```javascript
+// 현재 코드 (오염된 상태)
+window.addGold = function(hero, amount) {
+    if(!hero) return;
+    if(hero.faction === player?.faction) {
+        let tax = amount * 0.03;
+        window.TEAM_VAULT.gold += tax;
+        hero.gold += (amount - tax);
+    } 
+    else if(this.heroKey === 'ZEROS') {     // ← window.heroKey = undefined → 항상 false
+        // ... ZEROS 평타 코드 ...           // ← 완전 dead code. 실행 안 됨
+    }
+    else if(this.heroKey === 'CRAG') {      // ← 마찬가지
+        // ... CRAG 평타 코드 ...            // ← 완전 dead code
+    }
+    else {
+        hero.gold += amount;                 // ← RED 팀 골드. 우연히 작동
+    }
+};
+```
+
+**왜 지금 안 터지냐:** `'use strict'` 모드에서 `window.addGold()`로 호출 시 `this`는 `window`이고 `window.heroKey`는 `undefined`이므로 ZEROS/CRAG 분기는 항상 `false`. 결과적으로 RED 팀 영웅은 `else { hero.gold += amount; }`로 골드를 받는다. **사고가 안 나는 것이지, 코드가 맞는 것이 아니다.**
+
+**진짜 위험:** 이 dead code는 `target`, `dmg`, `spawnSlash` 등 이 컨텍스트에서 존재하지 않는 변수들을 참조함. 미래에 `this`가 달라지거나 호출 방식이 바뀌면 즉시 `ReferenceError`로 게임 전체가 멈춤.
+
+**수정 코드 (396~418번 줄 전체 교체):**
+
+```javascript
+window.addGold = function(hero, amount) {
+    if(!hero) return;
+    if(hero.faction === player?.faction) {
+        let tax = amount * 0.03;
+        window.TEAM_VAULT.gold += tax;
+        hero.gold += (amount - tax);
+    } else {
+        hero.gold += amount;
+    }
+};
+```
+
+---
+
+### BUG-02 ❌ `range cap` 계산에서 `bonusRange`가 음수가 됨
+
+**위치:** `game.js` 2418~2423번 줄
+
+```javascript
+// 현재 코드
+if(HERO_TMPL[this.heroKey]) this.range = HERO_TMPL[this.heroKey].range + (this.bonusRange||0);
+if(this.range > 355) {
+    this.range = 355;
+    this.bonusRange = 355 - HERO_TMPL[this.heroKey].range; // ← 실비아(450): -95 가 됨!
+}
+```
+
+**문제:** 실비아 기본 range=450. cap 적용 후 `bonusRange = 355 - 450 = -95`. 이 상태에서 다음 `applyStats()` 호출 시 `range = 450 + (-95) = 355`로 다시 cap으로 처리는 되지만, `bonusRange`가 음수인 채로 남아 저격수 렌즈 여러 개 강화 시 누적 계산이 뒤틀릴 수 있음. 또한 console에 잡히지 않는 논리적 오염.
+
+**수정 코드:**
+
+```javascript
+// 수정: bonusRange 재계산 제거, range만 cap 처리
+if(HERO_TMPL[this.heroKey]) this.range = HERO_TMPL[this.heroKey].range + (this.bonusRange||0);
+if(this.range > 355) {
+    this.range = 355;
+    // bonusRange는 건드리지 않음 — 표시용 값은 원본 유지, 실제 적용 range만 cap
+}
+```
+
+---
+
+### BUG-03 ❌ `stormZone` EVADE 상태 — 절대 발동 안 됨 (dead state)
+
+**위치:** `game.js` 1826번, 1890번 줄
+
+```javascript
+// AI _decideState()에서
+let dangerZones = entities.filter(e => e.type==='stormZone' && ...);
+if (dangerZones.length > 0) return 'EVADE';
+
+// 문제: stormZones 배열은 있지만 type='stormZone'인 엔티티가 entities 배열에
+// 단 한 번도 추가되지 않음. stormZones는 별도 렌더링 배열일 뿐임.
+```
+
+**확인:** `stormZones.push()`가 코드 전체에서 발견되지 않음. `entities`에 push되는 stormZone 타입 객체 없음 → `dangerZones`는 항상 빈 배열 → `EVADE` 상태는 절대 발동 불가. EVADE 관련 코드 전체가 dead code.
+
+**처리 방안 (두 가지 중 선택):**
+
+**A안 (삭제):** EVADE 상태 관련 코드 전체 제거
+```javascript
+// _decideState 맨 앞 2줄 제거
+// let dangerZones = ...
+// if (dangerZones.length > 0) return 'EVADE';
+
+// _runState case 'EVADE' 블록 제거
+```
+
+**B안 (연동):** 제피르 스킬2 `Gale Squall`의 폭풍 효과가 stormZone 형식으로 entities에 push되도록 연결:
+```javascript
+// 제피르 스킬2 발동 시 (useSkill 내부 ZEPHYR 분기에 추가)
+entities.push({
+    type: 'stormZone', faction: this.faction,
+    x: targetX, y: targetY, radius: 150,
+    life: 3.0, maxLife: 3.0,
+    update(dt){ this.life -= dt; if(this.life<=0) this.isDead=true; }
+});
+```
+
+---
+
+### BUG-04 ❌ `aiShopAI`에서 `melee` 영웅이 `magic` 아이템 구매 가능
+
+**위치:** `game.js` 2308~2311번 줄
+
+```javascript
+// 현재 코드
+let eligible = BASE_ITEMS.filter(i=>{
+    if(this.gold<i.cost) return false;
+    if(i.heroType==='melee'  && heroType!=='melee')  return false;
+    if(i.heroType==='ranged' && heroType!=='ranged') return false;
+    return true; // ← melee 영웅이 magic 아이템도 통과시킴!
+});
+```
+
+**결과:** 크래그, 바바리안, 그르르 등 근접 영웅 AI가 `죽음의 모자`, `현자의 지팡이`, `루덴의 메아리` 등 마법사 아이템을 구매함. 상점 UI는 `melee` 영웅에게 magic 아이템을 숨기는데 AI는 살 수 있는 불일치.
+
+**수정 코드:**
+
+```javascript
+let eligible = BASE_ITEMS.filter(i=>{
+    if(this.gold<i.cost) return false;
+    if(i.heroType==='melee'  && heroType!=='melee')  return false;
+    if(i.heroType==='ranged' && heroType!=='ranged') return false;
+    if(i.heroType==='magic'  && heroType==='melee')  return false; // ← 이 줄 추가
+    return true;
+});
+```
+
+---
+
+## 🟡 2등급: 권장 수정 (밸런스/논리 오류)
+
+### BALANCE-01 원거리 영웅 기본 사거리 미수정
+
+**현황:** range cap(355)은 `applyStats()`에서 적용되고 있어 실제 공격은 제한되나, `HERO_TMPL` 기본값은 여전히 구버전.
+
+| 영웅 | 현재 | cap 후 실제 | 권장 기본값 |
+|------|------|------------|------------|
+| 실비아 | 450 | 355 | 310 |
+| 궁수 | 420 | 355 | 300 |
+| 아리엘 | 390 | 355 | 280 |
+| 암흑사제 | 380 | 355 | 285 |
+| 제피르 | 380 | 355 | 285 |
+| 조커블레이드 | 360 | 355 | 290 |
+
+cap이 있으니 게임이 망가지진 않지만, `HERO_TMPL`의 값이 실제 동작 범위와 다르면 유지보수 시 혼란이 생기고 저격수 렌즈 bonusRange 계산도 의도한 대로 동작하지 않음. **권장 기본값으로 직접 수정하고 cap 코드를 보조 안전망으로만 유지**하는 것이 바람직.
+
+---
+
+### BALANCE-02 실비아 스탯 하향 미반영
+
+컨설팅 보고서 권장 사항 미반영:
+- ATK: 90 → 72 (권장) **미수정**  
+- critChance: 0.20 → 0.15 (권장) **미수정**
+
+range cap이 355로 설정되었으니 사거리는 해결됐지만, ATK 90 + critChance 20%는 여전히 게임 내 최강 조합. 특히 저격수 렌즈 구매 시 crit은 0.25까지 올라감 (0.20 + 0.05). critMultiplier가 기본 2배인데 지옥의 망치까지 더하면 3배 크리가 됨.
+
+**수정:**
+```javascript
+// game.js 285번 줄 (SYLVIA 정의)
+SYLVIA: {
+    hp:1600, atk:72, aspd:0.6, move:165, range:310, type:"ranged",  // atk 90→72, range 450→310
+    critChance:0.15,  // 0.20 → 0.15
+```
+
+---
+
+### BALANCE-03 그르르 포효 기절 시간 미수정
+
+```javascript
+// 현재 코드 (찾아보면 useSkill 내 grrr 분기)
+target.stunTimer = 2.0; // 2초 기절 → 권장 1.5초
+```
+
+보고서 권장 1.5초 미반영. 5:5 팀파이트에서 포효(반경 전체 2초 기절)는 게임을 일방적으로 만드는 핵심 요소.
+
+---
+
+### BALANCE-04 RED 팀 크리처 소환 로직 비대칭
+
+**현황:**
+```javascript
+// BLUE팀: 팀 금고를 450G씩 써서 구매
+let blueCount = Math.floor(window.TEAM_VAULT.gold / 450);
+
+// RED팀: 시간만 지나면 무료로 자동 소환
+let redCount = Math.min(Math.floor(GS.time / 360), 3); // 6분→1마리, 12분→2마리
+```
+
+**문제:** BLUE(플레이어 팀)는 금고에 골드를 쌓아야 크리처를 보낼 수 있지만 RED는 그냥 시간이 지나면 자동으로 받음. 플레이어가 금고를 0G 상태로 유지해도 RED는 12분에 2마리씩 크리처를 보낸다. 이는 팀 금고 시스템의 의미 자체를 퇴색시킨다.
+
+**수정 방향:**
+
+```javascript
+// RED 팀도 AI 킬/어시 골드의 일부를 RED 팀 금고에 적립
+window.TEAM_VAULT_RED = window.TEAM_VAULT_RED || { gold: 0 };
+
+// addGold에서 RED 팀 처리 시 3% 세금 추가
+} else {
+    let redTax = amount * 0.03;
+    window.TEAM_VAULT_RED.gold += redTax;
+    hero.gold += (amount - redTax);
+}
+
+// gameLoop 크리처 소환 부분
+let redCount = Math.floor(window.TEAM_VAULT_RED.gold / 450);
+if(redCount > 0) {
+    window.TEAM_VAULT_RED.gold -= redCount * 450;
+    for(let i=0; i<redCount; i++) { ... RED 크리처 소환 ... }
+}
+```
+
+---
+
+## 🟢 3등급: 정리 권장 (코드 품질)
+
+### CLEAN-01 황금 고블린 잔여 코드 정리
+
+황금 고블린 삭제는 완료됐으나 아래 코드가 남아있음:
+
+```javascript
+// 163번 줄 — 삭제
+const GOLD_GOBLIN_TIME = 8 * 60;  // 8분 ← 삭제
+
+// 434번 줄 — goblinSpawned 부분만 삭제
+let minionTimer = 0; let dragonTimer = 0; let goblinSpawned = false; ...
+// → let minionTimer = 0; let dragonTimer = 0; ...
+
+// 4720번 줄 — goblinSpawned 초기화 부분 삭제
+goblinSpawned = false; // ← 삭제
+```
+
+---
+
+### CLEAN-02 `allRoles`에 `support` 역할 없음
+
+```javascript
+// 4745번 줄
+let allRoles = ['top', 'mid', 'bot', 'jungle'];
+// 'support' 없음 → _laneWaypoints()의 support 경로 코드가 절대 사용 안 됨
+```
+
+서포터형(SUPPORT_MIND) 성격을 가진 AI가 support 라인을 이용하려면 이 role이 할당되어야 함.
+
+**수정:**
+```javascript
+let allRoles = ['top', 'mid', 'bot', 'jungle', 'support'];
+```
+
+---
+
+### CLEAN-03 아칸(ARCHON) 이동속도 미수정
+
+보고서 권장 이동속도 150 → 165 미반영. 중거리 영웅인데 팀 내 최저 이동속도(150)라 포지셔닝이 불가능. range도 150이라 근접전을 강요받으면서 도망도 못 가는 최악의 조합.
+
+```javascript
+// 200번 줄
+ARCHON: { hp:1820, atk:60, aspd:1.8, move:150, range:150 ... }
+// → move:165 으로 수정
+```
+
+---
+
+## 반영 완료 항목 확인 ✅
+
+| 항목 | 상태 |
+|------|------|
+| AI heroType 필터 (ranged/melee 분리) | ✅ 반영 완료 |
+| AI 패시브 스킬 heroType 필터 | ✅ 반영 완료 |
+| TeamBrain 팀 뇌 시스템 | ✅ 반영 완료 |
+| AI 12개 상태머신 (SIEGE, ASSASSINATE 등) | ✅ 반영 완료 |
+| AI 성격 시스템 (5종) | ✅ 반영 완료 |
+| 웨이포인트 기반 라인 이동 | ✅ 반영 완료 |
+| 원거리 AI 키팅 | ✅ 반영 완료 |
+| 행동 연계 채팅 (triggerStateChat/OrderChat) | ✅ 반영 완료 |
+| 강화 확률 완화 (+4 구간) | ✅ 반영 완료 |
+| 원거리 패시브 스킬 3종 추가 | ✅ 반영 완료 |
+| 황금 고블린 실질 삭제 | ✅ 반영 완료 (상수/변수 잔재만 남음) |
+| guardian_angel 3,500G 상향 | ✅ 반영 완료 |
+| 그르르 거대화 1.5→1.3 하향 | ✅ 반영 완료 |
+| range 355 cap 추가 | ✅ 반영 완료 (기본값 수정은 미완) |
+| RED 팀 크리처 소환 분리 (부분) | 🔶 부분 반영 (비대칭 문제 남음) |
+
+---
+
+## 수정 우선순위 요약
+
+| 순위 | 항목 | 난이도 | 시간 |
+|------|------|--------|------|
+| 1 | BUG-01: addGold 코드 오염 제거 | 쉬움 | 1분 |
+| 2 | BUG-04: aiShopAI magic 필터 1줄 추가 | 쉬움 | 1분 |
+| 3 | BUG-02: bonusRange 음수 방지 | 쉬움 | 2분 |
+| 4 | BALANCE-02: 실비아 ATK/crit 하향 | 쉬움 | 2분 |
+| 5 | BALANCE-01: HERO_TMPL range 기본값 수정 | 쉬움 | 5분 |
+| 6 | BUG-03: stormZone EVADE dead code 처리 | 보통 | 10분 |
+| 7 | BALANCE-04: RED 팀 금고 분리 | 보통 | 20분 |
+| 8 | CLEAN-01~03: 코드 정리 | 쉬움 | 5분 |
+
+---
+
+*분석 기준: game.js 6,080 lines 전체 정적 분석 + 이전 컨설팅 보고서 대조*
+EOF
+echo "완료"
