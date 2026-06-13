@@ -3968,7 +3968,7 @@ class Creature extends Minion {
 
         // 등장 위용 오라 이펙트
         if (this.auraTimer > 0) {
-            this.auraTimer -= dt;
+            this.auraTimer -= 1/60;
             ctx.save();
             ctx.translate(this.x, this.y);
             let auraScale = 1.0 + Math.sin(Date.now() / 150) * 0.1;
@@ -4166,7 +4166,6 @@ class Monster extends Entity {
 
         // 피격 시 흰색 번쩍임 플래시 효과
         if (this.hitFlashTimer > 0) {
-            ctx.filter = 'brightness(200%)';
         }
 
         // 2. 몬스터 타입별 개성 있는 외형 렌더링
