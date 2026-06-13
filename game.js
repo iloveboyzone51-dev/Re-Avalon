@@ -183,17 +183,17 @@ const HERO_TMPL = {
     CRAG: {
         name:"크래그", color:"#4b5563",
         hp:4500, atk:55, aspd:0.85, move:184, range:100, type:"melee", role_desc:"[탱커 / 근거리 / 오버파워]",
-        // 탱커형: AoE 기절 12초(최저 6s), 방어막 20초(최저 10s)
-        skill1: { name:"대지 강타", cd:12, desc:"주변 반경 150의 모든 적에게 강한 마법 피해를 입히고 1.5초 기절시킵니다." },
-        skill2: { name:"바위 갑옷", cd:20, desc:"5초 동안 최대 체력의 30% 방어막을 얻고 방어력이 대폭 상승합니다." },
+        // 탱커형: AoE 기절 10.5초, 방어막 18.5초
+        skill1: { name:"대지 강타", cd:10.5, desc:"주변 반경 150의 모든 적에게 강한 마법 피해를 입히고 1.5초 기절시킵니다." },
+        skill2: { name:"바위 갑옷", cd:18.5, desc:"5초 동안 최대 체력의 30% 방어막을 얻고 방어력이 대폭 상승합니다." },
         draw:(ctx,x,y,r,dir,f,anim,ent) => drawBlockyHero(ctx,x,y,r,dir,f,'crag',anim,ent)
     },
 
     // ── 브루저 / 근거리 딜탱 ──
     BERSERKER: { name:"광전사", color:"#ef4444", hp:2470, atk:52, aspd:1.3, move:213, range:90, type:"melee", role_desc:"[근접 / 브루저 / 광역 제어]",
-        // 광역기: 10초(최저 5s), 도약: 14초(최저 7s)
-        skill1:{name:"회전 참격", cd:10, desc:"주변 반경 내 적들에게 광역 데미지를 주고 0.5초 기절시킵니다."},
-        skill2:{name:"도약 강타", cd:14, desc:"대상에게 도약하여 주변에 큰 데미지를 주고 1.5초 기절시킵니다."},
+        // 광역기: 8.5초, 도약: 12.5초
+        skill1:{name:"회전 참격", cd:8.5, desc:"주변 반경 내 적들에게 광역 데미지를 주고 0.5초 기절시킵니다."},
+        skill2:{name:"도약 강타", cd:12.5, desc:"대상에게 도약하여 주변에 큰 데미지를 주고 1.5초 기절시킵니다."},
         draw:(ctx,x,y,r,dir,f,anim,ent)=>drawBlockyHero(ctx,x,y,r,dir,f,'berserker',anim,ent) },
 
     // ── 중거리 / 광역 폭딜 ──
@@ -205,9 +205,9 @@ const HERO_TMPL = {
 
     // ── 브루저 / 근거리 ──
     BARBARIAN: { name:"바바리안", color:"#fb923c", hp:2860, atk:55, aspd:1.3, move:201, range:90, type:"melee", role_desc:"[근접 / 브루저 / 광역 딜러]",
-        // 도약 둔화: 12초(최저 6s), 휠윈드 지속딜: 16초(최저 8s)
-        skill1:{name:"점프샷",  cd:12, desc:"적진으로 도약하여 넓은 범위의 적들을 느리게 만듭니다."},
-        skill2:{name:"휠윈드", cd:16, desc:"3초간 무기를 회전하며 지속 광역 피해를 주고 적을 띄웁니다."},
+        // 도약 둔화: 10.5초, 휠윈드 지속딜: 14.5초
+        skill1:{name:"점프샷",  cd:10.5, desc:"적진으로 도약하여 넓은 범위의 적들을 느리게 만듭니다."},
+        skill2:{name:"휠윈드", cd:14.5, desc:"3초간 무기를 회전하며 지속 광역 피해를 주고 적을 띄웁니다."},
         draw:(ctx,x,y,r,dir,f,anim,ent)=>drawBlockyHero(ctx,x,y,r,dir,f,'barbarian',anim,ent) },
 
     // ── 원거리 / 지속 딜러 ──
@@ -219,23 +219,23 @@ const HERO_TMPL = {
 
     // ── 탱커 / 폭주형 ──
     grrr: { name:'그르르', color:"#f59e0b", hp:2080, atk:70, aspd:0.9, move:190, range:80, type:"melee", role_desc:"[근접 / 탱커 / 폭주]",
-        // 변신 폭주: 24초(최저 12s), AoE 기절: 18초(최저 9s) - 강력한 만큼 긴 쿨
-        skill1:{name:'거대화', type:'self_buff', cd:24, desc:'일정 시간 동안 크기가 커지며 최대 체력/방어/공속/이속이 폭증합니다.'},
-        skill2:{name:'포효',   type:'aoe_stun',  cd:18, desc:'크게 포효하여 주변의 모든 적을 2초간 강력하게 기절시킵니다.'},
+        // 변신 폭주: 22.5초, AoE 기절: 16.5초
+        skill1:{name:'거대화', type:'self_buff', cd:22.5, desc:'일정 시간 동안 크기가 커지며 최대 체력/방어/공속/이속이 폭증합니다.'},
+        skill2:{name:'포효',   type:'aoe_stun',  cd:16.5, desc:'크게 포효하여 주변의 모든 적을 2초간 강력하게 기절시킵니다.'},
         draw:(ctx,x,y,r,dir,f,anim,ent)=>drawBlockyHero(ctx,x,y,r,dir,f,'grrr',anim,ent) },
 
     // ── 근접 암살자 / 피흡 ──
     VAMPIRE: { name:"뱀파이어", color:"#f43f5e", hp:2210, atk:45, aspd:1.2, move:201, range:110, type:"melee", role_desc:"[근접 / 암살자 / 피흡]",
-        // 흡혈파동: 12초(최저 6s), 순간이동 기절: 16초(최저 8s)
-        skill1:{name:"흡혈 파동", cd:12, desc:"전방 부채꼴 범위의 적들에게 데미지를 주고 데미지 비례 체력을 회복합니다."},
-        skill2:{name:"박쥐 강습", cd:16, desc:"적의 배후로 순간이동하며 데미지를 주고 1.5초간 기절시킵니다."},
+        // 흡혈파동: 10.5초, 순간이동 기절: 14.5초
+        skill1:{name:"흡혈 파동", cd:10.5, desc:"전방 부채꼴 범위의 적들에게 데미지를 주고 데미지 비례 체력을 회복합니다."},
+        skill2:{name:"박쥐 강습", cd:14.5, desc:"적의 배후로 순간이동하며 데미지를 주고 1.5초간 기절시킵니다."},
         lifeSteal:0.20, draw:(ctx,x,y,r,dir,f,anim,ent)=>drawBlockyHero(ctx,x,y,r,dir,f,'vampire',anim,ent) },
 
     // ── 근접 마법사 / 광역 폭딜 ──
     THOR: { name:"토르", color:"#60a5fa", hp:2600, atk:58, aspd:0.9, move:201, range:100, type:"melee", role_desc:"[근접 / 마법사 / 광역 폭딜]",
-        // 번개강타: 14초(최저 7s), 충격파: 18초(최저 9s)
-        skill1:{name:"번개 강타", cd:14, desc:"목표물에 번개를 떨어뜨려 주변에 큰 데미지와 스턴을 부여합니다."},
-        skill2:{name:"충격파",   cd:18, desc:"주변 넓은 범위에 매우 큰 데미지를 주고 적들을 밀어내며 에어본시킵니다."},
+        // 번개강타: 12.5초, 충격파: 16.5초
+        skill1:{name:"번개 강타", cd:12.5, desc:"목표물에 번개를 떨어뜨려 주변에 큰 데미지와 스턴을 부여합니다."},
+        skill2:{name:"충격파",   cd:16.5, desc:"주변 넓은 범위에 매우 큰 데미지를 주고 적들을 밀어내며 에어본시킵니다."},
         draw:(ctx,x,y,r,dir,f,anim,ent)=>drawBlockyHero(ctx,x,y,r,dir,f,'thor',anim,ent) },
 
     // ── 중거리 / 빙결 제어 ──
@@ -2086,11 +2086,21 @@ class Hero extends Entity {
             this.lastKillTime = now;
             
             let hName = HERO_TMPL[this.heroKey].name;
-            if(this.multiKill === 2) showBanner(hName + ' 더블 킬!', '✌️', this.faction===player?.faction);
-            else if(this.multiKill === 3) showBanner(hName + ' 트리플 킬!!', '🔥', this.faction===player?.faction);
-            else if(this.multiKill >= 4) showBanner(hName + ' 쿼드라 킬!!!', '💥', this.faction===player?.faction);
-            else if(this.killStreak >= 3) showBanner(hName + '가 미쳐 날뛰고 있습니다!', '👹', this.faction===player?.faction);
-            else showBanner(hName + ' 처치!', '⚔️', this.faction===player?.faction);
+            if(this.multiKill >= 2) {
+                let mMsg = this.multiKill === 2 ? ' 더블 킬!' : this.multiKill === 3 ? ' 트리플 킬!!' : ' 쿼드라 킬!!!';
+                let mIcon = this.multiKill === 2 ? '✌️' : this.multiKill === 3 ? '🔥' : '💥';
+                showBanner(hName + mMsg, mIcon, this.faction===player?.faction);
+            } else if(this.killStreak >= 3) {
+                showBanner(hName + '가 미쳐 날뛰고 있습니다!', '👹', this.faction===player?.faction);
+            } else {
+                showBanner(hName + ' 처치!', '⚔️', this.faction===player?.faction);
+            }
+            
+            if(this.killStreak >= 3 && this.multiKill >= 2) {
+                setTimeout(() => {
+                    showBanner(hName + '가 미쳐 날뛰고 있습니다!', '👹', this.faction===player?.faction);
+                }, 1500);
+            }
 
             window.addGold(this, 250); this.gainExp(80);
             if(target.faction!=='BLUE') GS.scoreBlue++; else GS.scoreRed++;
@@ -2139,6 +2149,20 @@ class Hero extends Entity {
         }
     }
     onDeath(attacker){
+        let deadName = HERO_TMPL[this.heroKey].name;
+        let deadFaction = this.faction === 'BLUE' ? '🔵' : '🔴';
+        let killerName = "알 수 없는 힘";
+        if (attacker) {
+            if (attacker.type === 'hero') killerName = HERO_TMPL[attacker.heroKey].name;
+            else if (attacker.type === 'tower' || attacker.type === 'nexus_turret') killerName = "포탑";
+            else if (attacker.type === 'nexus') killerName = "넥서스";
+            else if (attacker.mtype === 'boss_dragon' || attacker.mtype === 'boss_epic_dragon') killerName = "드래곤";
+            else if (attacker.type === 'minion') killerName = "미니언";
+            else if (attacker.type === 'jungle' || attacker.type === 'creature') killerName = "몬스터";
+            else killerName = attacker.name || attacker.type;
+        }
+        showBanner(`${deadFaction} ${deadName}이(가) ${killerName}에게 당했습니다.`, '💀', this.faction === player?.faction || attacker?.faction === player?.faction);
+
         let oracleAlly = entities.find(e => e.type==='hero' && e.faction===this.faction && e!==this && !e.isDead && dist(this, e) <= 400 && e.inventory.some(i=>i.id==='oracle_glory'));
         if(oracleAlly && !this.hasUsedOracleRevive) {
             this.hasUsedOracleRevive = true;
