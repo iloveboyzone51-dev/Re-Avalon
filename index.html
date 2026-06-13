@@ -543,11 +543,27 @@ window.onerror = function(msg, url, line, col, error) {
             <button onclick="document.getElementById('patchNotesModal').classList.add('hidden')" class="absolute top-4 right-4 text-slate-400 hover:text-white text-3xl font-bold">&times;</button>
             <h2 class="text-2xl md:text-3xl font-black text-amber-400 mb-6 border-b border-slate-700 pb-3 orbitron">📝 PATCH NOTES</h2>
             <div class="flex-1 overflow-y-auto pr-4 text-sm md:text-base text-slate-300 space-y-4 custom-scrollbar">
-                <!-- v4.2 (Latest) -->
+                <!-- v4.3 (Latest) -->
                 <details class="bg-slate-800/80 rounded-xl border border-amber-500/50 shadow-lg overflow-hidden" open>
                     <summary class="cursor-pointer p-4 font-black text-amber-400 hover:bg-slate-700/50 transition select-none flex justify-between items-center">
-                        <div class="flex items-center gap-2"><span class="text-xl">🛠️</span> v4.2 - 치명적 버그 수정 및 원거리 밸런스 조정</div>
+                        <div class="flex items-center gap-2"><span class="text-xl">🔥</span> v4.3 - 논스톱 난투 대규모 개편 및 아이템 수정</div>
                         <span class="px-2 py-0.5 bg-amber-500/20 text-amber-400 text-[10px] rounded-full border border-amber-500/30">LATEST</span>
+                    </summary>
+                    <div class="p-4 pt-2 text-sm text-slate-300 space-y-3 bg-slate-900/50">
+                        <ul class="list-disc pl-5 space-y-2">
+                            <li><span class="font-bold text-rose-400">[대규모 상향]</span> 모든 근접 영웅의 기본 평타에 스플래시(반경 60)가 적용되고 스킬 쿨타임이 대폭 감소했습니다.</li>
+                            <li><span class="font-bold text-amber-400">[골드 및 어시스트]</span> 적 처치 시 타격을 입힌 기여 영웅들에게 50%의 어시스트 골드를 지급합니다. 필드 몹의 경우 체력을 50% 이상 깎은 영웅이 막타 여부와 상관없이 골드를 독식합니다.</li>
+                            <li><span class="font-bold text-sky-400">[필드 전투 극대화]</span> 정글 몹 수가 45마리에서 80마리로 대폭 증가했으며, 부활 시간도 30% 빨라졌습니다. 에픽 드래곤을 포함한 보스들의 스탯은 20% 일괄 하향되었습니다.</li>
+                            <li><span class="font-bold text-emerald-400">[함정 아이템 픽스]</span> 스탯만 오르고 효과가 없던 태양불꽃 망토, 서리지팡이, 공허의 지팡이, 화염마귀의 검, 사신의 장검 등 5종의 능력이 이제 완벽하게 작동합니다.</li>
+                        </ul>
+                    </div>
+                </details>
+
+                <!-- v4.2 -->
+                <details class="bg-slate-800/50 rounded-xl border border-slate-700 overflow-hidden">
+                    <summary class="cursor-pointer p-4 font-bold text-emerald-400 hover:bg-slate-700/50 transition select-none flex justify-between items-center">
+                        <div class="flex items-center gap-2"><span class="text-lg">🛠️</span> v4.2 - 치명적 버그 수정 및 원거리 밸런스 조정</div>
+                        <span class="text-slate-500 text-xs">▼</span>
                     </summary>
                     <div class="p-4 pt-2 text-sm text-slate-300 space-y-3 bg-slate-900/50">
                         <ul class="list-disc pl-5 space-y-2">
