@@ -413,8 +413,7 @@ let aoeEffects = [];
 const keys = { w:false, a:false, s:false, d:false };
 const joy  = { active:false, id:null, ox:0, oy:0, dx:0, dy:0 };
 
-let minionTimer = 0; let dragonTimer = 0; let suddenDeathTriggered = false; // [v4.2 CLEAN-01] goblinSpawned 제거
-let midBossSpawned = [false, false, false];
+let minionTimer = 0; window.suddenDeathTriggered = false; // [v4.2 CLEAN-01] goblinSpawned 제거
 
 // ============ 유틸 ============
 const dist = (a,b) => Math.hypot(a.x-b.x, a.y-b.y);
@@ -3511,8 +3510,8 @@ class EpicDragon extends Entity {
         ctx.translate(this.x, this.y);
         ctx.beginPath();
         ctx.arc(0, 0, this.radius + 15, 0, Math.PI*2);
-        if(this.ctype==='dragon') ctx.fillStyle = 'rgba(239, 68, 68, 0.2)';
-        else if(this.ctype==='golem') ctx.fillStyle = 'rgba(16, 185, 129, 0.2)';
+        if(this.dtype==='red') ctx.fillStyle = 'rgba(239, 68, 68, 0.2)';
+        else if(this.dtype==='blue') ctx.fillStyle = 'rgba(56, 189, 248, 0.2)';
         else ctx.fillStyle = 'rgba(250, 204, 21, 0.2)';
         ctx.fill();
         ctx.restore();
@@ -3752,65 +3751,7 @@ class Guardian extends Entity {
     applyStun(duration) { }
     applySlow(amount, duration) { }
     
-    update(dt) {
-        if(this.isDead) return;
-        super.update(dt);
-        this.stunTimer = 0;
-        this.airborneTimer = 0;
-        this.isFrozen = false;
-        this.slowTimer = 0;
-        this.hitStopTimer = 0;
-        this.vx = 0;
-        this.vy = 0;
-        
-        let target = null;
-        let minDist = 800; // 수호신의 어그로 범위 (상당히 넓음)
-        entities.forEach(e => {
-            if(e.faction === this.faction || e.isDead || e.type === 'tower' || e.type === 'nexus_turret' || e.type === 'nexus' || e.type === 'jungle') return;
-            let d = dist(this, e);
-            if(d < minDist) {
-                minDist = d;
-                target = e;
-            }
-        });
 
-        if(target) {
-            let dToTarget = dist(this, target);
-            if(dToTarget > this.range) {
-                let a = Math.atan2(target.y - this.y, target.x - this.x);
-                this.vx = Math.cos(a) * this.moveSpd;
-                this.vy = Math.sin(a) * this.moveSpd;
-            } else {
-                this.vx = 0; this.vy = 0;
-                if(this.attackTimer <= 0) {
-                    this.attackTimer = 1 / this.aspd;
-                    
-                    // 수호신의 무자비한 공격 ("쓱싹 해버리는")
-                    target.applyRawDamage(this.atk * 1.5, this); // 강력한 일격
-                    if(target.applyStun) target.applyStun(0.5); // 강력한 경직/스턴
-                    
-                    // 수호신 전용 거대 무기 휘두르기 이펙트
-                    let angle = Math.atan2(target.y - this.y, target.x - this.x);
-                    if(typeof spawnSlash !== 'undefined') spawnSlash(this.x, this.y - this.radius, angle, '#38bdf8', 150); // 푸른빛 거대 창 궤적
-                    if(typeof spawnParticles !== 'undefined') spawnParticles(target.x, target.y, '#facc15', 20, 80, 0.5);
-                    if(typeof playSFX !== 'undefined') playSFX('skill_burst');
-                }
-            }
-        } else {
-            // 주변에 적이 없으면 원래 위치(home)로 당당하게 복귀
-            if(dist(this, this.home) > 10) {
-                let a = Math.atan2(this.home.y - this.y, this.home.x - this.x);
-                this.vx = Math.cos(a) * this.moveSpd;
-                this.vy = Math.sin(a) * this.moveSpd;
-            } else {
-                this.vx = 0; this.vy = 0;
-                // 복귀 완료 시 체력 회복
-                if(this.hp < this.maxHp) this.hp = Math.min(this.maxHp, this.hp + this.maxHp * 0.1 * dt);
-            }
-        }
-    }
-    
-    
     draw(ctx) {
         if(this.isDead) return;
         let r = this.radius;
@@ -3921,6 +3862,8 @@ class Guardian extends Entity {
     
     update(dt) {
         if(this.isDead) return; super.update(dt);
+        this.stunTimer = 0; this.airborneTimer = 0; this.isFrozen = false; this.slowTimer = 0; this.hitStopTimer = 0;
+
         
         // 시간에 따른 무한 스케일링 (초반 강력, 후반 괴물)
         let scale = 1 + (window.GS ? window.GS.time / 300 : 0); // 5분마다 1배수 증가
@@ -4025,7 +3968,7 @@ class Creature extends Minion {
 
         // 등장 위용 오라 이펙트
         if (this.auraTimer > 0) {
-            this.auraTimer -= 1/60;
+            this.auraTimer -= dt;
             ctx.save();
             ctx.translate(this.x, this.y);
             let auraScale = 1.0 + Math.sin(Date.now() / 150) * 0.1;
@@ -4111,7 +4054,7 @@ class Creature extends Minion {
             if(Math.random()<0.05 && typeof spawnRing !== 'undefined') spawnRing(this.x, this.y, 'rgba(239,68,68,0.2)', 150, 0.5);
         } else if(this.ctype === 'beast') {
             // 6초마다 1초 광역 스턴
-            if(this.beastStunTimer === undefined) this.beastStunTimer = 6.0;
+
             this.beastStunTimer -= dt;
             if(this.beastStunTimer <= 0) {
                 this.beastStunTimer = 6.0;
@@ -4126,9 +4069,7 @@ class Creature extends Minion {
         }
     }
     
-    // 오버라이드: 평타를 광역으로
-    applyAttack(target) {
-    }
+
 }
 
 class Monster extends Entity {
@@ -4225,7 +4166,8 @@ class Monster extends Entity {
 
         // 피격 시 흰색 번쩍임 플래시 효과
         if (this.hitFlashTimer > 0) {
-            }
+            ctx.filter = 'brightness(200%)';
+        }
 
         // 2. 몬스터 타입별 개성 있는 외형 렌더링
         if (this.mtype === 'summon') {
@@ -4638,7 +4580,7 @@ window.startGame=()=>{
     // 완벽한 초기화
     entities=[]; projectiles=[]; particles=[]; floatingTexts=[]; slashEffects=[]; aoeEffects=[]; earthCrackEffects=[]; rockAuraEffects=[];
     GS.scoreBlue=0; GS.scoreRed=0; GS.time=0; GS.paused=false; minionTimer=MINION_INTERVAL-2;
-    midBossSpawned = [false, false, false]; suddenDeathTriggered = false; // [v4.2 CLEAN-01] goblinSpawned 제거
+    window.suddenDeathTriggered = false; // [v4.2 CLEAN-01] goblinSpawned 제거
     document.getElementById('scoreBlue').textContent='0'; document.getElementById('scoreRed').textContent='0';
 
     // 건물 세팅 (3라인 + 수호타워)
@@ -5039,7 +4981,7 @@ function gameLoop(now){
         // [v4.2 CLEAN-01] 황금 고블린 스폰 코드 완전 제거 (컨텐츠 삭제됨)
 
         // 서든데스 트리거
-        if(typeof suddenDeathTriggered === 'undefined') window.suddenDeathTriggered = false;
+        if(typeof window.suddenDeathTriggered === 'undefined') window.suddenDeathTriggered = false;
         if(!window.suddenDeathTriggered && GS.time >= 18 * 60) {
             window.suddenDeathTriggered = true;
             let sdWarn = document.getElementById('suddenDeathWarn');
@@ -5086,8 +5028,10 @@ function gameLoop(now){
         
         // Garbage Collection: 사망한 미니언/몬스터/투사체 영구 삭제 (프레임 방어)
         entities = entities.filter(e => {
-            if (e.isDead && e.type !== 'hero' && e.type !== 'building') return false;
-            return true;
+            if (!e.isDead) return true;
+            if (e.type === 'hero' || e.type === 'building') return true;
+            if (e.type === 'jungle' && !e.mtype.includes('boss') && e.mtype !== 'summon') return true;
+            return false;
         });
         projectiles = projectiles.filter(p => !p.isDead);
         for(let i=particles.length-1;i>=0;i--){let p=particles[i];p.x+=p.vx*dt;p.y+=p.vy*dt;p.life-=dt;if(p.life<=0)particles.splice(i,1);}
@@ -5119,7 +5063,7 @@ function gameLoop(now){
         
         if(window.AIChat) window.AIChat.update(dt);
     if(window.TeamBrains) { if(window.TeamBrains['BLUE']) window.TeamBrains['BLUE'].update(dt); if(window.TeamBrains['RED']) window.TeamBrains['RED'].update(dt); }
-        entities=entities.filter(e=>!e.isDead||e.type==='hero'||(e.type==='jungle'&&!e.mtype.includes('boss')&&e.mtype!=='summon')); projectiles=projectiles.filter(p=>!p.isDead);
+
         let camSmooth = GS.platform === 'MOBILE' ? 0.08 : 0.12;
         if(player&&!player.isDead){ camera.x+=(player.x-camera.x)*camSmooth; camera.y+=(player.y-camera.y)*camSmooth; }
     }
@@ -5593,13 +5537,11 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.innerHTML += '<div class="absolute -top-2 -right-2 bg-amber-500 text-[8px] font-bold text-white px-1 py-0.5 rounded shadow z-10 whitespace-nowrap animate-bounce">Pick!</div>';
         }
     }
+    selectHero('BERSERKER');
 });
-
-selectHero('BERSERKER');
 
 
 // ====== AI Chat & Kill Feed Systems ======
-window.killStreaks = {};
 
 window.chatBubbles = []; // For in-game speech bubbles
 
@@ -5832,7 +5774,7 @@ window.AIChat = {
     
     onKill: function(killer, victim) {
         if(killer && killer.type === 'hero' && victim && victim.type === 'hero') {
-            if(window.addText) {
+            if(typeof addText !== 'undefined') {
                 let kEmoji = this.patterns.emojis.killer[Math.floor(Math.random()*this.patterns.emojis.killer.length)];
                 let vEmoji = this.patterns.emojis.victim[Math.floor(Math.random()*this.patterns.emojis.victim.length)];
                 killer.emote = kEmoji; killer.emoteTimer = 3.0;
@@ -5842,7 +5784,7 @@ window.AIChat = {
             // 닉네임 입력 전당 등록을 위해 KDA 및 딜량 데이터 세팅
             const kdaResult = document.getElementById('kdaResult');
             if(kdaResult) kdaResult.innerText = `${player.kills}/${player.deaths}/${player.assists||0}`;
-            const domResult = document.getElementById('dominanceResult');
+
             
             if (Math.random() < 0.8) {
                 let msg = this.patterns.kill[Math.floor(Math.random() * this.patterns.kill.length)];
@@ -5944,7 +5886,7 @@ window.AIChat = {
         let towers = entities.filter(e => e.type === 'tower');
         if (this.lastTowerCount !== -1 && towers.length < this.lastTowerCount) {
             // A tower died
-            let towerFactions = towers.map(t=>t.faction);
+
             // Guess which faction lost a tower (approximate)
             let myHeroes = heroes.filter(h => h.faction === rHero.faction);
             let enemyHeroes = heroes.filter(h => h.faction !== rHero.faction);
