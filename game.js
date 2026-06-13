@@ -2187,7 +2187,7 @@ class Hero extends Entity {
                 if(c.attacker !== attacker && !c.attacker.isDead) {
                     c.attacker.assists++;
                     c.attacker.gainExp(this.level * 15);
-                    window.addGold(c.attacker, 150);
+                    window.addGold(c.attacker, 125);
                     if(c.attacker.triggerWarAnthem) c.attacker.triggerWarAnthem();
                 }
             });
@@ -2312,7 +2312,7 @@ class Hero extends Entity {
             if(i.stat==='storm_eye')          { this.moveSpd+=i.val*m; }
             if(i.stat==='vampiric')           { this.crimsonLifesteal+=i.val*m; }
             if(i.stat==='phantom')            { this.critChance+=i.val*m; }
-            if(i.stat==='demonfire')          { this.burnDmg+=i.val*m; }
+            if(i.stat==='demonfire')          { /* burst effect applied in autoAttack */ }
             if(i.stat==='berserker')          { this.aspd+=i.val*m; this.crimsonLifesteal+=0.10*m; }
             if(i.stat==='oracle_glory')       { this.defense+=i.val*m; }
             if(i.stat==='fate_dodge')         { /* 특수처리: applyRawDamage에서 처리 */ }
@@ -4135,12 +4135,12 @@ class Monster extends Entity {
                     if(r < 0.3) {
                         spawnAOE(this.x, this.y, 250, '#ef444488', 1.0);
                         let targets = entities.filter(e => e.faction !== this.faction && !e.isDead && dist(this, e) <= 250);
-                        targets.forEach(t => t.applyRawDamage(this.atk*1.5, this));
+                        targets.forEach(t => t.applyRawDamage(this.atk*1.2, this));
                         playSFX('skill_burst');
                     } else if(r < 0.6) {
                         spawnRing(this.x, this.y, '#f59e0b', 300, 0.8);
                         let targets = entities.filter(e => e.faction !== this.faction && !e.isDead && dist(this, e) <= 300);
-                        targets.forEach(t => { t.applyRawDamage(this.atk*2, this); t.stunTimer = t.type==='hero' && t.inventory && t.inventory.some(i=>i.id==='behemoth_armor') && HERO_TMPL[t.heroKey] && HERO_TMPL[t.heroKey].type==='melee' ? (1.0)*0.7 : (1.0); });
+                        targets.forEach(t => { t.applyRawDamage(this.atk*1.6, this); t.stunTimer = t.type==='hero' && t.inventory && t.inventory.some(i=>i.id==='behemoth_armor') && HERO_TMPL[t.heroKey] && HERO_TMPL[t.heroKey].type==='melee' ? (1.0)*0.7 : (1.0); });
                         playSFX('skill_magic');
                     } else target.applyRawDamage(this.atk,this);
                 } else target.applyRawDamage(this.atk,this);
@@ -4148,7 +4148,7 @@ class Monster extends Entity {
         } else if(dist(this,this.home)>50){ let a=Math.atan2(this.home.y-this.y,this.home.x-this.x); this.vx=Math.cos(a)*this.moveSpd; this.vy=Math.sin(a)*this.moveSpd; }
         else { this.vx=0; this.vy=0; }
     }
-    onDeath(attacker){ this.respawnTimer=10.5; if(this.mtype==='boss_dragon'){ showBanner('드래곤 처치!','🐲', attacker?.faction===player?.faction); } }
+    onDeath(attacker){ this.respawnTimer=10.5 * 0.7; if(this.mtype==='boss_dragon'){ showBanner('드래곤 처치!','🐲', attacker?.faction===player?.faction); } }
     draw(ctx){
         if(this.isDead) return;
 
