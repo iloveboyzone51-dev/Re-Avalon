@@ -328,6 +328,7 @@ const BASE_ITEMS = [
     { id:'void_staff',   name:'공허의 지팡이', cost:1400, heroType:'magic', stat:'magic_pen', val:0.2, icon:'🌌', desc:'[마법] 적 마법 저항력 무시' },
 
     // [공용 / 유틸]
+    { id:'life_orb',     name:'생명의 구슬',   cost:400, heroType:'common', stat:'hp_bonus', val:400, icon:'🔮', desc:'최대 체력 400 증가' },
     { id:'steel_plate',  name:'강철 판금',     cost:500, heroType:'common', stat:'phys_resist', val:0.15, icon:'🛡️', desc:'물리 데미지 15% 감소' },
     { id:'magic_cloak',  name:'마법 무효화 망토',cost:500, heroType:'common', stat:'magic_resist', val:0.15, icon:'🧥', desc:'마법 데미지 15% 감소' },
     { id:'purify_amulet',name:'정화의 부적',   cost:600, heroType:'common', stat:'status_resist', val:0.2, icon:'🧿', desc:'상태이상(기절/둔화) 저항 확률 20% 증가' },
@@ -378,7 +379,8 @@ const EVOLUTION_ITEMS = [
 ];
 
 // ============ 전역 상태 ============
-let GS = { status:'TITLE', platform:'PC', faction:'BLUE', hero:'grrr', time:0, lastFrame:0, paused:false, autoSkill1:false, autoSkill2:false, hitStopTimer:0, sfxEnabled:true };
+let GS = { status:'TITLE', platform:'PC', faction:'BLUE', hero:'grrr', time:0, lastFrame:0, paused:false, autoSkill1:false, autoSkill2:false, hitStopTimer:0, sfxEnabled:true, aiCommand:'FREE' };
+window.setAICommand = (cmd) => { GS.aiCommand = cmd; if(window.showBanner) showBanner('AI 지시: '+(cmd==='FREE'?'자율 행동 개시':cmd==='GATHER'?'내 위치로 집결':cmd==='CHASE'?'적 영웅 추격':'적 타워 공격'), '📣', true); };
 let camera = { x:1500, y:2500, zoom:0.65 };
 let player = null;
 window.TEAM_VAULT = { gold: 0 };
@@ -1802,6 +1804,24 @@ class Hero extends Entity {
     }
 
     _decideState(hpRatio, nearEnemies, nearAllies, pers, order, orderActive, myBase) {
+        let isFighting = nearEnemies.some(e => e.type==='hero' && dist(this, e) < 600);
+        let nearDragon = entities.some(e => e.mtype==='boss_epic_dragon' && !e.isDead && dist(this, e) < 800);
+        
+        if(!this.isPlayer && GS.aiCommand && GS.aiCommand !== 'FREE') {
+            if(GS.aiCommand === 'GATHER') {
+                let p = entities.find(e => e.isPlayer && e.faction === this.faction && !e.isDead);
+                if(p) {
+                    if (isFighting || nearDragon) {
+                        return (isFighting && nearAllies.some(a=>a.type==='hero'&&(a.lastAttackedTimer||0)>0)) ? 'TEAMFIGHT_JOIN' : 'ATTACK';
+                    }
+                    return 'GATHER';
+                }
+            }
+            else if(GS.aiCommand === 'CHASE') return 'CHASE_GLOBAL';
+            else if(GS.aiCommand === 'SIEGE') {
+                if(hpRatio > 0.4 && !isFighting) return 'SIEGE_GLOBAL';
+            }
+        }
         let dangerZones = entities.filter(e => e.type==='stormZone' && e.faction!==this.faction && dist(this, e) < e.radius);
         if (dangerZones.length > 0) return 'EVADE';
 
@@ -1865,6 +1885,46 @@ class Hero extends Entity {
         };
 
         switch(this.aiState) {
+            case 'GATHER': {
+                let p = entities.find(e => e.isPlayer && e.faction === this.faction && !e.isDead);
+                if(p) {
+                    if(dist(this, p) > 200) { go(p, 150); } 
+                    else { if(target && dist(this, target) <= this.range) { this.vx=0; this.vy=0; this.facingDir = target.x < this.x ? -1 : 1; } else { this.vx=0; this.vy=0; } }
+                    skills(true, this.range*1.5);
+                } else { this.aiState = 'LANE'; }
+                break;
+            }
+            case 'CHASE_GLOBAL': {
+                let anyEnemy = (this.nearEnemiesCache||[]).filter(e=>e.type==='hero'&&!e.isDead).sort((a,b)=>dist(this,a)-dist(this,b))[0];
+                if(!anyEnemy) anyEnemy = entities.filter(e=>e.type==='hero'&&e.faction!==this.faction&&!e.isDead).sort((a,b)=>dist(this,a)-dist(this,b))[0];
+                if(anyEnemy) { 
+                    let enemyTowers = entities.filter(t=>(t.type==='tower'||t.type==='nexus_turret') && t.faction!==this.faction && !t.isDead);
+                    let underTower = enemyTowers.some(t => dist(t, anyEnemy) < t.range);
+                    if(underTower) {
+                        this.aiState = 'LANE'; // 다이브 금지
+                    } else {
+                        go(anyEnemy, this.range*0.8); skills(true, this.range*1.5); 
+                    }
+                } else { this.aiState = 'LANE'; }
+                break;
+            }
+            case 'SIEGE_GLOBAL': {
+                let towers = entities.filter(e=>(e.type==='tower'||e.type==='nexus_turret'||e.type==='nexus')&&e.faction!==this.faction&&!e.isDead).sort((a,b)=>dist(this,a)-dist(this,b));
+                if(towers.length > 0) {
+                    let safeTower = towers.find(tw => entities.some(m => m.faction===this.faction && m.type==='minion' && !m.isDead && dist(m, tw) < tw.range));
+                    let tgt = safeTower || towers[0];
+                    if(!safeTower && tgt.type !== 'nexus') {
+                        if(dist(this, tgt) < tgt.range + 50) {
+                            let a = Math.atan2(this.y - tgt.y, this.x - tgt.x);
+                            this.vx = Math.cos(a) * this.moveSpd; this.vy = Math.sin(a) * this.moveSpd;
+                        } else { go(tgt, tgt.range + 60); }
+                    } else {
+                        if(target && target.type==='hero' && dist(this, target) < this.range) tgt = target; 
+                        go(tgt, this.range*0.8); skills(true, this.range*1.5);
+                    }
+                } else { this.aiState = 'LANE'; }
+                break;
+            }
             case 'EVADE': {
                 let dangerZones = entities.filter(e => e.type==='stormZone' && e.faction!==this.faction && dist(this, e) < e.radius);
                 if(dangerZones.length > 0) {
@@ -2370,6 +2430,7 @@ class Hero extends Entity {
             if(i.stat==='frost_slow')         { this.frostSlow += i.val*m; }
             if(i.stat==='magic_pen')          { this.magicPen += i.val*m; }
             // ── 공용 ──
+            if(i.stat==='hp_bonus')           { this.maxHp += i.val*m; }
             if(i.stat==='phys_resist')        { this.physResist += i.val*m; }
             if(i.stat==='magic_resist')       { this.magicResist += i.val*m; }
             if(i.stat==='status_resist')      { this.statusResist += i.val*m; }
@@ -3478,9 +3539,9 @@ class EpicDragon extends Entity {
         this.mtype = 'boss_epic_dragon';
         this.dtype = dtype; // 'red' or 'blue'
         this.radius = 60; // 5배 크기 (기본 영웅 12)
-        this.maxHp = 27000 * scale; this.hp = this.maxHp;
-        this.atk = 270 * scale;
-        this.defense = 75 * scale;
+        this.maxHp = 15000 * scale; this.hp = this.maxHp;
+        this.atk = 150 * scale;
+        this.defense = 40 * scale;
         this.moveSpd = 80;
         this.range = 150;
         
@@ -4281,7 +4342,7 @@ class Monster extends Entity {
         } else if(dist(this,this.home)>50){ let a=Math.atan2(this.home.y-this.y,this.home.x-this.x); this.vx=Math.cos(a)*this.moveSpd; this.vy=Math.sin(a)*this.moveSpd; }
         else { this.vx=0; this.vy=0; }
     }
-    onDeath(attacker){ this.respawnTimer=15; if(this.mtype==='boss_dragon'){ showBanner('드래곤 처치!','🐲', attacker?.faction===player?.faction); } }
+    onDeath(attacker){ this.respawnTimer=10.5; if(this.mtype==='boss_dragon'){ showBanner('드래곤 처치!','🐲', attacker?.faction===player?.faction); } }
     draw(ctx){
         if(this.isDead) return;
 
@@ -4729,9 +4790,9 @@ window.startGame=()=>{
     // 미드
     entities.push(new Building(1000,2000,'BLUE','tower')); entities.push(new Building(1300,1700,'BLUE','tower')); entities.push(new Building(2000,1000,'RED','tower')); entities.push(new Building(1700,1300,'RED','tower'));
 
-    // 정글 몹 스폰 (5종류, 수량 25개로 대폭 증가)
+    // 정글 몹 스폰 (5종류, 수량 45개로 대폭 증가)
     let mTypes = ['wolf', 'bear', 'golem', 'skeleton', 'slime'];
-    for(let i=0;i<25;i++) {
+    for(let i=0;i<45;i++) {
         let type = mTypes[Math.floor(Math.random() * mTypes.length)];
         // 맵 전체에 랜덤 배치하되 완전 외곽 제외
         entities.push(new Monster(rand(400,2600), rand(400,2600), type));
@@ -4959,6 +5020,38 @@ function renderShop(){
         let lv=slot?'<span class="text-rose-400 font-bold">+'+slot.upgrade+'</span>':'';
         let canBuy=player.gold>=i.cost&&(slot||player.inventory.length<10);
         let sellPrice = Math.floor(i.cost * 0.6);
+        let upgStr = '';
+        if(slot && i.val && i.stat !== 'crit_multi') {
+            let m1 = 1 + (slot.upgrade*0.5);
+            let m2 = 1 + ((slot.upgrade+1)*0.5);
+            let cur = (i.val * m1); let nxt = (i.val * m2);
+            let curF = cur.toFixed(1).replace('.0',''); let nxtF = nxt.toFixed(1).replace('.0','');
+            let text = `성능:${curF} &rarr; ${nxtF}`;
+            
+            if(i.id === 'sniper_lens') {
+                let curCrit = (0.05 * m1 * 100).toFixed(1).replace('.0',''); let nxtCrit = (0.05 * m2 * 100).toFixed(1).replace('.0','');
+                text = `사거리:${curF} 치명:${curCrit}% &rarr; 사거리:${nxtF} 치명:${nxtCrit}%`;
+            } else if(i.id === 'tiamat') {
+                let cA = (25*m1).toFixed(0); let cH = (300*m1).toFixed(0);
+                let nA = (25*m2).toFixed(0); let nH = (300*m2).toFixed(0);
+                text = `공격:${cA} HP:${cH} &rarr; 공격:${nA} HP:${nH}`;
+            } else if(i.id === 'phantom_dancer') {
+                let cS = (20*m1).toFixed(0); let cD = (i.val*m1*100).toFixed(1).replace('.0','');
+                let nS = (20*m2).toFixed(0); let nD = (i.val*m2*100).toFixed(1).replace('.0','');
+                text = `회피:${cD}% 이속:${cS} &rarr; 회피:${nD}% 이속:${nS}`;
+            } else if(i.id === 'guardian_angel') {
+                let cH = (200*m1).toFixed(0); let nH = (200*m2).toFixed(0);
+                text = `부활HP:${cH} &rarr; 부활HP:${nH}`;
+            } else if(i.id === 'absolute_armor') {
+                let cD = (100*m1).toFixed(0); let nD = (100*m2).toFixed(0);
+                text = `방어비례:+${cD}% &rarr; +${nD}%`;
+            } else if(i.stat==='rapid_fire'||i.stat==='phantom'||i.stat==='magic_amp'||i.stat==='cdr'||i.stat==='magic_pen'||i.stat==='phys_resist'||i.stat==='magic_resist'||i.stat==='status_resist'||i.stat==='reflect_dmg'||i.stat==='crimson_lifesteal'||i.stat==='dodge'||i.stat==='skill_dmg') { 
+                curF=Math.floor(cur*100)+'%'; nxtF=Math.floor(nxt*100)+'%'; 
+                text = `성능:${curF} &rarr; ${nxtF}`;
+            }
+            
+            upgStr = `<br><span class="text-emerald-400 font-bold tracking-tight bg-slate-900/50 px-1 rounded inline-block mt-0.5 border border-emerald-500/30">[${text}]</span>`;
+        }
         cont.innerHTML+=`
         <div class="bg-slate-800/80 hover:bg-slate-700/80 transition-colors border border-slate-700 rounded-lg p-1 md:p-2 flex flex-col items-center justify-between gap-0.5 md:gap-1 w-full relative group shadow-sm">
             <div class="text-2xl md:text-3xl mb-0.5 md:mb-1 mt-0.5 md:mt-1">${i.icon}</div>
@@ -4966,7 +5059,7 @@ function renderShop(){
                 <div class="text-[9px] md:text-xs font-bold text-slate-100 truncate w-full px-0.5">${i.name} ${lv}</div>
                 <div class="text-[8px] md:text-[10px] text-amber-400 font-bold">${i.cost}G</div>
             </div>
-            ${i.desc ? '<div class="text-[7.5px] md:text-[9px] text-slate-400 text-center leading-tight line-clamp-2 min-h-[1.5rem] mt-0.5 px-0.5">'+i.desc+'</div>' : ''}
+            ${i.desc ? '<div class="text-[7.5px] md:text-[9px] text-slate-300 text-center leading-tight line-clamp-3 min-h-[1.5rem] mt-0.5 px-0.5">'+i.desc+upgStr+'</div>' : ''}
             <button onclick="buyItemUI('${i.id}')" class="${canBuy?'bg-amber-500 hover:bg-amber-400 text-slate-950 active:scale-95':'bg-slate-700 text-slate-500'} text-[8px] md:text-[11px] w-full py-1 md:py-1.5 rounded font-bold mt-0.5 transition-all">${slot?'강화 (+'+(slot.upgrade+1)+')':'구매'}</button>
             ${slot?'<button onclick="event.stopPropagation();window.sellItemUI&&window.sellItemUI(\"'+i.id+'\",'+sellPrice+')" class="bg-rose-700 hover:bg-rose-600 text-white text-[7px] md:text-[9px] w-full py-0.5 rounded font-bold mt-0.5 transition-all">판매 ('+sellPrice+'G)</button>':''}
         </div>`;
