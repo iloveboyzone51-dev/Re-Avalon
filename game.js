@@ -1482,6 +1482,187 @@ const AI_PERSONALITY = {
 };
 
 // ============ 팀 뇌 시스템 ============
+class ReworkedAIController {
+    constructor(hero) {
+        this.hero = hero;
+        this.state = 'SQUAD_ROAM';
+    }
+
+    update(dt) {
+        if (!this.hero || this.hero.isDead || this.hero.stunTimer > 0) return;
+
+        // Player command override for UI buttons
+        if (!this.hero.isPlayer && GS.aiCommand && GS.aiCommand !== 'FREE') {
+            if (GS.aiCommand === 'GATHER') {
+                let p = entities.find(e => e.isPlayer && e.faction === this.hero.faction && !e.isDead);
+                if (p) { this.moveTo(p.x, p.y, 150); return; }
+            } else if (GS.aiCommand === 'CHASE') {
+                let enm = this.getClosestEnemyHero();
+                if (enm) { this.hero.aiTarget = enm; this.moveTo(enm.x, enm.y, this.hero.range*0.8); this.useAllSkillsOn(enm); return; }
+            } else if (GS.aiCommand === 'SIEGE') {
+                this.executeObjectivePush(); return;
+            }
+        }
+
+        // 1. 기지 위기 감지 (Base Defense Override)
+        if (this.checkBaseUnderAttack()) {
+            this.state = 'BASE_DEFENSE';
+            this.executeBaseDefense();
+            return;
+        }
+
+        const nearbyAllies = this.getNearbyAllies(800);
+        const averageTeamLevel = this.getAverageLevel();
+
+        // 2. 최우선 오브젝트 밀기 (레벨 15 이상)
+        if (averageTeamLevel >= 15) {
+            this.state = 'OBJECTIVE_PUSH';
+            this.executeObjectivePush();
+        } 
+        // 3. 적극적 교전 판단
+        else if (this.detectNearbyTarget(nearbyAllies)) {
+            this.state = 'ENGAGE';
+            this.executeEngage(nearbyAllies);
+        } 
+        // 4. 스쿼드 뭉치기 및 로밍
+        else {
+            this.state = 'SQUAD_ROAM';
+            this.executeSquadRoam(nearbyAllies);
+        }
+    }
+
+    getNearbyAllies(radius) {
+        return entities.filter(e => e.type==='hero' && e.faction===this.hero.faction && !e.isDead && e!==this.hero && dist(this.hero, e) < radius);
+    }
+    getAverageLevel() {
+        let allies = entities.filter(e => e.type==='hero' && e.faction===this.hero.faction);
+        return allies.reduce((sum, a) => sum + (a.level||1), 0) / Math.max(1, allies.length);
+    }
+    checkBaseUnderAttack() {
+        let baseStructures = entities.filter(e => (e.type==='nexus' || e.type==='nexus_turret' || e.mtype==='boss_epic_dragon') && e.faction===this.hero.faction && !e.isDead);
+        return baseStructures.some(s => {
+            let enemiesNear = entities.some(e => e.faction!==this.hero.faction && !e.isDead && dist(e, s) < 800);
+            return enemiesNear && (s.hp < s.maxHp);
+        });
+    }
+
+    sanitizePosition(tx, ty) {
+        const margin = 150;
+        const mapW = 3000, mapH = 3000;
+        let cx = Math.max(margin, Math.min(mapW - margin, tx));
+        let cy = Math.max(margin, Math.min(mapH - margin, ty));
+        let isNearCorner = (cx < margin*2 && cy < margin*2) || (cx > mapW - margin*2 && cy < margin*2) || 
+                           (cx < margin*2 && cy > mapH - margin*2) || (cx > mapW - margin*2 && cy > mapH - margin*2);
+        if (isNearCorner) { cx = mapW/2; cy = mapH/2; }
+        return { x: cx, y: cy };
+    }
+
+    executeSquadRoam(nearbyAllies) {
+        let allAllies = entities.filter(e => e.type==='hero' && e.faction===this.hero.faction && !e.isDead);
+        if (nearbyAllies.length < 2 && allAllies.length >= 3) {
+            let cx = allAllies.reduce((s, a) => s + a.x, 0) / allAllies.length;
+            let cy = allAllies.reduce((s, a) => s + a.y, 0) / allAllies.length;
+            let safePos = this.sanitizePosition(cx, cy);
+            this.moveTo(safePos.x, safePos.y, 50);
+        } else {
+            let mCamps = entities.filter(e => !e.isDead && (e.type==='minion' || e.type==='creature' || e.type==='jungle') && e.faction!==this.hero.faction);
+            if (mCamps.length > 0) {
+                let closest = mCamps.sort((a,b)=>dist(this.hero,a)-dist(this.hero,b))[0];
+                let safePos = this.sanitizePosition(closest.x, closest.y);
+                this.hero.aiTarget = closest;
+                this.moveTo(safePos.x, safePos.y, this.hero.range*0.8);
+            } else {
+                let enmBase = this.hero.faction==='BLUE' ? {x:2700,y:300} : {x:300,y:2700};
+                let tgt = this.sanitizePosition(enmBase.x, enmBase.y);
+                this.moveTo(tgt.x, tgt.y, 50);
+            }
+        }
+    }
+
+    executeObjectivePush() {
+        let towers = entities.filter(e=>(e.type==='tower'||e.type==='nexus_turret'||e.type==='nexus'||e.mtype==='boss_epic_dragon')&&e.faction!==this.hero.faction&&!e.isDead).sort((a,b)=>dist(this.hero,a)-dist(this.hero,b));
+        if (towers.length > 0) {
+            let tgt = towers[0];
+            this.hero.aiTarget = tgt;
+            this.moveTo(tgt.x, tgt.y, this.hero.range*0.8);
+            this.useAllSkillsOn(tgt);
+        }
+    }
+
+    executeBaseDefense() {
+        let myBase = this.hero.faction==='BLUE' ? {x:300,y:2700} : {x:2700,y:300};
+        let threat = entities.find(e => e.faction!==this.hero.faction && !e.isDead && dist(e, myBase) < 900);
+        if (threat) {
+            this.hero.aiTarget = threat;
+            this.moveTo(threat.x, threat.y, this.hero.range*0.8);
+            this.useAllSkillsOn(threat);
+        } else {
+            this.moveTo(myBase.x, myBase.y, 200);
+        }
+    }
+
+    detectNearbyTarget(nearbyAllies) {
+        let hpRatio = this.hero.hp / this.hero.maxHp;
+        let isWipe = nearbyAllies.length === 0 && entities.filter(e => e.type==='hero' && e.faction===this.hero.faction && !e.isDead).length <= 1;
+        
+        if (hpRatio < 0.15 || isWipe) {
+            let myBase = this.hero.faction==='BLUE' ? {x:300,y:2700} : {x:2700,y:300};
+            this.moveTo(myBase.x, myBase.y, 100);
+            return true; 
+        }
+        
+        let enemies = entities.filter(e => e.faction!==this.hero.faction && !e.isDead && dist(this.hero, e) < 800);
+        return enemies.length > 0;
+    }
+
+    executeEngage(nearbyAllies) {
+        let enemies = entities.filter(e => e.faction!==this.hero.faction && !e.isDead && dist(this.hero, e) < 800);
+        let bestTarget = null;
+        let maxScore = -9999;
+        enemies.forEach(e => {
+            let d = dist(this.hero, e);
+            let s = -d;
+            if (e.type === 'hero') {
+                s += 500;
+                s += (1 - e.hp/e.maxHp) * 300;
+                let eAllies = entities.filter(a => a.faction===e.faction && !e.isDead && dist(a, e) < 600);
+                if (eAllies.length === 0 && nearbyAllies.length >= 2) s += 1000;
+                s += (nearbyAllies.length / Math.max(1, eAllies.length)) * 100;
+            }
+            if (s > maxScore) { maxScore = s; bestTarget = e; }
+        });
+
+        if (bestTarget) {
+            this.hero.aiTarget = bestTarget;
+            this.moveTo(bestTarget.x, bestTarget.y, this.hero.range*0.8);
+            this.useAllSkillsOn(bestTarget);
+        }
+    }
+    
+    getClosestEnemyHero() {
+        let enemies = entities.filter(e => e.type==='hero' && e.faction!==this.hero.faction && !e.isDead).sort((a,b)=>dist(this.hero,a)-dist(this.hero,b));
+        return enemies.length > 0 ? enemies[0] : null;
+    }
+
+    moveTo(tx, ty, stopDist) {
+        let d = Math.hypot(tx - this.hero.x, ty - this.hero.y);
+        if (d > stopDist) {
+            let a = Math.atan2(ty - this.hero.y, tx - this.hero.x);
+            this.hero.vx = Math.cos(a) * this.hero.moveSpd;
+            this.hero.vy = Math.sin(a) * this.hero.moveSpd;
+        } else {
+            this.hero.vx = 0; this.hero.vy = 0;
+        }
+        this.hero.facingDir = tx < this.hero.x ? -1 : 1;
+    }
+
+    useAllSkillsOn(target) {
+        if (!target) return;
+        if(this.hero.heroSkill1Timer<=0) this.hero.useSkill(1);
+        if(this.hero.heroSkill2Timer<=0) this.hero.useSkill(2);
+    }
+}
+
 class TeamBrain {
     constructor(faction) {
         this.faction = faction;
@@ -1521,42 +1702,42 @@ class TeamBrain {
         let myScore = this.faction==='BLUE' ? GS.scoreBlue : GS.scoreRed;
         let enmScore = this.faction==='BLUE' ? GS.scoreRed : GS.scoreBlue;
         let avgHp = myH.length>0 ? myH.reduce((s,h)=>s+h.hp/h.maxHp,0)/myH.length : 1;
+        let avgLevel = myH.length>0 ? myH.reduce((s,h)=>s+h.level,0)/myH.length : 1;
 
         if (myNx && myNx.hp/myNx.maxHp < 0.30) return this._issue('DEFEND', null, 'critical', 10.0);
         
+        // 빠른 끝내기 로직 (평균 레벨 15 이상)
+        if (avgLevel >= 15) {
+            if (Math.random() < 0.2) this._chat('order_push');
+            return this._issue('END_GAME', null, 'critical', 30.0);
+        }
+
         if (enmNx && !entities.some(e=>e.type==='nexus_turret'&&e.faction===ef&&!e.isDead)) {
             let lane = this._weakestEnemyLane();
             this._chat('nexus_open');
             return this._issue('PUSH_'+lane.toUpperCase(), lane, 'urgent', 20.0);
         }
         
+        // 고립된 적 척결 (HUNT_LONE_ENEMY)
+        let enmH = entities.filter(e=>e.type==='hero'&&e.faction===ef&&!e.isDead);
+        let loneEnemy = enmH.find(e => {
+            let isLone = !enmH.some(ally => ally !== e && dist(e, ally) < 800);
+            let isSafe = entities.some(t => (t.type==='tower'||t.type==='nexus_turret') && t.faction===ef && !t.isDead && dist(e, t) < t.range + 100);
+            return isLone && !isSafe;
+        });
+        if (loneEnemy && myH.length >= 3) {
+            return this._issue('HUNT_LONE_ENEMY', null, 'urgent', 15.0, loneEnemy);
+        }
+
         let nearDragon = dragons.find(d=>myH.filter(h=>dist(h,d)<900).length>=2);
         if (nearDragon && avgHp>0.55 && Math.random()<0.65) {
             this._chat('call_dragon');
             return this._issue('DRAGON', null, 'urgent', 15.0, nearDragon);
         }
         
-        if (avgHp < 0.45) return this._issue('FARM', null, 'normal', 12.0);
-        
-        if (myScore - enmScore >= 3) {
-            let lane = this._weakestEnemyLane();
-            if (Math.random()<0.5) this._chat('order_push');
-            return this._issue('PUSH_'+lane.toUpperCase(), lane, 'normal', 15.0);
-        }
-        
-        if (enmScore - myScore >= 3) {
-            if (Math.random()<0.6) this._chat('call_defend');
-            return this._issue('DEFEND', null, 'urgent', 12.0);
-        }
-        
-        let grouped = this._findGroupedAllies(3, 450);
-        if (grouped && GS.time>300) {
-            if (Math.random()<0.4) this._chat('call_teamfight');
-            return this._issue('GROUP_FIGHT', null, 'normal', 8.0);
-        }
-        
-        let lane = GS.time<300 ? ['top','mid','bot'][Math.floor(Math.random()*3)] : this._weakestEnemyLane();
-        return this._issue('PUSH_'+lane.toUpperCase(), lane, 'normal', 12.0);
+        // 파밍 삭제. 무조건 데스볼 뭉치기
+        let lane = this.commander ? (this.commander.aiLane || 'mid') : this._weakestEnemyLane();
+        return this._issue('GROUP_PUSH', lane, 'normal', 15.0);
     }
 
     _issue(type, lane, urgency, duration, target=null) {
@@ -1749,348 +1930,8 @@ class Hero extends Entity {
     }
     handleAI(dt) {
         if (this.isDead || this.stunTimer > 0) return;
-
-        let myBase    = this.faction==='BLUE' ? {x:300,y:2700} : {x:2700,y:300};
-        let enemyBase = this.faction==='BLUE' ? {x:2700,y:300} : {x:300,y:2700};
-        let hpRatio   = this.hp / this.maxHp;
-        let pers      = this.personality || AI_PERSONALITY.TACTICAL;
-
-        if (!this.aiUpdateTimer) this.aiUpdateTimer = 0;
-        this.aiUpdateTimer -= dt;
-        if (this.aiUpdateTimer <= 0) {
-            this.aiUpdateTimer = 0.2;
-            this.nearEnemiesCache = entities.filter(e=>e.faction!==this.faction&&!e.isDead&&dist(this,e)<1000);
-            this.nearAlliesCache  = entities.filter(e=>e.faction===this.faction&&!e.isDead&&dist(this,e)<1000&&e!==this);
-            if (this.aiMemory) {
-                this.nearEnemiesCache.forEach(e=>{
-                    if(e.type==='hero') {
-                        let d=(e.kills||0)*10+(e.level||1)*5;
-                        if(this.aiMemory.lastKilledBy===e.heroKey) d+=50;
-                        this.aiMemory.enemyDangerMap[e.heroKey]=d;
-                    }
-                });
-            }
-        }
-
-        let nearEnemies = (this.nearEnemiesCache||[]).filter(e=>!e.isDead);
-        let nearAllies  = (this.nearAlliesCache ||[]).filter(e=>!e.isDead);
-
-        if (dist(this, myBase) < 400) {
-            if (!this.aiShopTimer) this.aiShopTimer = 3.0 + Math.random()*4.0;
-            this.aiShopTimer -= dt;
-            if (this.aiShopTimer <= 0) {
-                this.aiShopAI();
-                this.aiShopTimer = 3.0 + Math.random()*4.0;
-            }
-        }
-
-        let brain  = window.TeamBrains && window.TeamBrains[this.faction];
-        let order  = brain ? brain.currentOrder : null;
-        let orderActive = order && (GS.time - order.issuedAt) < order.duration;
-
-        let oldState = this.aiState;
-        this.aiState = this._decideState(hpRatio,nearEnemies,nearAllies,pers,order,orderActive,myBase);
-
-        if (oldState !== this.aiState) {
-            this.aiChasing = false;
-            this.reactionDelay = pers.id==='AGGRESSIVE' ? 0.05 : 0.10+Math.random()*0.15;
-            if (Math.random() < 0.25) this._stateChat(oldState, this.aiState);
-        }
-        if (this.reactionDelay > 0) { this.reactionDelay -= dt; return; }
-
-        let target = this._pickTarget(nearEnemies, pers);
-        this._runState(dt,target,nearEnemies,nearAllies,myBase,enemyBase,pers,order,orderActive);
-        this.aiTarget = target;
-    }
-
-    _decideState(hpRatio, nearEnemies, nearAllies, pers, order, orderActive, myBase) {
-        let isFighting = nearEnemies.some(e => e.type==='hero' && dist(this, e) < 600);
-        let nearDragon = entities.some(e => e.mtype==='boss_epic_dragon' && !e.isDead && dist(this, e) < 800);
-        
-        if(!this.isPlayer && GS.aiCommand && GS.aiCommand !== 'FREE') {
-            if(GS.aiCommand === 'GATHER') {
-                let p = entities.find(e => e.isPlayer && e.faction === this.faction && !e.isDead);
-                if(p) {
-                    if (isFighting || nearDragon) {
-                        return (isFighting && nearAllies.some(a=>a.type==='hero'&&(a.lastAttackedTimer||0)>0)) ? 'TEAMFIGHT_JOIN' : 'ATTACK';
-                    }
-                    return 'GATHER';
-                }
-            }
-            else if(GS.aiCommand === 'CHASE') return 'CHASE_GLOBAL';
-            else if(GS.aiCommand === 'SIEGE') {
-                if(hpRatio > 0.4 && !isFighting) return 'SIEGE_GLOBAL';
-            }
-        }
-        let dangerZones = entities.filter(e => e.type==='stormZone' && e.faction!==this.faction && dist(this, e) < e.radius);
-        if (dangerZones.length > 0) return 'EVADE';
-
-        if (hpRatio <= pers.retreatHpRatio) {
-            if (pers.id==='AGGRESSIVE') {
-                let dying=nearEnemies.find(e=>e.type==='hero'&&(e.hp/e.maxHp)<0.15&&dist(this,e)<this.range*1.5);
-                if(dying) return 'ASSASSINATE';
-            }
-            return dist(this,myBase)<500 ? 'RECALL' : 'RETREAT';
-        }
-        if (orderActive && Math.random()<pers.orderObeyRate) return 'FOLLOW_ORDER';
-        let dyingHero=nearEnemies.find(e=>e.type==='hero'&&(e.hp/e.maxHp)<0.30&&dist(this,e)<700);
-        if(dyingHero&&(pers.id==='AGGRESSIVE'||pers.id==='OPPORTUNIST')) return 'ASSASSINATE';
-        if(pers.id==='SUPPORT_MIND') {
-            let weakAlly=nearAllies.find(a=>a.type==='hero'&&a.hp/a.maxHp<0.40);
-            if(weakAlly) return 'ESCORT';
-        }
-        let combatAllies=nearAllies.filter(a=>a.type==='hero'&&(a.lastAttackedTimer||0)>0);
-        if(combatAllies.length>=2&&nearEnemies.filter(e=>e.type==='hero').length>=1) return 'TEAMFIGHT_JOIN';
-        if(pers.id==='OPPORTUNIST'&&hpRatio>0.70&&nearAllies.filter(a=>a.type==='hero').length===0&&Math.random()<pers.loneWolfChance) return 'SPLITPUSH';
-        
-        let siegeTower=entities.find(e=>
-            (e.type==='tower'||e.type==='nexus_turret')&&e.faction!==this.faction&&!e.isDead&&
-            dist(this,e)<700&&entities.some(m=>m.faction===this.faction&&m.type==='minion'&&!m.isDead&&dist(m,e)<e.range));
-        if(siegeTower) return 'SIEGE';
-        if(nearEnemies.length>0) return 'ATTACK';
-        return 'LANE';
-    }
-
-    _pickTarget(nearEnemies, pers) {
-        if(nearEnemies.length===0) return null;
-        let best=-99999, target=null;
-        nearEnemies.forEach(e=>{
-            if(e.type==='nexus'&&entities.some(t=>t.type==='nexus_turret'&&t.faction===e.faction&&!t.isDead)) return;
-            let d=dist(this,e);
-            let s=(1-(e.hp/e.maxHp))*400+(1-(d/1000))*300;
-            if(e.type==='hero') s+=250;
-            if(pers.id==='AGGRESSIVE'&&e.type==='hero') s+=400;
-            if(pers.id==='AGGRESSIVE'&&e.type==='minion') s-=200;
-            if(pers.id==='OPPORTUNIST') s+=(1-(e.hp/e.maxHp))*300;
-            if(pers.id==='TACTICAL'&&e.type==='hero'&&this.aiMemory) s+=(this.aiMemory.enemyDangerMap[e.heroKey]||0)*0.5;
-            if((e.type==='tower'||e.type==='nexus_turret')&&
-               !entities.some(m=>m.faction===this.faction&&m.type==='minion'&&dist(m,e)<e.range)) s-=600;
-            if(s>best){best=s;target=e;}
-        });
-        return target;
-    }
-
-    _runState(dt, target, nearEnemies, nearAllies, myBase, enemyBase, pers, order, orderActive) {
-        let hpRatio=this.hp/this.maxHp;
-        const go=(pos,stop)=>{
-            let d=dist(this,pos);
-            if(d>stop){let a=Math.atan2(pos.y-this.y,pos.x-this.x);this.vx=Math.cos(a)*this.moveSpd;this.vy=Math.sin(a)*this.moveSpd;}
-            else{this.vx=0;this.vy=0;}
-            this.facingDir=pos.x<this.x?-1:1;
-        };
-        const skills=(needTarget=true,maxDist=9999)=>{
-            if(needTarget&&(!target||dist(this,target)>maxDist)) return;
-            if(this.heroSkill1Timer<=pers.skillUseDelay) this.useSkill(1);
-            if(this.heroSkill2Timer<=pers.skillUseDelay&&(!needTarget||dist(this,target)<this.range*1.2)) this.useSkill(2);
-        };
-
-        switch(this.aiState) {
-            case 'GATHER': {
-                let p = entities.find(e => e.isPlayer && e.faction === this.faction && !e.isDead);
-                if(p) {
-                    if(dist(this, p) > 200) { go(p, 150); } 
-                    else { if(target && dist(this, target) <= this.range) { this.vx=0; this.vy=0; this.facingDir = target.x < this.x ? -1 : 1; } else { this.vx=0; this.vy=0; } }
-                    skills(true, this.range*1.5);
-                } else { this.aiState = 'LANE'; }
-                break;
-            }
-            case 'CHASE_GLOBAL': {
-                let anyEnemy = (this.nearEnemiesCache||[]).filter(e=>e.type==='hero'&&!e.isDead).sort((a,b)=>dist(this,a)-dist(this,b))[0];
-                if(!anyEnemy) anyEnemy = entities.filter(e=>e.type==='hero'&&e.faction!==this.faction&&!e.isDead).sort((a,b)=>dist(this,a)-dist(this,b))[0];
-                if(anyEnemy) { 
-                    let enemyTowers = entities.filter(t=>(t.type==='tower'||t.type==='nexus_turret') && t.faction!==this.faction && !t.isDead);
-                    let underTower = enemyTowers.some(t => dist(t, anyEnemy) < t.range);
-                    if(underTower) {
-                        this.aiState = 'LANE'; // 다이브 금지
-                    } else {
-                        go(anyEnemy, this.range*0.8); skills(true, this.range*1.5); 
-                    }
-                } else { this.aiState = 'LANE'; }
-                break;
-            }
-            case 'SIEGE_GLOBAL': {
-                let towers = entities.filter(e=>(e.type==='tower'||e.type==='nexus_turret'||e.type==='nexus')&&e.faction!==this.faction&&!e.isDead).sort((a,b)=>dist(this,a)-dist(this,b));
-                if(towers.length > 0) {
-                    let safeTower = towers.find(tw => entities.some(m => m.faction===this.faction && m.type==='minion' && !m.isDead && dist(m, tw) < tw.range));
-                    let tgt = safeTower || towers[0];
-                    if(!safeTower && tgt.type !== 'nexus') {
-                        if(dist(this, tgt) < tgt.range + 50) {
-                            let a = Math.atan2(this.y - tgt.y, this.x - tgt.x);
-                            this.vx = Math.cos(a) * this.moveSpd; this.vy = Math.sin(a) * this.moveSpd;
-                        } else { go(tgt, tgt.range + 60); }
-                    } else {
-                        if(target && target.type==='hero' && dist(this, target) < this.range) tgt = target; 
-                        go(tgt, this.range*0.8); skills(true, this.range*1.5);
-                    }
-                } else { this.aiState = 'LANE'; }
-                break;
-            }
-            case 'EVADE': {
-                let dangerZones = entities.filter(e => e.type==='stormZone' && e.faction!==this.faction && dist(this, e) < e.radius);
-                if(dangerZones.length > 0) {
-                    let dz = dangerZones[0];
-                    let a = Math.atan2(this.y - dz.y, this.x - dz.x);
-                    this.vx = Math.cos(a) * this.moveSpd * 1.5;
-                    this.vy = Math.sin(a) * this.moveSpd * 1.5;
-                    this.facingDir = this.vx > 0 ? 1 : -1;
-                } else {
-                    this.aiState = 'LANE';
-                }
-                break;
-            }
-            case 'RETREAT': {
-                let chaser=nearEnemies.find(e=>e.type==='hero'&&dist(this,e)<350);
-                if(chaser){
-                    let a=Math.atan2(myBase.y-this.y,myBase.x-this.x);
-                    let n=Math.sin(performance.now()/130)*0.5;
-                    this.vx=Math.cos(a+n)*this.moveSpd; this.vy=Math.sin(a+n)*this.moveSpd;
-                    if(dist(this,chaser)<200&&this.heroSkill2Timer<=0) this.useSkill(2);
-                } else { go(myBase,50); }
-                break;
-            }
-            case 'RECALL': {
-                go(myBase,80);
-                if(hpRatio>0.75) this.aiState='LANE';
-                break;
-            }
-            case 'ATTACK': {
-                if(!target){this.aiState='LANE';break;}
-                let d=dist(this,target);
-                if(HERO_TMPL[this.heroKey].type==='ranged'&&this.attackTimer>0&&d<this.range*0.75){
-                    let a=Math.atan2(this.y-target.y,this.x-target.x);
-                    let side=Math.sin(performance.now()/200)*0.6;
-                    this.vx=Math.cos(a+side)*this.moveSpd*0.8; this.vy=Math.sin(a+side)*this.moveSpd*0.8;
-                } else { go(target,this.range*0.65); }
-                skills(true,this.range*1.3);
-                break;
-            }
-            case 'TEAMFIGHT_JOIN': {
-                let center=nearAllies.find(a=>a.type==='hero'&&(a.lastAttackedTimer||0)>0);
-                if(!center){this.aiState='LANE';break;}
-                let stopDist=HERO_TMPL[this.heroKey].type==='melee'?this.range*0.5:this.range*0.8;
-                go(center,stopDist);
-                skills(true,this.range*1.2);
-                break;
-            }
-            case 'SIEGE': {
-                let tw=entities.find(e=>(e.type==='tower'||e.type==='nexus_turret')&&e.faction!==this.faction&&!e.isDead&&dist(this,e)<700);
-                if(!tw){this.aiState='LANE';break;}
-                let hasTank=entities.some(m=>m.faction===this.faction&&m.type==='minion'&&!m.isDead&&dist(m,tw)<tw.range);
-                if(hasTank){
-                    let a=Math.atan2(this.y-tw.y,this.x-tw.x);
-                    go({x:tw.x+Math.cos(a)*(tw.range-this.range*0.9),y:tw.y+Math.sin(a)*(tw.range-this.range*0.9)},30);
-                } else { go(myBase,300); }
-                break;
-            }
-            case 'ASSASSINATE': {
-                let prey=nearEnemies.find(e=>e.type==='hero'&&(e.hp/e.maxHp)<0.40)||nearEnemies.find(e=>e.type==='hero');
-                if(!prey){this.aiState='LANE';break;}
-                go(prey,this.range*0.4);
-                if(this.heroSkill1Timer<=0) this.useSkill(1);
-                if(this.heroSkill2Timer<=0) this.useSkill(2);
-                break;
-            }
-            case 'ESCORT': {
-                let weakA=nearAllies.find(a=>a.type==='hero'&&a.hp/a.maxHp<0.40);
-                if(!weakA||weakA.hp/weakA.maxHp>0.72){this.aiState='LANE';break;}
-                go(weakA,80);
-                if(target&&target.type==='hero'){go(target,this.range*0.5);skills(true,this.range*1.3);}
-                break;
-            }
-            case 'FOLLOW_ORDER': {
-                if(!order||!orderActive){this.aiState='LANE';break;}
-                let ef=this.faction==='BLUE'?'RED':'BLUE';
-                switch(order.type){
-                    case 'DEFEND': {
-                        let nx=entities.find(e=>e.type==='nexus'&&e.faction===this.faction);
-                        if(nx) go(nx,200);
-                        if(target){go(target,this.range*0.6);skills(true,this.range*1.2);}
-                        break;
-                    }
-                    case 'DRAGON': {
-                        let dg=order.targetEntity;
-                        if(dg&&!dg.isDead){go(dg,this.range*0.7);skills(true,this.range*1.3);}
-                        else this.aiState='LANE';
-                        break;
-                    }
-                    case 'PUSH_TOP': case 'PUSH_MID': case 'PUSH_BOT': {
-                        let dest=this._laneDest(order.lane||'mid');
-                        go(dest,100);
-                        let tw=entities.find(e=>(e.type==='tower'||e.type==='nexus_turret')&&e.faction===ef&&!e.isDead&&dist(this,e)<e.range*1.8);
-                        if(tw&&entities.some(m=>m.faction===this.faction&&m.type==='minion'&&!m.isDead&&dist(m,tw)<tw.range)){
-                            let a=Math.atan2(this.y-tw.y,this.x-tw.x);
-                            go({x:tw.x+Math.cos(a)*(tw.range-this.range*0.8),y:tw.y+Math.sin(a)*(tw.range-this.range*0.8)},30);
-                        }
-                        if(target&&dist(this,target)<this.range*1.2) skills(true,this.range*1.2);
-                        break;
-                    }
-                    case 'GROUP_FIGHT': {
-                        let gc=this._nearestAllyGroup();
-                        if(gc) go(gc,150);
-                        if(target) skills(true,this.range*1.2);
-                        break;
-                    }
-                    default: this.aiState='LANE';
-                }
-                break;
-            }
-            case 'SPLITPUSH': {
-                let oppLane=this.laneRole==='top'?'bot':'top';
-                go(this._laneDest(oppLane),100);
-                if(nearEnemies.find(e=>e.type==='hero'&&dist(this,e)<400)) this.aiState='RETREAT';
-                break;
-            }
-            case 'LANE': default: {
-                let wps=this._laneWaypoints();
-                let dest=this._nextWaypoint(wps);
-                let tw=entities.find(t=>(t.type==='tower'||t.type==='nexus_turret')&&t.faction!==this.faction&&!t.isDead&&dist(this,t)<t.range+130);
-                if(tw&&!entities.some(m=>m.faction===this.faction&&m.type==='minion'&&!m.isDead&&dist(m,tw)<tw.range)){
-                    let a=Math.atan2(this.y-tw.y,this.x-tw.x);
-                    dest={x:tw.x+Math.cos(a)*(tw.range+130),y:tw.y+Math.sin(a)*(tw.range+130)};
-                }
-                go(dest,60);
-                if(nearEnemies.length>0&&target) this.aiState='ATTACK';
-                break;
-            }
-        }
-    }
-
-    _laneDest(lane) {
-        let d={
-            BLUE:{top:{x:300,y:300},  mid:{x:1500,y:1500},bot:{x:2700,y:2700}},
-            RED: {top:{x:2700,y:2700},mid:{x:1500,y:1500},bot:{x:300,y:300}}
-        };
-        return (d[this.faction]&&d[this.faction][lane])||{x:1500,y:1500};
-    }
-
-    _laneWaypoints() {
-        let bT=[{x:300,y:2700},{x:300,y:1500},{x:300,y:300},{x:2700,y:300}];
-        let bM=[{x:300,y:2700},{x:1500,y:1500},{x:2700,y:300}];
-        let bB=[{x:300,y:2700},{x:1500,y:2700},{x:2700,y:2700},{x:2700,y:300}];
-        let rT=[{x:2700,y:300},{x:1500,y:300},{x:300,y:300},{x:300,y:2700}];
-        let rM=[{x:2700,y:300},{x:1500,y:1500},{x:300,y:2700}];
-        let rB=[{x:2700,y:300},{x:2700,y:1500},{x:2700,y:2700},{x:300,y:2700}];
-        let bWp={top:bT,mid:bM,bot:bB,jungle:bM,support:bB};
-        let rWp={top:rT,mid:rM,bot:rB,jungle:rM,support:rB};
-        return (this.faction==='BLUE'?bWp:rWp)[this.laneRole]||bM;
-    }
-
-    _nextWaypoint(wps) {
-        if(!wps||wps.length===0) return{x:1500,y:1500};
-        if(this.wpIdx===undefined) this.wpIdx=1;
-        let wp=wps[Math.min(this.wpIdx,wps.length-1)];
-        if(dist(this,wp)<180&&this.wpIdx<wps.length-1) this.wpIdx++;
-        return wp;
-    }
-
-    _nearestAllyGroup() {
-        let allies=entities.filter(e=>e.type==='hero'&&e.faction===this.faction&&!e.isDead&&e!==this);
-        for(let a of allies){if(allies.filter(b=>b!==a&&dist(a,b)<300).length>=1) return a;}
-        return allies[0]||null;
-    }
-
-    _stateChat(from, to) {
-        if(window.AIChat) window.AIChat.triggerStateChat(this, from, to);
+        if (!this.aiController) this.aiController = new ReworkedAIController(this);
+        this.aiController.update(dt);
     }
     autoAttack(){
         if(this.attackTimer>0) return;
