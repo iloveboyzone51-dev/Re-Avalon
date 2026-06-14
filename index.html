@@ -543,11 +543,27 @@ window.onerror = function(msg, url, line, col, error) {
             <button onclick="document.getElementById('patchNotesModal').classList.add('hidden')" class="absolute top-4 right-4 text-slate-400 hover:text-white text-3xl font-bold">&times;</button>
             <h2 class="text-2xl md:text-3xl font-black text-amber-400 mb-6 border-b border-slate-700 pb-3 orbitron">📝 PATCH NOTES</h2>
             <div class="flex-1 overflow-y-auto pr-4 text-sm md:text-base text-slate-300 space-y-4 custom-scrollbar">
-                <!-- v4.3 (Latest) -->
+                <!-- v4.4 (Latest) -->
                 <details class="bg-slate-800/80 rounded-xl border border-amber-500/50 shadow-lg overflow-hidden" open>
                     <summary class="cursor-pointer p-4 font-black text-amber-400 hover:bg-slate-700/50 transition select-none flex justify-between items-center">
-                        <div class="flex items-center gap-2"><span class="text-xl">🔥</span> v4.3 - 논스톱 난투 대규모 개편 및 아이템 수정</div>
+                        <div class="flex items-center gap-2"><span class="text-xl">⚔️</span> v4.4 - 대규모 아이템 개편 및 전투 시스템 확장</div>
                         <span class="px-2 py-0.5 bg-amber-500/20 text-amber-400 text-[10px] rounded-full border border-amber-500/30">LATEST</span>
+                    </summary>
+                    <div class="p-4 pt-2 text-sm text-slate-300 space-y-3 bg-slate-900/50">
+                        <ul class="list-disc pl-5 space-y-2">
+                            <li><span class="font-bold text-amber-400">[전투 지향형 설계]</span> 무의미한 골드 수급 아이템 3종이 전투 특화 형태로 교체되었습니다 (선봉대의 방패, 전투의 희열, 불멸의 요새). 총 27종의 신규 아이템(기본/진화/패시브)이 업데이트되었습니다.</li>
+                            <li><span class="font-bold text-rose-400">[근접 영웅 대폭 상향]</span> 모든 근접 영웅들에게 일괄적으로 기본 공격속도 15% 상승이 적용되었으며, 기본 평타가 전방 부채꼴(90도) 형태의 광역기로 개편되었습니다.</li>
+                            <li><span class="font-bold text-sky-400">[다중 사격 개편]</span> 다중 사격 패시브 및 루난의 허리케인 효과가 제피스(ZEPHYR) 등 다중 투사체를 발사하는 영웅에게도 중첩되어 완벽히 적용되도록 구조가 개편되었습니다.</li>
+                            <li><span class="font-bold text-emerald-400">[버그 픽스]</span> '지옥의 망치' 강화 시 골드만 소모되던 버그를 수정하여 상점 UI에서 명확히 '강화 불가'로 막아두었습니다.</li>
+                        </ul>
+                    </div>
+                </details>
+
+                <!-- v4.3 -->
+                <details class="bg-slate-800/50 rounded-xl border border-slate-700 overflow-hidden">
+                    <summary class="cursor-pointer p-4 font-bold text-emerald-400 hover:bg-slate-700/50 transition select-none flex justify-between items-center">
+                        <div class="flex items-center gap-2"><span class="text-lg">🔥</span> v4.3 - 논스톱 난투 대규모 개편 및 아이템 수정</div>
+                        <span class="text-slate-500 text-xs">▼</span>
                     </summary>
                     <div class="p-4 pt-2 text-sm text-slate-300 space-y-3 bg-slate-900/50">
                         <ul class="list-disc pl-5 space-y-2">
