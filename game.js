@@ -4610,8 +4610,8 @@ window.startGame=()=>{
     window.TeamBrains = { 'BLUE': new TeamBrain('BLUE'), 'RED': new TeamBrain('RED') };
 let allKeys=Object.keys(HERO_TMPL).filter(h=>h!==GS.hero); allKeys.sort(()=>Math.random()-0.5);
     let bc=0, rc=0;
-    for(let i=0;i<9;i++){
-        let hk=allKeys[i%allKeys.length]; let f=bc<4?'BLUE':'RED';
+    for(let i=0;i<15;i++){
+        let hk=allKeys[i%allKeys.length]; let f=bc<7?'BLUE':'RED';
         let role = allRoles[Math.floor(Math.random()*allRoles.length)];
         if(f==='BLUE') bc++; else rc++;
         entities.push(new Hero(f==='BLUE'?300:2700, f==='BLUE'?2700:300, f, hk, false, role));
